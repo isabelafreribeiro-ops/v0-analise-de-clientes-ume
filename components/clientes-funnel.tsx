@@ -1,31 +1,97 @@
 "use client";
 
 import { useMemo } from "react";
-import { TrendingUp, Users, UserCheck, ShoppingBag, Repeat } from "lucide-react";
+import { TrendingUp, Users, UserCheck, ShoppingBag, Calendar, X } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import { useData } from "@/lib/data-context";
 import { FunnelChart } from "./funnel-chart";
 import { InsightCallout } from "./insight-callout";
 import type { FunnelStep } from "@/lib/types";
 
-interface FunnelDashboardProps {
-  periodFrom: string;
-  periodTo: string;
-  selectedVarejo: string;
+const MONTH_NAMES = [
+  "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
+  "Jul", "Ago", "Set", "Out", "Nov", "Dez"
+];
+
+interface PeriodOption {
+  value: string;
+  label: string;
+  sortKey: number;
 }
 
-// Helper to get sortKey from period string (MM/YYYY)
+interface ClientesFunnelProps {
+  periodFrom: string;
+  periodTo: string;
+  onPeriodFromChange: (value: string) => void;
+  onPeriodToChange: (value: string) => void;
+}
+
 function getSortKey(period: string): number {
   const [month, year] = period.split("/").map(Number);
   return year * 100 + month;
 }
 
-export function FunnelDashboard({ periodFrom, periodTo, selectedVarejo }: FunnelDashboardProps) {
-  const { clientesData, varejoData } = useData();
+export function ClientesFunnel({ 
+  periodFrom, 
+  periodTo, 
+  onPeriodFromChange, 
+  onPeriodToChange 
+}: ClientesFunnelProps) {
+  const { clientesData } = useData();
 
-  // Filtrar dados de clientes por período (range)
+  // Get unique periods from data
+  const periods = useMemo((): PeriodOption[] => {
+    const periodsMap = new Map<string, PeriodOption>();
+    
+    clientesData.forEach((cliente) => {
+      const date = cliente["Data de Entrada na Ume"];
+      if (date) {
+        const dateStr = String(date);
+        let month: number | null = null;
+        let year: number | null = null;
+        
+        const slashParts = dateStr.split("/");
+        if (slashParts.length >= 3) {
+          month = parseInt(slashParts[1], 10);
+          year = parseInt(slashParts[2], 10);
+        } else if (dateStr.includes("-")) {
+          const dashParts = dateStr.split("-");
+          if (dashParts.length >= 2) {
+            year = parseInt(dashParts[0], 10);
+            month = parseInt(dashParts[1], 10);
+          }
+        }
+        
+        if (month && year && month >= 1 && month <= 12) {
+          const value = `${month.toString().padStart(2, "0")}/${year}`;
+          const label = `${MONTH_NAMES[month - 1]}/${year}`;
+          const sortKey = year * 100 + month;
+          
+          if (!periodsMap.has(value)) {
+            periodsMap.set(value, { value, label, sortKey });
+          }
+        }
+      }
+    });
+    
+    return Array.from(periodsMap.values()).sort((a, b) => a.sortKey - b.sortKey);
+  }, [clientesData]);
+
+  const getSelectedLabel = (value: string) => {
+    if (value === "all") return "Todos";
+    const found = periods.find(p => p.value === value);
+    return found ? found.label : value;
+  };
+
+  // Filter clients by period range
   const filteredClientes = useMemo(() => {
-    // If both are "all", return all data
     if (periodFrom === "all" && periodTo === "all") return clientesData;
     
     const fromKey = periodFrom !== "all" ? getSortKey(periodFrom) : 0;
@@ -58,50 +124,13 @@ export function FunnelDashboard({ periodFrom, periodTo, selectedVarejo }: Funnel
     });
   }, [clientesData, periodFrom, periodTo]);
 
-  // Dados do varejo filtrado
-  const filteredVarejo = useMemo(() => {
-    if (selectedVarejo === "all") return null;
-    return varejoData.find((v) => v.Varejo === selectedVarejo) || null;
-  }, [varejoData, selectedVarejo]);
-
-  // Calcular métricas do funil baseado na base de clientes
+  // Calculate funnel data
   const funnelData = useMemo((): FunnelStep[] => {
     if (filteredClientes.length === 0) return [];
 
-    // Se tiver filtro de varejo, usar métricas do varejo
-    if (filteredVarejo) {
-      const totalTransacoes = (filteredVarejo["Transações Recorrentes por mês"] || 0) + 
-                              (filteredVarejo["Transações de Conversões por mês"] || 0);
-      const conversoes = filteredVarejo["Transações de Conversões por mês"] || 0;
-      const recorrentes = filteredVarejo["Transações Recorrentes por mês"] || 0;
-      
-      const steps: FunnelStep[] = [
-        {
-          name: "Total Transações",
-          value: totalTransacoes,
-          percentage: 100,
-          dropoffRate: 0,
-        },
-        {
-          name: "Conversões",
-          value: conversoes,
-          percentage: totalTransacoes > 0 ? (conversoes / totalTransacoes) * 100 : 0,
-          dropoffRate: totalTransacoes > 0 ? ((totalTransacoes - conversoes) / totalTransacoes) * 100 : 0,
-        },
-        {
-          name: "Recorrentes",
-          value: recorrentes,
-          percentage: totalTransacoes > 0 ? (recorrentes / totalTransacoes) * 100 : 0,
-          dropoffRate: conversoes > 0 ? ((conversoes - recorrentes) / conversoes) * 100 : 0,
-        },
-      ];
-      
-      return steps;
-    }
-
-    // Métricas padrão da base de clientes
     const total = filteredClientes.length;
     const negados = filteredClientes.filter((c) => c.Situação === "Negada").length;
+    const aprovados = total - negados;
     const aprovadosInativos = filteredClientes.filter(
       (c) => Number(c["Qtd de Compras"]) === 0 && c.Situação !== "Negada"
     ).length;
@@ -129,44 +158,26 @@ export function FunnelDashboard({ periodFrom, periodTo, selectedVarejo }: Funnel
         name: "Aprovados Inativos",
         value: aprovadosInativos,
         percentage: total > 0 ? (aprovadosInativos / total) * 100 : 0,
-        dropoffRate: total > 0 ? ((total - negados - aprovadosInativos - primeiraCompra) / total) * 100 : 0,
+        dropoffRate: aprovados > 0 ? ((aprovados - aprovadosInativos - primeiraCompra) / aprovados) * 100 : 0,
       },
       {
         name: "Primeira Compra",
         value: primeiraCompra,
         percentage: total > 0 ? (primeiraCompra / total) * 100 : 0,
-        dropoffRate: aprovadosInativos > 0 
-          ? ((total - negados - primeiraCompra) / (total - negados)) * 100 
-          : 0,
+        dropoffRate: aprovados > 0 ? ((aprovados - primeiraCompra) / aprovados) * 100 : 0,
       },
       {
         name: "Recorrentes",
         value: recorrentes,
         percentage: total > 0 ? (recorrentes / total) * 100 : 0,
-        dropoffRate: primeiraCompra > 0 
-          ? ((primeiraCompra - recorrentes) / primeiraCompra) * 100 
-          : 0,
+        dropoffRate: primeiraCompra > 0 ? ((primeiraCompra - recorrentes) / primeiraCompra) * 100 : 0,
       },
     ];
 
-    // Recalcular drop-off rates de forma mais precisa
-    for (let i = 1; i < steps.length; i++) {
-      if (i === 1) {
-        steps[i].dropoffRate = 0;
-      } else if (steps[i - 1].value > 0) {
-        const prevRelevantValue = i === 2 
-          ? steps[0].value - steps[1].value
-          : steps[i - 1].value;
-        steps[i].dropoffRate = prevRelevantValue > 0 
-          ? ((prevRelevantValue - steps[i].value) / prevRelevantValue) * 100 
-          : 0;
-      }
-    }
-
     return steps;
-  }, [filteredClientes, filteredVarejo]);
+  }, [filteredClientes]);
 
-  // Métricas resumo
+  // Summary metrics
   const summaryMetrics = useMemo(() => {
     if (filteredClientes.length === 0) {
       return {
@@ -188,9 +199,73 @@ export function FunnelDashboard({ periodFrom, periodTo, selectedVarejo }: Funnel
 
   const hasData = clientesData.length > 0;
 
+  const clearFilters = () => {
+    onPeriodFromChange("all");
+    onPeriodToChange("all");
+  };
+
+  const hasActiveFilters = periodFrom !== "all" || periodTo !== "all";
+
   return (
     <div className="space-y-6">
-      {/* Cards de resumo */}
+      {/* Title and Filters */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-white">Aquisição de Clientes</h2>
+          <p className="text-sm text-[#7a9e8a]">
+            Análise do funil de aquisição e conversão de clientes Ume
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Calendar className="h-3.5 w-3.5 text-[#7a9e8a]" />
+          <span className="text-xs text-[#7a9e8a]">De:</span>
+          <Select value={periodFrom} onValueChange={onPeriodFromChange}>
+            <SelectTrigger className="h-7 w-[110px] border-[#004d26] bg-[#003d1f] px-2 text-xs text-white">
+              <span className="truncate">{getSelectedLabel(periodFrom)}</span>
+            </SelectTrigger>
+            <SelectContent className="border-[#004d26] bg-[#002a14]">
+              <SelectItem value="all" className="text-xs text-white hover:bg-[#003d1f] focus:bg-[#003d1f] focus:text-white">
+                Todos
+              </SelectItem>
+              {periods.map((period) => (
+                <SelectItem key={period.value} value={period.value} className="text-xs text-white hover:bg-[#003d1f] focus:bg-[#003d1f] focus:text-white">
+                  {period.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          
+          <span className="text-xs text-[#7a9e8a]">Até:</span>
+          <Select value={periodTo} onValueChange={onPeriodToChange}>
+            <SelectTrigger className="h-7 w-[110px] border-[#004d26] bg-[#003d1f] px-2 text-xs text-white">
+              <span className="truncate">{getSelectedLabel(periodTo)}</span>
+            </SelectTrigger>
+            <SelectContent className="border-[#004d26] bg-[#002a14]">
+              <SelectItem value="all" className="text-xs text-white hover:bg-[#003d1f] focus:bg-[#003d1f] focus:text-white">
+                Todos
+              </SelectItem>
+              {periods.map((period) => (
+                <SelectItem key={period.value} value={period.value} className="text-xs text-white hover:bg-[#003d1f] focus:bg-[#003d1f] focus:text-white">
+                  {period.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          
+          {hasActiveFilters && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={clearFilters}
+              className="h-7 px-2 text-[#7a9e8a] hover:bg-[#003d1f] hover:text-white"
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-4">
         <Card className="border-[#004d26] bg-[#002a14]">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -225,7 +300,7 @@ export function FunnelDashboard({ periodFrom, periodTo, selectedVarejo }: Funnel
             <CardTitle className="text-sm font-medium text-[#7a9e8a]">
               Clientes Ativos
             </CardTitle>
-            <ShoppingBag className="h-4 w-4 text-[#00ff6a]" />
+            <ShoppingBag className="h-4 w-4 text-[#00C853]" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-white">
@@ -242,24 +317,22 @@ export function FunnelDashboard({ periodFrom, periodTo, selectedVarejo }: Funnel
             <TrendingUp className="h-4 w-4 text-[#00C853]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-[#00ff6a]">
+            <div className="text-2xl font-bold text-[#00C853]">
               {summaryMetrics.taxaConversao.toFixed(1)}%
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Funil */}
+      {/* Funnel Chart */}
       <Card className="border-[#004d26] bg-[#002a14]">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-white">
-            <Repeat className="h-5 w-5 text-[#00C853]" />
-            Funil de Aquisição
+            <Users className="h-5 w-5 text-[#00C853]" />
+            Funil de Aquisição de Clientes
           </CardTitle>
           <CardDescription className="text-[#7a9e8a]">
-            {selectedVarejo !== "all"
-              ? `Métricas de transações do varejo: ${selectedVarejo}`
-              : "Visualização do funil completo de aquisição de clientes"}
+            Visualização do funil completo de aquisição de clientes
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -272,7 +345,7 @@ export function FunnelDashboard({ periodFrom, periodTo, selectedVarejo }: Funnel
                 Nenhum dado carregado
               </p>
               <p className="text-sm text-[#7a9e8a]/70">
-                Faça upload das bases CSV para visualizar o funil
+                Faça upload da Base de Clientes para visualizar o funil
               </p>
             </div>
           )}
@@ -280,7 +353,7 @@ export function FunnelDashboard({ periodFrom, periodTo, selectedVarejo }: Funnel
       </Card>
 
       {/* Insight */}
-      <InsightCallout data={funnelData} />
+      <InsightCallout data={funnelData} title="clientes" />
     </div>
   );
 }

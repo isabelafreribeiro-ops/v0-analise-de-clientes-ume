@@ -7,9 +7,10 @@ import type { FunnelStep } from "@/lib/types";
 
 interface InsightCalloutProps {
   data: FunnelStep[];
+  title?: string;
 }
 
-export function InsightCallout({ data }: InsightCalloutProps) {
+export function InsightCallout({ data, title = "clientes" }: InsightCalloutProps) {
   const insight = useMemo(() => {
     if (data.length < 2) return null;
 
@@ -45,7 +46,7 @@ export function InsightCallout({ data }: InsightCalloutProps) {
               Carregue os dados para visualizar insights
             </p>
             <p className="text-sm text-[#7a9e8a]/70">
-              Faça upload das bases de clientes e varejo para análise
+              Faça upload das bases para análise
             </p>
           </div>
         </CardContent>
@@ -54,22 +55,22 @@ export function InsightCallout({ data }: InsightCalloutProps) {
   }
 
   return (
-    <Card className="border-[#00C853]/30 bg-[#00C853]/10">
+    <Card className="border-[#004d26] bg-[#002a14]">
       <CardContent className="flex items-start gap-4 py-4">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#00C853]/20">
-          <AlertTriangle className="h-6 w-6 text-[#00ff6a]" />
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#003d1f]">
+          <AlertTriangle className="h-6 w-6 text-[#00C853]" />
         </div>
         <div>
           <p className="font-semibold text-white">
             Maior perda identificada: {insight.fromStep} → {insight.toStep}
           </p>
           <p className="mt-1 text-sm text-[#7a9e8a]">
-            Taxa de drop-off de <span className="font-bold text-[#00ff6a]">{insight.dropoffRate.toFixed(1)}%</span>
+            Taxa de drop-off de <span className="font-bold text-[#00C853]">{insight.dropoffRate.toFixed(1)}%</span>
             {" "}representa a perda de{" "}
-            <span className="font-bold text-[#00ff6a]">{insight.lostCount.toLocaleString("pt-BR")}</span> clientes
-            nesta etapa do funil.
+            <span className="font-bold text-[#00C853]">{insight.lostCount.toLocaleString("pt-BR")}</span> {title}
+            {" "}nesta etapa do funil.
           </p>
-          <p className="mt-2 text-xs text-[#7a9e8a]">
+          <p className="mt-2 text-xs text-[#7a9e8a]/70">
             Considere analisar os motivos dessa conversão baixa para otimizar a aquisição.
           </p>
         </div>
