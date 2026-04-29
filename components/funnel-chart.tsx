@@ -3,16 +3,11 @@
 import { useMemo } from "react";
 import type { FunnelStep } from "@/lib/types";
 
-interface ExtendedFunnelStep extends FunnelStep {
-  lojas?: number;
-}
-
 interface FunnelChartProps {
-  data: ExtendedFunnelStep[];
-  showLojas?: boolean;
+  data: FunnelStep[];
 }
 
-export function FunnelChart({ data, showLojas = false }: FunnelChartProps) {
+export function FunnelChart({ data }: FunnelChartProps) {
   const maxValue = useMemo(() => Math.max(...data.map((d) => d.value)), [data]);
 
   if (data.length === 0) return null;
@@ -50,16 +45,9 @@ export function FunnelChart({ data, showLojas = false }: FunnelChartProps) {
                 >
                   <div className="flex flex-col">
                     <span className="text-sm font-medium">{step.name}</span>
-                    <div className="flex items-baseline gap-2">
-                      <span className="text-2xl font-bold">
-                        {step.value.toLocaleString("pt-BR")}
-                      </span>
-                      {showLojas && step.lojas !== undefined && (
-                        <span className="text-xs opacity-80">
-                          ({step.lojas.toLocaleString("pt-BR")} lojas)
-                        </span>
-                      )}
-                    </div>
+                    <span className="text-2xl font-bold">
+                      {step.value.toLocaleString("pt-BR")}
+                    </span>
                   </div>
                   <div className="flex flex-col items-end">
                     <span className="text-sm font-medium">

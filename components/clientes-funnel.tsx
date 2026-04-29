@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { TrendingUp, Users, UserCheck, ShoppingBag, Calendar, X, Store } from "lucide-react";
+import { TrendingUp, Users, UserCheck, ShoppingBag, Calendar, X } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
@@ -29,10 +29,8 @@ interface PeriodOption {
 interface ClientesFunnelProps {
   periodFrom: string;
   periodTo: string;
-  varejosFilter: string;
   onPeriodFromChange: (value: string) => void;
   onPeriodToChange: (value: string) => void;
-  onVarejosFilterChange: (value: string) => void;
 }
 
 function getSortKey(period: string): number {
@@ -42,11 +40,9 @@ function getSortKey(period: string): number {
 
 export function ClientesFunnel({ 
   periodFrom, 
-  periodTo,
-  varejosFilter,
+  periodTo, 
   onPeriodFromChange, 
-  onPeriodToChange,
-  onVarejosFilterChange
+  onPeriodToChange 
 }: ClientesFunnelProps) {
   const { clientesData } = useData();
 
@@ -94,61 +90,39 @@ export function ClientesFunnel({
     return found ? found.label : value;
   };
 
-  // Filter clients by period range and varejos filter
+  // Filter clients by period range
   const filteredClientes = useMemo(() => {
-    let filtered = clientesData;
+    if (periodFrom === "all" && periodTo === "all") return clientesData;
     
-    // Filter by period range
-    if (periodFrom !== "all" || periodTo !== "all") {
-      const fromKey = periodFrom !== "all" ? getSortKey(periodFrom) : 0;
-      const toKey = periodTo !== "all" ? getSortKey(periodTo) : 999999;
+    const fromKey = periodFrom !== "all" ? getSortKey(periodFrom) : 0;
+    const toKey = periodTo !== "all" ? getSortKey(periodTo) : 999999;
+    
+    return clientesData.filter((cliente) => {
+      const date = cliente["Data de Entrada na Ume"];
+      if (!date) return false;
       
-      filtered = filtered.filter((cliente) => {
-        const date = cliente["Data de Entrada na Ume"];
-        if (!date) return false;
-        
-        const dateStr = String(date);
-        let month: number | null = null;
-        let year: number | null = null;
-        
-        const parts = dateStr.split("/");
-        if (parts.length >= 3) {
-          month = parseInt(parts[1], 10);
-          year = parseInt(parts[2], 10);
-        } else if (dateStr.includes("-")) {
-          const dateParts = dateStr.split("-");
-          if (dateParts.length >= 2) {
-            year = parseInt(dateParts[0], 10);
-            month = parseInt(dateParts[1], 10);
-          }
+      const dateStr = String(date);
+      let month: number | null = null;
+      let year: number | null = null;
+      
+      const parts = dateStr.split("/");
+      if (parts.length >= 3) {
+        month = parseInt(parts[1], 10);
+        year = parseInt(parts[2], 10);
+      } else if (dateStr.includes("-")) {
+        const dateParts = dateStr.split("-");
+        if (dateParts.length >= 2) {
+          year = parseInt(dateParts[0], 10);
+          month = parseInt(dateParts[1], 10);
         }
-        
-        if (!month || !year) return false;
-        
-        const clientKey = year * 100 + month;
-        return clientKey >= fromKey && clientKey <= toKey;
-      });
-    }
-    
-    // Filter by number of varejos
-    if (varejosFilter !== "all") {
-      filtered = filtered.filter((cliente) => {
-        const qtdVarejos = Number(cliente["Qtd de Varejos que já comprou"]) || 0;
-        switch (varejosFilter) {
-          case "1":
-            return qtdVarejos === 1;
-          case "2":
-            return qtdVarejos === 2;
-          case "3+":
-            return qtdVarejos >= 3;
-          default:
-            return true;
-        }
-      });
-    }
-    
-    return filtered;
-  }, [clientesData, periodFrom, periodTo, varejosFilter]);
+      }
+      
+      if (!month || !year) return false;
+      
+      const clientKey = year * 100 + month;
+      return clientKey >= fromKey && clientKey <= toKey;
+    });
+  }, [clientesData, periodFrom, periodTo]);
 
   // Calculate funnel data
   const funnelData = useMemo((): FunnelStep[] => {
@@ -228,10 +202,9 @@ export function ClientesFunnel({
   const clearFilters = () => {
     onPeriodFromChange("all");
     onPeriodToChange("all");
-    onVarejosFilterChange("all");
   };
 
-  const hasActiveFilters = periodFrom !== "all" || periodTo !== "all" || varejosFilter !== "all";
+  const hasActiveFilters = periodFrom !== "all" || periodTo !== "all";
 
   return (
     <div className="space-y-6">
@@ -243,11 +216,11 @@ export function ClientesFunnel({
             Análise do funil de aquisição e conversão de clientes Ume
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-2">
           <Calendar className="h-3.5 w-3.5 text-[#7a9e8a]" />
           <span className="text-xs text-[#7a9e8a]">De:</span>
           <Select value={periodFrom} onValueChange={onPeriodFromChange}>
-            <SelectTrigger className="h-7 w-[100px] border-[#004d26] bg-[#003d1f] px-2 text-xs text-white">
+            <SelectTrigger className="h-7 w-[110px] border-[#004d26] bg-[#003d1f] px-2 text-xs text-white">
               <span className="truncate">{getSelectedLabel(periodFrom)}</span>
             </SelectTrigger>
             <SelectContent className="border-[#004d26] bg-[#002a14]">
@@ -264,7 +237,7 @@ export function ClientesFunnel({
           
           <span className="text-xs text-[#7a9e8a]">Até:</span>
           <Select value={periodTo} onValueChange={onPeriodToChange}>
-            <SelectTrigger className="h-7 w-[100px] border-[#004d26] bg-[#003d1f] px-2 text-xs text-white">
+            <SelectTrigger className="h-7 w-[110px] border-[#004d26] bg-[#003d1f] px-2 text-xs text-white">
               <span className="truncate">{getSelectedLabel(periodTo)}</span>
             </SelectTrigger>
             <SelectContent className="border-[#004d26] bg-[#002a14]">
@@ -276,34 +249,6 @@ export function ClientesFunnel({
                   {period.label}
                 </SelectItem>
               ))}
-            </SelectContent>
-          </Select>
-
-          <div className="mx-1 h-4 w-px bg-[#004d26]" />
-          
-          <Store className="h-3.5 w-3.5 text-[#7a9e8a]" />
-          <span className="text-xs text-[#7a9e8a]">Varejos:</span>
-          <Select value={varejosFilter} onValueChange={onVarejosFilterChange}>
-            <SelectTrigger className="h-7 w-[100px] border-[#004d26] bg-[#003d1f] px-2 text-xs text-white">
-              <span className="truncate">
-                {varejosFilter === "all" ? "Todos" : 
-                 varejosFilter === "1" ? "1 varejo" :
-                 varejosFilter === "2" ? "2 varejos" : "3+ varejos"}
-              </span>
-            </SelectTrigger>
-            <SelectContent className="border-[#004d26] bg-[#002a14]">
-              <SelectItem value="all" className="text-xs text-white hover:bg-[#003d1f] focus:bg-[#003d1f] focus:text-white">
-                Todos
-              </SelectItem>
-              <SelectItem value="1" className="text-xs text-white hover:bg-[#003d1f] focus:bg-[#003d1f] focus:text-white">
-                1 varejo
-              </SelectItem>
-              <SelectItem value="2" className="text-xs text-white hover:bg-[#003d1f] focus:bg-[#003d1f] focus:text-white">
-                2 varejos
-              </SelectItem>
-              <SelectItem value="3+" className="text-xs text-white hover:bg-[#003d1f] focus:bg-[#003d1f] focus:text-white">
-                3+ varejos
-              </SelectItem>
             </SelectContent>
           </Select>
           

@@ -1,42 +1,28 @@
 "use client";
 
-import { useMemo, useState, useRef, useEffect } from "react";
-import { Store, TrendingUp, DollarSign, Repeat, Search, ChevronDown, Check, X } from "lucide-react";
+import { useMemo } from "react";
+import { Store, TrendingUp, DollarSign, Repeat } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { X } from "lucide-react";
 import { useData } from "@/lib/data-context";
 import { FunnelChart } from "./funnel-chart";
 import { InsightCallout } from "./insight-callout";
 import type { FunnelStep } from "@/lib/types";
 
 interface VarejoFunnelProps {
-  selectedSegmentos: string[];
-  searchQuery: string;
-  onSegmentosChange: (value: string[]) => void;
-  onSearchChange: (value: string) => void;
+  selectedSegmento: string;
+  onSegmentoChange: (value: string) => void;
 }
 
-export function VarejoFunnel({ 
-  selectedSegmentos, 
-  searchQuery,
-  onSegmentosChange,
-  onSearchChange 
-}: VarejoFunnelProps) {
+export function VarejoFunnel({ selectedSegmento, onSegmentoChange }: VarejoFunnelProps) {
   const { varejoData } = useData();
-  const [isSegmentoOpen, setIsSegmentoOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsSegmentoOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   // Get unique segmentos
   const segmentos = useMemo(() => {
@@ -49,58 +35,27 @@ export function VarejoFunnel({
     return Array.from(segmentSet).sort();
   }, [varejoData]);
 
-  // Toggle segmento selection
-  const toggleSegmento = (segmento: string) => {
-    if (selectedSegmentos.includes(segmento)) {
-      onSegmentosChange(selectedSegmentos.filter(s => s !== segmento));
-    } else {
-      onSegmentosChange([...selectedSegmentos, segmento]);
-    }
-  };
-
-  // Select all segmentos
-  const selectAll = () => {
-    onSegmentosChange([]);
-  };
-
-  // Filter data by segmentos and search
+  // Filter data by segmento
   const filteredVarejo = useMemo(() => {
-    let filtered = varejoData;
-    
-    // Filter by segmentos (empty array means all)
-    if (selectedSegmentos.length > 0) {
-      filtered = filtered.filter((v) => selectedSegmentos.includes(v.Segmento));
-    }
-    
-    // Filter by search query
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter((v) => 
-        v.Varejo?.toLowerCase().includes(query)
-      );
-    }
-    
-    return filtered;
-  }, [varejoData, selectedSegmentos, searchQuery]);
+    if (selectedSegmento === "all") return varejoData;
+    return varejoData.filter((v) => v.Segmento === selectedSegmento);
+  }, [varejoData, selectedSegmento]);
 
   // Calculate funnel data for varejos
   const funnelData = useMemo((): FunnelStep[] => {
     if (filteredVarejo.length === 0) return [];
 
     const totalVarejos = filteredVarejo.length;
-    const totalLojas = filteredVarejo.reduce((sum, v) => sum + (Number(v.Lojas) || 0), 0);
     const varejosComRecorrentes = filteredVarejo.filter(
       (v) => Number(v["Transações Recorrentes por mês"]) > 0
     ).length;
-    const lojasComRecorrentes = filteredVarejo
-      .filter((v) => Number(v["Transações Recorrentes por mês"]) > 0)
-      .reduce((sum, v) => sum + (Number(v.Lojas) || 0), 0);
     const varejosComConversoes = filteredVarejo.filter(
       (v) => Number(v["Transações de Conversões por mês"]) > 0
     ).length;
-    const lojasComConversoes = filteredVarejo
-      .filter((v) => Number(v["Transações de Conversões por mês"]) > 0)
-      .reduce((sum, v) => sum + (Number(v.Lojas) || 0), 0);
+    const originacaoTotal = filteredVarejo.reduce(
+      (sum, v) => sum + (Number(v["Originação Total"]) || 0),
+      0
+    );
 
     const steps: FunnelStep[] = [
       {
@@ -108,14 +63,12 @@ export function VarejoFunnel({
         value: totalVarejos,
         percentage: 100,
         dropoffRate: 0,
-        lojas: totalLojas,
       },
       {
         name: "Varejos com Transações Recorrentes",
         value: varejosComRecorrentes,
         percentage: totalVarejos > 0 ? (varejosComRecorrentes / totalVarejos) * 100 : 0,
         dropoffRate: totalVarejos > 0 ? ((totalVarejos - varejosComRecorrentes) / totalVarejos) * 100 : 0,
-        lojas: lojasComRecorrentes,
       },
       {
         name: "Varejos com Conversões",
@@ -124,7 +77,6 @@ export function VarejoFunnel({
         dropoffRate: varejosComRecorrentes > 0 
           ? ((varejosComRecorrentes - varejosComConversoes) / varejosComRecorrentes) * 100 
           : 0,
-        lojas: lojasComConversoes,
       },
     ];
 
@@ -160,22 +112,11 @@ export function VarejoFunnel({
 
   const hasData = varejoData.length > 0;
 
-  const clearFilters = () => {
-    onSegmentosChange([]);
-    onSearchChange("");
-  };
-
-  const hasActiveFilters = selectedSegmentos.length > 0 || searchQuery.trim() !== "";
-
-  const getSegmentoLabel = () => {
-    if (selectedSegmentos.length === 0) return "Todos";
-    if (selectedSegmentos.length === 1) return selectedSegmentos[0];
-    return `${selectedSegmentos.length} selecionados`;
-  };
+  const clearFilter = () => onSegmentoChange("all");
 
   return (
     <div className="space-y-6">
-      {/* Title and Filters */}
+      {/* Title and Filter */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-xl font-bold text-white">Aquisição de Varejos</h2>
@@ -184,64 +125,29 @@ export function VarejoFunnel({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {/* Search Input */}
-          <div className="relative">
-            <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-[#7a9e8a]" />
-            <Input
-              type="text"
-              placeholder="Buscar varejo..."
-              value={searchQuery}
-              onChange={(e) => onSearchChange(e.target.value)}
-              className="h-7 w-[140px] border-[#004d26] bg-[#003d1f] pl-7 pr-2 text-xs text-white placeholder:text-[#7a9e8a]"
-            />
-          </div>
-
-          {/* Segmento Multi-Select */}
-          <div className="relative" ref={dropdownRef}>
-            <button
-              type="button"
-              onClick={() => setIsSegmentoOpen(!isSegmentoOpen)}
-              className="flex h-7 w-[140px] items-center justify-between rounded-md border border-[#004d26] bg-[#003d1f] px-2 text-xs text-white"
-            >
-              <span className="truncate">{getSegmentoLabel()}</span>
-              <ChevronDown className="h-3 w-3 text-[#7a9e8a]" />
-            </button>
-            
-            {isSegmentoOpen && (
-              <div className="absolute right-0 top-full z-50 mt-1 w-[180px] rounded-md border border-[#004d26] bg-[#002a14] py-1 shadow-lg">
-                <button
-                  type="button"
-                  onClick={selectAll}
-                  className="flex w-full items-center gap-2 px-2 py-1.5 text-left text-xs text-white hover:bg-[#003d1f]"
-                >
-                  <div className={`flex h-3.5 w-3.5 items-center justify-center rounded border ${selectedSegmentos.length === 0 ? "border-[#00C853] bg-[#00C853]" : "border-[#004d26]"}`}>
-                    {selectedSegmentos.length === 0 && <Check className="h-2.5 w-2.5 text-[#001a0f]" />}
-                  </div>
-                  Todos
-                </button>
-                <div className="my-1 border-t border-[#004d26]" />
-                {segmentos.map((segmento) => (
-                  <button
-                    key={segmento}
-                    type="button"
-                    onClick={() => toggleSegmento(segmento)}
-                    className="flex w-full items-center gap-2 px-2 py-1.5 text-left text-xs text-white hover:bg-[#003d1f]"
-                  >
-                    <div className={`flex h-3.5 w-3.5 items-center justify-center rounded border ${selectedSegmentos.includes(segmento) ? "border-[#00C853] bg-[#00C853]" : "border-[#004d26]"}`}>
-                      {selectedSegmentos.includes(segmento) && <Check className="h-2.5 w-2.5 text-[#001a0f]" />}
-                    </div>
-                    {segmento}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {hasActiveFilters && (
+          <span className="text-xs text-[#7a9e8a]">Segmento:</span>
+          <Select value={selectedSegmento} onValueChange={onSegmentoChange}>
+            <SelectTrigger className="h-7 w-[140px] border-[#004d26] bg-[#003d1f] px-2 text-xs text-white">
+              <span className="truncate">
+                {selectedSegmento === "all" ? "Todos" : selectedSegmento}
+              </span>
+            </SelectTrigger>
+            <SelectContent className="border-[#004d26] bg-[#002a14]">
+              <SelectItem value="all" className="text-xs text-white hover:bg-[#003d1f] focus:bg-[#003d1f] focus:text-white">
+                Todos
+              </SelectItem>
+              {segmentos.map((segmento) => (
+                <SelectItem key={segmento} value={segmento} className="text-xs text-white hover:bg-[#003d1f] focus:bg-[#003d1f] focus:text-white">
+                  {segmento}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {selectedSegmento !== "all" && (
             <Button
               variant="ghost"
               size="sm"
-              onClick={clearFilters}
+              onClick={clearFilter}
               className="h-7 px-2 text-[#7a9e8a] hover:bg-[#003d1f] hover:text-white"
             >
               <X className="h-3 w-3" />
@@ -322,7 +228,7 @@ export function VarejoFunnel({
         </CardHeader>
         <CardContent>
           {hasData ? (
-            <FunnelChart data={funnelData} showLojas />
+            <FunnelChart data={funnelData} />
           ) : (
             <div className="flex h-64 flex-col items-center justify-center text-center">
               <Store className="mb-4 h-12 w-12 text-[#7a9e8a]/50" />
