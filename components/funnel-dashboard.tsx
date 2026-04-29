@@ -1,18 +1,20 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { TrendingUp, Users, UserCheck, ShoppingBag, Repeat } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useData } from "@/lib/data-context";
 import { FunnelChart } from "./funnel-chart";
-import { FunnelFilters } from "./funnel-filters";
 import { InsightCallout } from "./insight-callout";
 import type { FunnelStep } from "@/lib/types";
 
-export function FunnelDashboard() {
+interface FunnelDashboardProps {
+  selectedPeriod: string;
+  selectedVarejo: string;
+}
+
+export function FunnelDashboard({ selectedPeriod, selectedVarejo }: FunnelDashboardProps) {
   const { clientesData, varejoData } = useData();
-  const [selectedPeriod, setSelectedPeriod] = useState("all");
-  const [selectedVarejo, setSelectedVarejo] = useState("all");
 
   // Filtrar dados de clientes por período
   const filteredClientes = useMemo(() => {
@@ -132,11 +134,10 @@ export function FunnelDashboard() {
     // Recalcular drop-off rates de forma mais precisa
     for (let i = 1; i < steps.length; i++) {
       if (i === 1) {
-        // Negados não têm drop-off significativo (são filtrados)
         steps[i].dropoffRate = 0;
       } else if (steps[i - 1].value > 0) {
         const prevRelevantValue = i === 2 
-          ? steps[0].value - steps[1].value // Total - Negados
+          ? steps[0].value - steps[1].value
           : steps[i - 1].value;
         steps[i].dropoffRate = prevRelevantValue > 0 
           ? ((prevRelevantValue - steps[i].value) / prevRelevantValue) * 100 
@@ -171,22 +172,6 @@ export function FunnelDashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Filtros */}
-      <Card className="border-[#004d26] bg-[#002a14]">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg text-white">Filtros</CardTitle>
-          <CardDescription className="text-[#7a9e8a]">Filtre os dados por período ou varejo</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <FunnelFilters
-            selectedPeriod={selectedPeriod}
-            selectedVarejo={selectedVarejo}
-            onPeriodChange={setSelectedPeriod}
-            onVarejoChange={setSelectedVarejo}
-          />
-        </CardContent>
-      </Card>
-
       {/* Cards de resumo */}
       <div className="grid gap-4 md:grid-cols-4">
         <Card className="border-[#004d26] bg-[#002a14]">

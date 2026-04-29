@@ -1,15 +1,33 @@
 "use client";
 
+import { useState } from "react";
 import { DataProvider } from "@/lib/data-context";
 import { Header } from "@/components/header";
 import { CSVUploader } from "@/components/csv-uploader";
 import { FunnelDashboard } from "@/components/funnel-dashboard";
+import { FunnelFilters } from "@/components/funnel-filters";
 
 export default function Home() {
+  const [selectedPeriod, setSelectedPeriod] = useState("all");
+  const [selectedVarejo, setSelectedVarejo] = useState("all");
+
   return (
     <DataProvider>
       <div className="min-h-screen bg-background">
         <Header />
+        
+        {/* Toolbar de filtros */}
+        <div className="border-b border-[#004d26] bg-[#002a14]">
+          <div className="container mx-auto flex items-center gap-4 px-4 py-2">
+            <span className="text-xs font-medium text-[#7a9e8a]">Filtros:</span>
+            <FunnelFilters
+              selectedPeriod={selectedPeriod}
+              selectedVarejo={selectedVarejo}
+              onPeriodChange={setSelectedPeriod}
+              onVarejoChange={setSelectedVarejo}
+            />
+          </div>
+        </div>
         
         <main className="container mx-auto px-4 py-8">
           <div className="mb-8">
@@ -29,7 +47,10 @@ export default function Home() {
           </section>
 
           <section>
-            <FunnelDashboard />
+            <FunnelDashboard 
+              selectedPeriod={selectedPeriod}
+              selectedVarejo={selectedVarejo}
+            />
           </section>
         </main>
       </div>
