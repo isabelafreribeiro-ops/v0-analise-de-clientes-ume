@@ -35,16 +35,16 @@ export function InsightCallout({ data }: InsightCalloutProps) {
 
   if (!insight) {
     return (
-      <Card className="border-muted bg-muted/30">
+      <Card className="border-[#004d26] bg-[#002a14]">
         <CardContent className="flex items-center gap-4 py-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-            <TrendingDown className="h-6 w-6 text-muted-foreground" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#003d1f]">
+            <TrendingDown className="h-6 w-6 text-[#7a9e8a]" />
           </div>
           <div>
-            <p className="font-medium text-muted-foreground">
+            <p className="font-medium text-[#7a9e8a]">
               Carregue os dados para visualizar insights
             </p>
-            <p className="text-sm text-muted-foreground/70">
+            <p className="text-sm text-[#7a9e8a]/70">
               Faça upload das bases de clientes e varejo para análise
             </p>
           </div>
@@ -54,23 +54,23 @@ export function InsightCallout({ data }: InsightCalloutProps) {
   }
 
   return (
-    <Card className="border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30">
+    <Card className="border-[#00C853]/30 bg-[#00C853]/10">
       <CardContent className="flex items-start gap-4 py-4">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/50">
-          <AlertTriangle className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#00C853]/20">
+          <AlertTriangle className="h-6 w-6 text-[#00ff6a]" />
         </div>
         <div>
-          <p className="font-semibold text-amber-900 dark:text-amber-100">
+          <p className="font-semibold text-white">
             Maior perda identificada: {insight.fromStep} → {insight.toStep}
           </p>
-          <p className="mt-1 text-sm text-amber-800 dark:text-amber-200">
-            Taxa de drop-off de <span className="font-bold">{insight.dropoffRate.toFixed(1)}%</span>
+          <p className="mt-1 text-sm text-[#7a9e8a]">
+            Taxa de drop-off de <span className="font-bold text-[#00ff6a]">{insight.dropoffRate.toFixed(1)}%</span>
             {" "}representa a perda de{" "}
-            <span className="font-bold">{insight.lostCount.toLocaleString("pt-BR")}</span> clientes
+            <span className="font-bold text-[#00ff6a]">{insight.lostCount.toLocaleString("pt-BR")}</span> clientes
             nesta etapa do funil.
           </p>
-          <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">
-            💡 Considere analisar os motivos dessa conversão baixa para otimizar a aquisição.
+          <p className="mt-2 text-xs text-[#7a9e8a]">
+            Considere analisar os motivos dessa conversão baixa para otimizar a aquisição.
           </p>
         </div>
       </CardContent>

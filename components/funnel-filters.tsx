@@ -76,15 +76,15 @@ export function FunnelFilters({
   return (
     <div className="flex flex-wrap items-center gap-3">
       <div className="flex items-center gap-2">
-        <Calendar className="h-4 w-4 text-muted-foreground" />
+        <Calendar className="h-4 w-4 text-[#7a9e8a]" />
         <Select value={selectedPeriod} onValueChange={onPeriodChange}>
-          <SelectTrigger className="w-[180px]">
+          <SelectTrigger className="w-[180px] border-[#004d26] bg-[#003d1f] text-white">
             <SelectValue placeholder="Período" />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os períodos</SelectItem>
+          <SelectContent className="border-[#004d26] bg-[#002a14]">
+            <SelectItem value="all" className="text-white hover:bg-[#003d1f] focus:bg-[#003d1f] focus:text-white">Todos os períodos</SelectItem>
             {periods.map((period) => (
-              <SelectItem key={period} value={period}>
+              <SelectItem key={period} value={period} className="text-white hover:bg-[#003d1f] focus:bg-[#003d1f] focus:text-white">
                 {period}
               </SelectItem>
             ))}
@@ -93,15 +93,15 @@ export function FunnelFilters({
       </div>
 
       <div className="flex items-center gap-2">
-        <Store className="h-4 w-4 text-muted-foreground" />
+        <Store className="h-4 w-4 text-[#7a9e8a]" />
         <Select value={selectedVarejo} onValueChange={onVarejoChange}>
-          <SelectTrigger className="w-[200px]">
+          <SelectTrigger className="w-[200px] border-[#004d26] bg-[#003d1f] text-white">
             <SelectValue placeholder="Varejo" />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os varejos</SelectItem>
+          <SelectContent className="border-[#004d26] bg-[#002a14]">
+            <SelectItem value="all" className="text-white hover:bg-[#003d1f] focus:bg-[#003d1f] focus:text-white">Todos os varejos</SelectItem>
             {varejos.map((varejo) => (
-              <SelectItem key={varejo} value={varejo}>
+              <SelectItem key={varejo} value={varejo} className="text-white hover:bg-[#003d1f] focus:bg-[#003d1f] focus:text-white">
                 {varejo}
               </SelectItem>
             ))}
@@ -110,7 +110,12 @@ export function FunnelFilters({
       </div>
 
       {hasActiveFilters && (
-        <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={clearFilters} 
+          className="h-9 text-[#7a9e8a] hover:text-white hover:bg-[#003d1f]"
+        >
           <X className="mr-1 h-4 w-4" />
           Limpar filtros
         </Button>

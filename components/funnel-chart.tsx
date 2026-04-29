@@ -18,17 +18,17 @@ export function FunnelChart({ data }: FunnelChartProps) {
         const widthPercentage = maxValue > 0 ? (step.value / maxValue) * 100 : 0;
         const isLast = index === data.length - 1;
         
-        // Gradiente de cores verde (escuro para claro)
+        // Gradiente de cores verde Ume (accent -> primary -> mais escuro)
         const colors = [
-          "bg-[#00C853]", // Verde Ume principal
-          "bg-[#00E676]", // Verde mais claro
-          "bg-[#69F0AE]", // Verde claro
-          "bg-[#B9F6CA]", // Verde muito claro
-          "bg-[#E8F5E9]", // Verde quase branco
+          { bg: "bg-[#00ff6a]", text: "text-[#001a0f]" }, // Accent - mais brilhante
+          { bg: "bg-[#00C853]", text: "text-[#001a0f]" }, // Primary
+          { bg: "bg-[#00a344]", text: "text-white" },     // Médio
+          { bg: "bg-[#007a33]", text: "text-white" },     // Escuro
+          { bg: "bg-[#005522]", text: "text-white" },     // Mais escuro
         ];
         
-        const bgColor = colors[Math.min(index, colors.length - 1)];
-        const textColor = index < 2 ? "text-white" : "text-foreground";
+        const colorIndex = Math.min(index, colors.length - 1);
+        const { bg, text } = colors[colorIndex];
 
         return (
           <div key={step.name} className="relative">
@@ -36,21 +36,21 @@ export function FunnelChart({ data }: FunnelChartProps) {
               {/* Barra do funil */}
               <div className="relative flex-1">
                 <div
-                  className={`${bgColor} relative flex min-h-[72px] items-center justify-between rounded-lg px-4 py-3 transition-all duration-500`}
+                  className={`${bg} relative flex min-h-[72px] items-center justify-between rounded-lg px-4 py-3 transition-all duration-500`}
                   style={{ width: `${Math.max(widthPercentage, 30)}%` }}
                 >
                   <div className="flex flex-col">
-                    <span className={`text-sm font-medium ${textColor}`}>{step.name}</span>
-                    <span className={`text-2xl font-bold ${textColor}`}>
+                    <span className={`text-sm font-medium ${text}`}>{step.name}</span>
+                    <span className={`text-2xl font-bold ${text}`}>
                       {step.value.toLocaleString("pt-BR")}
                     </span>
                   </div>
                   <div className="flex flex-col items-end">
-                    <span className={`text-sm font-medium ${textColor}`}>
+                    <span className={`text-sm font-medium ${text}`}>
                       {step.percentage.toFixed(1)}% do total
                     </span>
                     {!isLast && step.dropoffRate > 0 && (
-                      <span className={`text-xs ${index < 2 ? "text-white/80" : "text-muted-foreground"}`}>
+                      <span className={`text-xs ${colorIndex < 2 ? "opacity-70" : "opacity-80"} ${text}`}>
                         -{step.dropoffRate.toFixed(1)}% drop-off
                       </span>
                     )}
@@ -62,7 +62,7 @@ export function FunnelChart({ data }: FunnelChartProps) {
               {!isLast && (
                 <div className="flex h-8 w-8 items-center justify-center">
                   <svg
-                    className="h-5 w-5 text-muted-foreground"
+                    className="h-5 w-5 text-[#7a9e8a]"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"

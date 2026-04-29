@@ -3,80 +3,50 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Ume Brand Colors - Dark Theme */
 :root {
-  --background: oklch(0.98 0.005 155);
-  --foreground: oklch(0.2 0.02 155);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.2 0.02 155);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.2 0.02 155);
-  --primary: oklch(0.72 0.19 155);
-  --primary-foreground: oklch(0.98 0.005 155);
-  --secondary: oklch(0.95 0.02 155);
-  --secondary-foreground: oklch(0.3 0.02 155);
-  --muted: oklch(0.95 0.01 155);
-  --muted-foreground: oklch(0.5 0.02 155);
-  --accent: oklch(0.92 0.04 155);
-  --accent-foreground: oklch(0.3 0.02 155);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(0.98 0.01 0);
-  --border: oklch(0.9 0.02 155);
-  --input: oklch(0.92 0.02 155);
-  --ring: oklch(0.72 0.19 155);
-  --chart-1: oklch(0.72 0.19 155);
-  --chart-2: oklch(0.6 0.15 155);
-  --chart-3: oklch(0.5 0.12 155);
-  --chart-4: oklch(0.8 0.15 155);
-  --chart-5: oklch(0.65 0.17 155);
-  --radius: 0.75rem;
-  --sidebar: oklch(0.15 0.02 155);
-  --sidebar-foreground: oklch(0.95 0.01 155);
-  --sidebar-primary: oklch(0.72 0.19 155);
-  --sidebar-primary-foreground: oklch(0.98 0.005 155);
-  --sidebar-accent: oklch(0.25 0.03 155);
-  --sidebar-accent-foreground: oklch(0.95 0.01 155);
-  --sidebar-border: oklch(0.25 0.02 155);
-  --sidebar-ring: oklch(0.72 0.19 155);
+  /* Core Ume palette */
+  --ume-bg: #001a0f;
+  --ume-primary: #00C853;
+  --ume-card: #002a14;
+  --ume-text: #FFFFFF;
+  --ume-text-secondary: #7a9e8a;
+  --ume-accent: #00ff6a;
   
-  /* Custom Ume colors */
-  --ume-green: #00C853;
-  --ume-green-dark: #00A344;
-  --ume-green-light: #69F0AE;
-}
-
-.dark {
-  --background: oklch(0.12 0.02 155);
-  --foreground: oklch(0.95 0.01 155);
-  --card: oklch(0.18 0.02 155);
-  --card-foreground: oklch(0.95 0.01 155);
-  --popover: oklch(0.18 0.02 155);
-  --popover-foreground: oklch(0.95 0.01 155);
-  --primary: oklch(0.72 0.19 155);
-  --primary-foreground: oklch(0.12 0.02 155);
-  --secondary: oklch(0.25 0.03 155);
-  --secondary-foreground: oklch(0.95 0.01 155);
-  --muted: oklch(0.25 0.02 155);
-  --muted-foreground: oklch(0.65 0.02 155);
-  --accent: oklch(0.3 0.04 155);
-  --accent-foreground: oklch(0.95 0.01 155);
-  --destructive: oklch(0.5 0.2 25);
-  --destructive-foreground: oklch(0.95 0.01 0);
-  --border: oklch(0.28 0.02 155);
-  --input: oklch(0.25 0.02 155);
-  --ring: oklch(0.72 0.19 155);
-  --chart-1: oklch(0.72 0.19 155);
-  --chart-2: oklch(0.6 0.15 155);
-  --chart-3: oklch(0.5 0.12 155);
-  --chart-4: oklch(0.8 0.15 155);
-  --chart-5: oklch(0.65 0.17 155);
-  --sidebar: oklch(0.12 0.02 155);
-  --sidebar-foreground: oklch(0.95 0.01 155);
-  --sidebar-primary: oklch(0.72 0.19 155);
-  --sidebar-primary-foreground: oklch(0.12 0.02 155);
-  --sidebar-accent: oklch(0.25 0.03 155);
-  --sidebar-accent-foreground: oklch(0.95 0.01 155);
-  --sidebar-border: oklch(0.28 0.02 155);
-  --sidebar-ring: oklch(0.72 0.19 155);
+  /* Design tokens mapped to Ume colors */
+  --background: #001a0f;
+  --foreground: #FFFFFF;
+  --card: #002a14;
+  --card-foreground: #FFFFFF;
+  --popover: #002a14;
+  --popover-foreground: #FFFFFF;
+  --primary: #00C853;
+  --primary-foreground: #001a0f;
+  --secondary: #003d1f;
+  --secondary-foreground: #FFFFFF;
+  --muted: #003d1f;
+  --muted-foreground: #7a9e8a;
+  --accent: #00ff6a;
+  --accent-foreground: #001a0f;
+  --destructive: #ff4444;
+  --destructive-foreground: #FFFFFF;
+  --border: #004d26;
+  --input: #003d1f;
+  --ring: #00C853;
+  --chart-1: #00C853;
+  --chart-2: #00ff6a;
+  --chart-3: #00a344;
+  --chart-4: #7a9e8a;
+  --chart-5: #004d26;
+  --radius: 0.75rem;
+  --sidebar: #001a0f;
+  --sidebar-foreground: #FFFFFF;
+  --sidebar-primary: #00C853;
+  --sidebar-primary-foreground: #001a0f;
+  --sidebar-accent: #003d1f;
+  --sidebar-accent-foreground: #FFFFFF;
+  --sidebar-border: #004d26;
+  --sidebar-ring: #00C853;
 }
 
 @theme inline {

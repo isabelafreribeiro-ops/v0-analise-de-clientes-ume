@@ -1,13 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { TrendingUp, Users, UserX, UserCheck, ShoppingBag, Repeat } from "lucide-react";
+import { TrendingUp, Users, UserCheck, ShoppingBag, Repeat } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useData } from "@/lib/data-context";
 import { FunnelChart } from "./funnel-chart";
 import { FunnelFilters } from "./funnel-filters";
 import { InsightCallout } from "./insight-callout";
-import type { FunnelStep, VarejoRow } from "@/lib/types";
+import type { FunnelStep } from "@/lib/types";
 
 export function FunnelDashboard() {
   const { clientesData, varejoData } = useData();
@@ -172,10 +172,10 @@ export function FunnelDashboard() {
   return (
     <div className="space-y-6">
       {/* Filtros */}
-      <Card>
+      <Card className="border-[#004d26] bg-[#002a14]">
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Filtros</CardTitle>
-          <CardDescription>Filtre os dados por período ou varejo</CardDescription>
+          <CardTitle className="text-lg text-white">Filtros</CardTitle>
+          <CardDescription className="text-[#7a9e8a]">Filtre os dados por período ou varejo</CardDescription>
         </CardHeader>
         <CardContent>
           <FunnelFilters
@@ -189,57 +189,57 @@ export function FunnelDashboard() {
 
       {/* Cards de resumo */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card>
+        <Card className="border-[#004d26] bg-[#002a14]">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-sm font-medium text-[#7a9e8a]">
               Total Solicitações
             </CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <Users className="h-4 w-4 text-[#7a9e8a]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-bold text-white">
               {summaryMetrics.total.toLocaleString("pt-BR")}
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-[#004d26] bg-[#002a14]">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-sm font-medium text-[#7a9e8a]">
               Aprovados
             </CardTitle>
-            <UserCheck className="h-4 w-4 text-primary" />
+            <UserCheck className="h-4 w-4 text-[#00C853]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-primary">
+            <div className="text-2xl font-bold text-[#00C853]">
               {summaryMetrics.aprovados.toLocaleString("pt-BR")}
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-[#004d26] bg-[#002a14]">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-sm font-medium text-[#7a9e8a]">
               Clientes Ativos
             </CardTitle>
-            <ShoppingBag className="h-4 w-4 text-primary" />
+            <ShoppingBag className="h-4 w-4 text-[#00ff6a]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-bold text-white">
               {summaryMetrics.ativos.toLocaleString("pt-BR")}
             </div>
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="border-[#004d26] bg-[#002a14]">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
+            <CardTitle className="text-sm font-medium text-[#7a9e8a]">
               Taxa de Conversão
             </CardTitle>
-            <TrendingUp className="h-4 w-4 text-primary" />
+            <TrendingUp className="h-4 w-4 text-[#00C853]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
+            <div className="text-2xl font-bold text-[#00ff6a]">
               {summaryMetrics.taxaConversao.toFixed(1)}%
             </div>
           </CardContent>
@@ -247,13 +247,13 @@ export function FunnelDashboard() {
       </div>
 
       {/* Funil */}
-      <Card>
+      <Card className="border-[#004d26] bg-[#002a14]">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Repeat className="h-5 w-5 text-primary" />
+          <CardTitle className="flex items-center gap-2 text-white">
+            <Repeat className="h-5 w-5 text-[#00C853]" />
             Funil de Aquisição
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="text-[#7a9e8a]">
             {selectedVarejo !== "all"
               ? `Métricas de transações do varejo: ${selectedVarejo}`
               : "Visualização do funil completo de aquisição de clientes"}
@@ -264,11 +264,11 @@ export function FunnelDashboard() {
             <FunnelChart data={funnelData} />
           ) : (
             <div className="flex h-64 flex-col items-center justify-center text-center">
-              <Users className="mb-4 h-12 w-12 text-muted-foreground/50" />
-              <p className="text-lg font-medium text-muted-foreground">
+              <Users className="mb-4 h-12 w-12 text-[#7a9e8a]/50" />
+              <p className="text-lg font-medium text-[#7a9e8a]">
                 Nenhum dado carregado
               </p>
-              <p className="text-sm text-muted-foreground/70">
+              <p className="text-sm text-[#7a9e8a]/70">
                 Faça upload das bases CSV para visualizar o funil
               </p>
             </div>

@@ -110,24 +110,24 @@ export function CSVUploader() {
 
     return (
       <Card
-        className={`transition-all duration-200 ${
-          isActive ? "border-primary ring-2 ring-primary/20" : ""
-        } ${state.uploaded ? "border-primary/50 bg-primary/5" : ""}`}
+        className={`transition-all duration-200 border-[#004d26] bg-[#002a14] ${
+          isActive ? "border-[#00C853] ring-2 ring-[#00C853]/20" : ""
+        } ${state.uploaded ? "border-[#00C853]/50" : ""}`}
       >
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <FileSpreadsheet className="h-5 w-5 text-primary" />
+          <CardTitle className="flex items-center gap-2 text-lg text-white">
+            <FileSpreadsheet className="h-5 w-5 text-[#00C853]" />
             {title}
           </CardTitle>
         </CardHeader>
         <CardContent>
           {state.uploaded ? (
-            <div className="flex items-center justify-between rounded-lg bg-primary/10 p-4">
+            <div className="flex items-center justify-between rounded-lg bg-[#00C853]/10 border border-[#00C853]/30 p-4">
               <div className="flex items-center gap-3">
-                <CheckCircle2 className="h-5 w-5 text-primary" />
+                <CheckCircle2 className="h-5 w-5 text-[#00C853]" />
                 <div>
-                  <p className="font-medium text-foreground">{state.fileName}</p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="font-medium text-white">{state.fileName}</p>
+                  <p className="text-sm text-[#7a9e8a]">
                     {state.count.toLocaleString("pt-BR")} registros carregados
                   </p>
                 </div>
@@ -136,7 +136,7 @@ export function CSVUploader() {
                 variant="ghost"
                 size="icon"
                 onClick={() => clearUpload(type)}
-                className="h-8 w-8 hover:bg-destructive/10 hover:text-destructive"
+                className="h-8 w-8 hover:bg-red-500/10 hover:text-red-400 text-[#7a9e8a]"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -147,12 +147,12 @@ export function CSVUploader() {
               onDragOver={(e) => handleDragOver(e, type)}
               onDragLeave={handleDragLeave}
               className={`flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-8 transition-colors ${
-                isActive ? "border-primary bg-primary/5" : "border-muted-foreground/25 hover:border-primary/50"
+                isActive ? "border-[#00C853] bg-[#00C853]/5" : "border-[#004d26] hover:border-[#00C853]/50"
               }`}
             >
-              <Upload className={`mb-3 h-10 w-10 ${isActive ? "text-primary" : "text-muted-foreground"}`} />
-              <p className="mb-1 text-sm font-medium text-foreground">{description}</p>
-              <p className="mb-4 text-xs text-muted-foreground">Arraste e solte ou clique para selecionar</p>
+              <Upload className={`mb-3 h-10 w-10 ${isActive ? "text-[#00C853]" : "text-[#7a9e8a]"}`} />
+              <p className="mb-1 text-sm font-medium text-white">{description}</p>
+              <p className="mb-4 text-xs text-[#7a9e8a]">Arraste e solte ou clique para selecionar</p>
               <label>
                 <input
                   type="file"
@@ -160,7 +160,7 @@ export function CSVUploader() {
                   onChange={(e) => handleInputChange(e, type)}
                   className="hidden"
                 />
-                <Button variant="outline" size="sm" asChild>
+                <Button variant="outline" size="sm" asChild className="border-[#00C853] text-[#00C853] hover:bg-[#00C853]/10 hover:text-[#00ff6a]">
                   <span className="cursor-pointer">Selecionar arquivo</span>
                 </Button>
               </label>
