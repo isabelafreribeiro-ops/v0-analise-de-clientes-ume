@@ -2,7 +2,6 @@
 
 import { useMemo } from "react";
 import { AlertTriangle, TrendingDown } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
 import type { FunnelStep } from "@/lib/types";
 
 interface InsightCalloutProps {
@@ -36,45 +35,41 @@ export function InsightCallout({ data, title = "clientes" }: InsightCalloutProps
 
   if (!insight) {
     return (
-      <Card className="border-[#004d26] bg-[#002a14]">
-        <CardContent className="flex items-center gap-4 py-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#003d1f]">
-            <TrendingDown className="h-6 w-6 text-[#7a9e8a]" />
-          </div>
+      <div className="mt-6 border-l-4 border-[#00C853] bg-[#002a14] px-4 py-4 rounded">
+        <div className="flex items-center gap-3">
+          <TrendingDown className="h-5 w-5 flex-shrink-0 text-[#00C853]" />
           <div>
-            <p className="font-medium text-[#7a9e8a]">
+            <p className="font-medium text-white">
               Carregue os dados para visualizar insights
             </p>
-            <p className="text-sm text-[#7a9e8a]/70">
+            <p className="text-sm text-[#8fbc9e]">
               Faça upload das bases para análise
             </p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     );
   }
 
   return (
-    <Card className="border-[#004d26] bg-[#002a14]">
-      <CardContent className="flex items-start gap-4 py-4">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#003d1f]">
-          <AlertTriangle className="h-6 w-6 text-[#00C853]" />
-        </div>
-        <div>
+    <div className="mt-6 border-l-4 border-[#00C853] bg-[#002a14] px-4 py-4 rounded">
+      <div className="flex items-start gap-3">
+        <AlertTriangle className="h-5 w-5 flex-shrink-0 text-[#00C853] mt-0.5" />
+        <div className="flex-1">
           <p className="font-semibold text-white">
             Maior perda identificada: {insight.fromStep} → {insight.toStep}
           </p>
-          <p className="mt-1 text-sm text-[#7a9e8a]">
+          <p className="mt-2 text-sm text-[#8fbc9e]">
             Taxa de drop-off de <span className="font-bold text-[#00C853]">{insight.dropoffRate.toFixed(1)}%</span>
             {" "}representa a perda de{" "}
             <span className="font-bold text-[#00C853]">{insight.lostCount.toLocaleString("pt-BR")}</span> {title}
             {" "}nesta etapa do funil.
           </p>
-          <p className="mt-2 text-xs text-[#7a9e8a]/70">
+          <p className="mt-2 text-xs text-[#8fbc9e]/70">
             Considere analisar os motivos dessa conversão baixa para otimizar a aquisição.
           </p>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

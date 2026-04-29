@@ -8,9 +8,11 @@ import { VarejoFunnel } from "@/components/varejo-funnel";
 import { ClientesFunnel } from "@/components/clientes-funnel";
 
 export default function Home() {
-  const [selectedSegmento, setSelectedSegmento] = useState("all");
+  const [selectedSegmentos, setSelectedSegmentos] = useState<string[]>([]);
+  const [searchVarejo, setSearchVarejo] = useState("");
   const [periodFrom, setPeriodFrom] = useState("all");
   const [periodTo, setPeriodTo] = useState("all");
+  const [varejoFilter, setVarejoFilter] = useState("todos");
 
   return (
     <DataProvider>
@@ -32,8 +34,10 @@ export default function Home() {
           {/* Funnel 1: Aquisição de Varejos */}
           <section className="mb-12">
             <VarejoFunnel 
-              selectedSegmento={selectedSegmento}
-              onSegmentoChange={setSelectedSegmento}
+              selectedSegmentos={selectedSegmentos}
+              onSegmentosChange={setSelectedSegmentos}
+              searchVarejo={searchVarejo}
+              onSearchVarejoChange={setSearchVarejo}
             />
           </section>
 
@@ -47,6 +51,8 @@ export default function Home() {
               periodTo={periodTo}
               onPeriodFromChange={setPeriodFrom}
               onPeriodToChange={setPeriodTo}
+              varejoFilter={varejoFilter}
+              onVarejoFilterChange={setVarejoFilter}
             />
           </section>
         </main>
