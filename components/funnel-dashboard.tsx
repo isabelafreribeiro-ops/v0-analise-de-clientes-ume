@@ -9,36 +9,54 @@ import { InsightCallout } from "./insight-callout";
 import type { FunnelStep } from "@/lib/types";
 
 interface FunnelDashboardProps {
-  selectedPeriod: string;
+  periodFrom: string;
+  periodTo: string;
   selectedVarejo: string;
 }
 
-export function FunnelDashboard({ selectedPeriod, selectedVarejo }: FunnelDashboardProps) {
+// Helper to get sortKey from period string (MM/YYYY)
+function getSortKey(period: string): number {
+  const [month, year] = period.split("/").map(Number);
+  return year * 100 + month;
+}
+
+export function FunnelDashboard({ periodFrom, periodTo, selectedVarejo }: FunnelDashboardProps) {
   const { clientesData, varejoData } = useData();
 
-  // Filtrar dados de clientes por período
+  // Filtrar dados de clientes por período (range)
   const filteredClientes = useMemo(() => {
-    if (selectedPeriod === "all") return clientesData;
+    // If both are "all", return all data
+    if (periodFrom === "all" && periodTo === "all") return clientesData;
+    
+    const fromKey = periodFrom !== "all" ? getSortKey(periodFrom) : 0;
+    const toKey = periodTo !== "all" ? getSortKey(periodTo) : 999999;
     
     return clientesData.filter((cliente) => {
       const date = cliente["Data de Entrada na Ume"];
       if (!date) return false;
       
       const dateStr = String(date);
+      let month: number | null = null;
+      let year: number | null = null;
+      
       const parts = dateStr.split("/");
       if (parts.length >= 3) {
-        const monthYear = `${parts[1]}/${parts[2]}`;
-        return monthYear === selectedPeriod;
+        month = parseInt(parts[1], 10);
+        year = parseInt(parts[2], 10);
       } else if (dateStr.includes("-")) {
         const dateParts = dateStr.split("-");
         if (dateParts.length >= 2) {
-          const monthYear = `${dateParts[1]}/${dateParts[0]}`;
-          return monthYear === selectedPeriod;
+          year = parseInt(dateParts[0], 10);
+          month = parseInt(dateParts[1], 10);
         }
       }
-      return false;
+      
+      if (!month || !year) return false;
+      
+      const clientKey = year * 100 + month;
+      return clientKey >= fromKey && clientKey <= toKey;
     });
-  }, [clientesData, selectedPeriod]);
+  }, [clientesData, periodFrom, periodTo]);
 
   // Dados do varejo filtrado
   const filteredVarejo = useMemo(() => {

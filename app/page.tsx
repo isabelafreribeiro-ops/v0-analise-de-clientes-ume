@@ -8,7 +8,8 @@ import { FunnelDashboard } from "@/components/funnel-dashboard";
 import { FunnelFilters } from "@/components/funnel-filters";
 
 export default function Home() {
-  const [selectedPeriod, setSelectedPeriod] = useState("all");
+  const [periodFrom, setPeriodFrom] = useState("all");
+  const [periodTo, setPeriodTo] = useState("all");
   const [selectedVarejo, setSelectedVarejo] = useState("all");
 
   return (
@@ -21,9 +22,11 @@ export default function Home() {
           <div className="container mx-auto flex items-center gap-4 px-4 py-2">
             <span className="text-xs font-medium text-[#7a9e8a]">Filtros:</span>
             <FunnelFilters
-              selectedPeriod={selectedPeriod}
+              periodFrom={periodFrom}
+              periodTo={periodTo}
               selectedVarejo={selectedVarejo}
-              onPeriodChange={setSelectedPeriod}
+              onPeriodFromChange={setPeriodFrom}
+              onPeriodToChange={setPeriodTo}
               onVarejoChange={setSelectedVarejo}
             />
           </div>
@@ -48,7 +51,8 @@ export default function Home() {
 
           <section>
             <FunnelDashboard 
-              selectedPeriod={selectedPeriod}
+              periodFrom={periodFrom}
+              periodTo={periodTo}
               selectedVarejo={selectedVarejo}
             />
           </section>
