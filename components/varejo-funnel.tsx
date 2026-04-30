@@ -36,6 +36,16 @@ export function VarejoFunnel({
 
   // Get unique values with robust column matching
   const { varejos, segmentos, meses, mesMap } = useMemo(() => {
+    // Guard: return empty if no retail data
+    if (!varejoData || varejoData.length === 0) {
+      return {
+        varejos: [],
+        segmentos: [],
+        meses: [],
+        mesMap: new Map(),
+      };
+    }
+
     const varejoSet = new Set<string>();
     const segmentoSet = new Set<string>();
     const mesArray: string[] = [];
@@ -59,12 +69,10 @@ export function VarejoFunnel({
     
     // Create map from display format back to original for filtering
     const mMap = new Map<string, string>();
-    mesArray.forEach((original) => {
-      const { display } = sortedMonths.find((m) => 
-        m.original === display || m.sortKey > 0
-      ) || { display: original };
-      if (!mMap.has(display)) {
-        mMap.set(display, original);
+    sortedMonths.forEach((monthObj) => {
+      // Use the parsed display format as the key, with original as fallback
+      if (!mMap.has(monthObj.display)) {
+        mMap.set(monthObj.display, monthObj.original);
       }
     });
 
@@ -166,8 +174,17 @@ export function VarejoFunnel({
         </p>
       </div>
 
-      {/* Filter Toolbar */}
-      <div className="flex flex-wrap items-center gap-3 border-b border-[#E2E8F0] pb-3">
+      {/* Empty State: No retail data */}
+      {!varejoData || varejoData.length === 0 ? (
+        <div className="rounded-lg border border-[#E2E8F0] bg-[#F7FAF8] p-6 text-center">
+          <p className="text-sm text-[#64748b]">
+            Nenhum dado de varejo disponível. Por favor, envie o arquivo &quot;Base de Varejo&quot; para visualizar a análise.
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* Filter Toolbar */}
+          <div className="flex flex-wrap items-center gap-3 border-b border-[#E2E8F0] pb-3">
         <span className="text-xs font-medium text-[#64748b]">Varejo:</span>
         <Select value={selectedVarejo} onValueChange={onVarejoChange}>
           <SelectTrigger className="h-8 w-48 border-[#E2E8F0] bg-white text-xs text-[#1a1a1a]">
@@ -333,6 +350,8 @@ export function VarejoFunnel({
 
       {/* Insight */}
       <InsightCallout data={funnelData} title="varejos" />
+        </>
+      )}
     </div>
   );
 }
