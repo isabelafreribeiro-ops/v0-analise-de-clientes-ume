@@ -51,7 +51,6 @@ export function CSVUploader() {
       try {
         // Read file as text
         const fileContent = await file.text();
-        console.log("[v0] File read, size:", fileContent.length);
 
         // Parse CSV asynchronously (non-blocking) with progress tracking
         const { data, count } = await parseCSVAsync(
@@ -59,9 +58,6 @@ export function CSVUploader() {
           type,
           (processed, total) => {
             const progress = Math.min(100, Math.round((processed / total) * 100));
-            if (progress % 10 === 0 || progress === 100) {
-              console.log(`[v0] Parsing progress: ${progress}%`);
-            }
             setUploadState((prev) => ({
               ...prev,
               [type]: { ...prev[type], progress },
@@ -69,18 +65,14 @@ export function CSVUploader() {
           }
         );
 
-        console.log("[v0] Parse complete, got data:", count, "rows");
-
         // Update state with parsed data
         if (type === "clientes") {
-          console.log("[v0] Setting clientes data with", count, "rows");
           setClientesData(data as ClienteRow[]);
           setUploadState((prev) => ({
             ...prev,
             clientes: { uploaded: true, fileName: file.name, count, loading: false, progress: 100, error: undefined },
           }));
         } else {
-          console.log("[v0] Setting varejo data with", count, "rows");
           setVarejoData(data as VarejoRow[]);
           setUploadState((prev) => ({
             ...prev,
