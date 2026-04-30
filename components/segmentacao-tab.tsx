@@ -1,11 +1,25 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import { TrendingUp, AlertCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useData } from "@/lib/data-context";
 import {
+  segmentarClientes,
+  calculateSegmentMetrics,
+  calculateThresholds,
+  calculatePurchaseDistribution,
+  calculatePurchaseGroupComparison,
+  calculateAgeDistribution,
+  calculateGenderDistribution,
+  calculateRetailerDistribution,
+  calculateAggregatedMetrics,
   formatBRNumber,
   normalizeSituacao,
+  parseNumber,
+  parseBoolean,
+  getColumnValue,
+  calculateAverage,
   calculatePercentage,
   type SegmentMetrics,
   type AggregatedMetrics,
@@ -43,18 +57,9 @@ function formatPercentage(value: number | null): string {
 }
 
 export function SegmentacaoTab() {
-  const { clientesData, cachedAnalytics, isLoading } = useData();
+  const { clientesData } = useData();
 
-  // Show loading state while computing
-  if (isLoading && cachedAnalytics === null) {
-    return (
-      <div className="rounded-lg border border-[#E2E8F0] bg-[#F7FAF8] p-6 text-center">
-        <p className="text-sm text-[#64748b]">Processando base...</p>
-      </div>
-    );
-  }
-
-  if (!clientesData || clientesData.length === 0 || !cachedAnalytics) {
+  if (!clientesData || clientesData.length === 0) {
     return (
       <div className="rounded-lg border border-[#E2E8F0] bg-[#F7FAF8] p-6 text-center">
         <p className="text-sm text-[#64748b]">Envie a Base de Clientes para visualizar a análise de segmentação.</p>
@@ -62,32 +67,63 @@ export function SegmentacaoTab() {
     );
   }
 
-  // PERFORMANCE FIX: Use ONLY cached analytics - NO recalculation
-  // All data is pre-computed once after upload and stored in context
-  const segments = cachedAnalytics?.segments ?? [];
-  const metrics = cachedAnalytics?.metrics ?? null;
-  const thresholds = cachedAnalytics?.thresholds ?? null;
-  const distribution = cachedAnalytics?.distribution ?? [];
-  const groupComparison = cachedAnalytics?.groupComparison ?? [];
-  const ageDistribution = cachedAnalytics?.ageDistribution ?? [];
-  const genderDistribution = cachedAnalytics?.genderDistribution ?? [];
-  const retailerDistribution = cachedAnalytics?.retailerDistribution ?? [];
-  const aggregated = cachedAnalytics?.aggregated ?? null;
+  // Pre-aggregated metrics for performance
+  const aggregated = useMemo(() => calculateAggregatedMetrics(clientesData), [clientesData]);
 
-  // Extract values from cached metrics (no recalculation)
-  // Provide safe defaults for all properties to prevent undefined errors
-  const totalAprovados = cachedAnalytics?.metrics?.total?.aprovados ?? 0;
-  const totalNegados = cachedAnalytics?.metrics?.total?.negados ?? 0;
-  const totalAtivados = cachedAnalytics?.metrics?.total?.ativados ?? 0;
-  const totalAprovadosNaoAtivados = cachedAnalytics?.metrics?.total?.aprovadosNaoAtivados ?? totalAprovados - totalAtivados;
-  const appAdoptionPct = cachedAnalytics?.metrics?.adoption?.app ?? 0;
-  const avgScore = cachedAnalytics?.thresholds?.avgScore ?? 0;
-  const avgLimite = cachedAnalytics?.thresholds?.avgLimite ?? 0;
-  const avgCompras = cachedAnalytics?.thresholds?.avgCompras ?? 0;
-  const percentageComAumento = 0;
-  
-  // Score distribution from aggregated data
-  const scoreDistribution = cachedAnalytics?.aggregated?.scoreDistribution ?? { low: 0, medium: 0, high: 0 };
+  // Memoized distributions and metrics
+  const segments = useMemo(() => segmentarClientes(clientesData), [clientesData]);
+  const metrics = useMemo(() => calculateSegmentMetrics(segments, clientesData.length), [segments, clientesData.length]);
+  const thresholds = useMemo(() => calculateThresholds(clientesData), [clientesData]);
+  const distribution = useMemo(() => calculatePurchaseDistribution(clientesData), [clientesData]);
+  const groupComparison = useMemo(() => calculatePurchaseGroupComparison(clientesData), [clientesData]);
+  const ageDistribution = useMemo(() => calculateAgeDistribution(clientesData), [clientesData]);
+  const genderDistribution = useMemo(() => calculateGenderDistribution(clientesData), [clientesData]);
+  const retailerDistribution = useMemo(() => calculateRetailerDistribution(clientesData), [clientesData]);
+
+  // Memoized key metrics
+  const keyMetrics = useMemo(() => {
+    const totalNegados = segments.find((s) => s.id === "negados")?.customers.length || 0;
+    const totalAprovados = clientesData.length - totalNegados;
+    const totalAprovedNaoAtivados = segments.find((s) => s.id === "aprovados-nao-ativados")?.customers.length || 0;
+    const totalAtivados = clientesData.filter((c) => {
+      const compras = parseNumber(getColumnValue(c, ["qtd de compras", "compras"])) || 0;
+      const situacao = normalizeSituacao(getColumnValue(c, ["situacao", "status"]));
+      return compras > 0 && situacao !== "negada";
+    }).length;
+
+    const comApp = clientesData.filter((c) => parseBoolean(getColumnValue(c, ["tem app", "app"]))).length;
+    const appAdoptionPct = (comApp / clientesData.length) * 100;
+
+    return { totalNegados, totalAprovados, totalAprovedNaoAtivados, totalAtivados, comApp, appAdoptionPct };
+  }, [segments, clientesData]);
+
+  const { totalNegados, totalAprovados, totalAprovedNaoAtivados, totalAtivados, comApp, appAdoptionPct } = keyMetrics;
+
+  const scoreDistribution = useMemo(() => {
+    const scores = clientesData.map((c) => parseNumber(getColumnValue(c, ["score de crédito", "score"]))).filter((s) => s !== null) as number[];
+    return {
+      low: scores.filter((s) => s < 400).length,
+      medium: scores.filter((s) => s >= 400 && s < 700).length,
+      high: scores.filter((s) => s >= 700).length,
+    };
+  }, [clientesData]);
+
+  const avgScore = useMemo(() => {
+    return calculateAverage(clientesData.map((c) => parseNumber(getColumnValue(c, ["score de crédito", "score"]))));
+  }, [clientesData]);
+
+  const avgLimite = useMemo(() => {
+    return calculateAverage(clientesData.map((c) => parseNumber(getColumnValue(c, ["limite total", "limite"]))));
+  }, [clientesData]);
+
+  const avgCompras = useMemo(() => {
+    return calculateAverage(clientesData.map((c) => parseNumber(getColumnValue(c, ["qtd de compras", "compras"]))));
+  }, [clientesData]);
+
+  const percentageComAumento = useMemo(() => {
+    const count = clientesData.filter((c) => parseBoolean(getColumnValue(c, ["aumento limite", "limite aumentado"]))).length;
+    return calculatePercentage(count, clientesData.length);
+  }, [clientesData]);
 
   // === RENDER ===
   return (

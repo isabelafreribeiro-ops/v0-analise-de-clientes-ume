@@ -1,40 +1,25 @@
 "use client";
 
-import { createContext, useContext, useState, useRef, type ReactNode } from "react";
+import { createContext, useContext, useState, type ReactNode } from "react";
 import type { ClienteRow, VarejoRow, DataContextType } from "./types";
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
-
-export interface CachedAnalytics {
-  segments: any;
-  metrics: any;
-  thresholds: any;
-  distribution: any;
-  groupComparison: any;
-  ageDistribution: any;
-  genderDistribution: any;
-  retailerDistribution: any;
-  aggregated: any;
-}
 
 export function DataProvider({ children }: { children: ReactNode }) {
   const [clientesData, setClientesData] = useState<ClienteRow[]>([]);
   const [varejoData, setVarejoData] = useState<VarejoRow[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [cachedAnalytics, setCachedAnalytics] = useState<CachedAnalytics | null>(null);
-  const dataRefClientes = useRef<ClienteRow[]>([]);
 
   const handleSetClientesData = (data: ClienteRow[]) => {
+    setIsLoading(true);
     setClientesData(data);
-    dataRefClientes.current = data; // Store in stable ref to avoid re-parsing
+    setIsLoading(false);
   };
 
   const handleSetVarejoData = (data: VarejoRow[]) => {
+    setIsLoading(true);
     setVarejoData(data);
-  };
-
-  const handleSetCachedAnalytics = (analytics: CachedAnalytics) => {
-    setCachedAnalytics(analytics);
+    setIsLoading(false);
   };
 
   return (
@@ -42,13 +27,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
       value={{
         clientesData,
         varejoData,
-        isLoading,
-        setIsLoading,
         setClientesData: handleSetClientesData,
         setVarejoData: handleSetVarejoData,
-        cachedAnalytics,
-        setCachedAnalytics: handleSetCachedAnalytics,
-        dataRefClientes,
+        isLoading,
       }}
     >
       {children}

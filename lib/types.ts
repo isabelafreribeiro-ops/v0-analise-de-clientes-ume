@@ -1,6 +1,3 @@
-import type { RefObject } from "react";
-import type { CachedAnalytics } from "./data-context";
-
 export interface ClienteRow {
   Nome: string;
   Idade: number;
@@ -44,8 +41,4 @@ export interface DataContextType {
   setClientesData: (data: ClienteRow[]) => void;
   setVarejoData: (data: VarejoRow[]) => void;
   isLoading: boolean;
-  setIsLoading: (loading: boolean) => void;
-  cachedAnalytics: CachedAnalytics | null;
-  setCachedAnalytics: (analytics: CachedAnalytics) => void;
-  dataRefClientes: RefObject<ClienteRow[]>;
 }
