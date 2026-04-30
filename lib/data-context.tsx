@@ -11,12 +11,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSetClientesData = (data: ClienteRow[]) => {
+    console.log("[v0] Setting clientes data:", data.length, "rows");
     setIsLoading(true);
     setClientesData(data);
     setIsLoading(false);
   };
 
   const handleSetVarejoData = (data: VarejoRow[]) => {
+    console.log("[v0] Setting varejo data:", data.length, "rows");
     setIsLoading(true);
     setVarejoData(data);
     setIsLoading(false);

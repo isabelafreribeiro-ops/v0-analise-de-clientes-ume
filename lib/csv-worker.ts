@@ -1,5 +1,5 @@
-// Função para processar CSV de forma não-bloqueante com suporte a arquivos grandes
-// Processa em chunks para evitar memory overflow
+// Função para processar CSV de forma robusta e responsiva
+// Usa Papa.parse simples sem chunk callbacks que podem interferir no fluxo
 
 import Papa from "papaparse";
 import type { ClienteRow, VarejoRow } from "./types";
@@ -11,41 +11,27 @@ export async function parseCSVAsync(
 ): Promise<{ data: ClienteRow[] | VarejoRow[]; count: number }> {
   return new Promise((resolve, reject) => {
     try {
-      // Dividir conteúdo em linhas para estimar total
+      // Estimar total de linhas para progresso
       const lines = fileContent.split("\n");
       const totalLines = lines.length;
-      let processedRows = 0;
 
-      // Parse com chunk callback para processar incrementalmente
+      // Parse simples e direto
       Papa.parse(fileContent, {
         header: true,
         skipEmptyLines: true,
         dynamicTyping: true,
-        chunk: (results, parser) => {
-          processedRows += results.data.length;
+        complete: (results) => {
+          const data = results.data as ClienteRow[] | VarejoRow[];
 
-          // Relatar progresso se callback fornecido
+          console.log(`[v0] CSV parsing complete: ${data.length} rows`);
+
+          // Report final progress
           if (onProgress) {
-            onProgress(processedRows, totalLines);
+            onProgress(data.length, totalLines);
           }
 
-          // Pausar e resumir com delay para yield do thread
-          parser.pause();
+          // Yield thread para manter UI responsiva
           setTimeout(() => {
-            parser.resume();
-          }, 0);
-        },
-        complete: (results) => {
-          // Yield do thread principal após parsing para UI ficar responsiva
-          setTimeout(() => {
-            const data = (
-              type === "clientes" ? results.data : results.data
-            ) as ClienteRow[] | VarejoRow[];
-
-            console.log(
-              `[v0] CSV parsing complete: ${data.length} rows processed`
-            );
-
             resolve({
               data,
               count: data.length,
