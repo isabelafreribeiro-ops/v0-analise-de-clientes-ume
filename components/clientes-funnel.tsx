@@ -332,6 +332,7 @@ export function ClientesFunnel({
             <div className="text-2xl font-bold text-[#1a1a1a]">
               {summaryMetrics.total.toLocaleString("pt-BR")}
             </div>
+            <p className="mt-1 text-xs text-[#64748b]">100% do total</p>
           </CardContent>
         </Card>
 
@@ -363,13 +364,16 @@ export function ClientesFunnel({
             <div className="text-2xl font-bold text-[#00C853]">
               {summaryMetrics.aprovados.toLocaleString("pt-BR")}
             </div>
+            <p className="mt-1 text-xs text-[#64748b]">
+              {summaryMetrics.total > 0 ? ((summaryMetrics.aprovados / summaryMetrics.total) * 100).toFixed(1) : 0}% do total
+            </p>
           </CardContent>
         </Card>
 
         <Card className="border-[#E2E8F0] bg-white">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-[#64748b]">
-              Clientes Ativos
+              Clientes Ativados
             </CardTitle>
             <ShoppingBag className="h-4 w-4 text-[#00C853]" />
           </CardHeader>
@@ -377,6 +381,9 @@ export function ClientesFunnel({
             <div className="text-2xl font-bold text-[#1a1a1a]">
               {summaryMetrics.ativos.toLocaleString("pt-BR")}
             </div>
+            <p className="mt-1 text-xs text-[#64748b]">
+              {summaryMetrics.total > 0 ? ((summaryMetrics.ativos / summaryMetrics.total) * 100).toFixed(1) : 0}% do total
+            </p>
           </CardContent>
         </Card>
 
@@ -412,11 +419,12 @@ export function ClientesFunnel({
               <FunnelChart data={funnelData} />
               
               {/* Metric Descriptions */}
-              <div className="grid gap-3 pt-4 border-t border-[#E2E8F0] text-xs text-[#64748b]">
-                <div><span className="font-medium text-[#1a1a1a]">Total Solicitações:</span> todos que solicitaram crédito Ume</div>
-                <div><span className="font-medium text-[#1a1a1a]">Aprovados:</span> tiveram crédito aprovado e limite definido</div>
-                <div><span className="font-medium text-[#1a1a1a]">Ativados:</span> realizaram a primeira compra</div>
-                <div><span className="font-medium text-[#1a1a1a]">Recorrentes:</span> realizaram mais de uma compra</div>
+              <div className="space-y-2 pt-4 border-t border-[#E2E8F0] text-xs text-[#64748b]">
+                <div><span className="font-medium text-[#1a1a1a]">Total Solicitações:</span> clientes que solicitaram crédito Ume.</div>
+                <div><span className="font-medium text-[#1a1a1a]">Aprovados:</span> clientes com crédito aprovado e limite definido.</div>
+                <div><span className="font-medium text-[#1a1a1a]">Ativados:</span> clientes que realizaram a primeira compra.</div>
+                <div><span className="font-medium text-[#1a1a1a]">Recorrentes:</span> clientes com mais de uma compra.</div>
+                <div><span className="font-medium text-[#1a1a1a]">Negados:</span> clientes que solicitaram crédito, mas não foram aprovados.</div>
               </div>
             </>
           ) : (

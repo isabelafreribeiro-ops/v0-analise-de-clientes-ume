@@ -24,7 +24,13 @@ export function FunnelChart({ data }: FunnelChartProps) {
   return (
     <div className="flex flex-col gap-3">
       {data.map((step, index) => {
-        const widthPercentage = maxValue > 0 ? (step.value / maxValue) * 100 : 0;
+        // Bar width based on ratio to first step value
+        // Each bar gets narrower or stays same width as it progresses
+        const firstStepValue = data[0].value;
+        const widthPercentage = firstStepValue > 0 ? (step.value / firstStepValue) * 100 : 0;
+        // Clamp to min 10% for readability
+        const displayWidth = Math.max(widthPercentage, 10);
+        
         const isLast = index === data.length - 1;
         
         const colorIndex = Math.min(index, FUNNEL_COLORS.length - 1);
@@ -38,7 +44,7 @@ export function FunnelChart({ data }: FunnelChartProps) {
                 <div
                   className="relative flex min-h-[72px] items-center justify-between rounded-lg px-4 py-3 transition-all duration-500"
                   style={{ 
-                    width: `${Math.max(widthPercentage, 30)}%`,
+                    width: `${displayWidth}%`,
                     backgroundColor: bg,
                     color: text
                   }}
@@ -66,7 +72,7 @@ export function FunnelChart({ data }: FunnelChartProps) {
               {!isLast && (
                 <div className="flex h-8 w-8 items-center justify-center">
                   <svg
-                    className="h-5 w-5 text-[#7a9e8a]"
+                    className="h-5 w-5 text-[#cbd5e1]"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"

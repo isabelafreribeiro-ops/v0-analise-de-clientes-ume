@@ -11,6 +11,8 @@ import { ClientesFunnel } from "@/components/clientes-funnel";
 export default function Home() {
   const [activeTab, setActiveTab] = useState("aquisicao");
   const [selectedVarejo, setSelectedVarejo] = useState("todos");
+  const [selectedSegmento, setSelectedSegmento] = useState("todos");
+  const [selectedMes, setSelectedMes] = useState("todos");
   const [periodFrom, setPeriodFrom] = useState("all");
   const [periodTo, setPeriodTo] = useState("all");
   const [varejoFilter, setVarejoFilter] = useState("todos");
@@ -41,6 +43,10 @@ export default function Home() {
                 <VarejoFunnel 
                   selectedVarejo={selectedVarejo}
                   onVarejoChange={setSelectedVarejo}
+                  selectedSegmento={selectedSegmento}
+                  onSegmentoChange={setSelectedSegmento}
+                  selectedMes={selectedMes}
+                  onMesChange={setSelectedMes}
                 />
               </section>
 
