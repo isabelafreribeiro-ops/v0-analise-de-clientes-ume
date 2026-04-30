@@ -1,3 +1,5 @@
+import type { AggregatedMetrics } from "./aggregation-types";
+
 export interface ClienteRow {
   Nome: string;
   Idade: number;
@@ -38,7 +40,9 @@ export interface FunnelStep {
 export interface DataContextType {
   clientesData: ClienteRow[];
   varejoData: VarejoRow[];
+  aggregatedMetrics: AggregatedMetrics | null;
   setClientesData: (data: ClienteRow[]) => void;
   setVarejoData: (data: VarejoRow[]) => void;
+  setAggregatedMetrics: (metrics: AggregatedMetrics) => void;
   isLoading: boolean;
 }

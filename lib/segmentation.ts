@@ -188,21 +188,18 @@ export function calculateThresholds(clientesData: ClienteRow[]): SegmentationThr
     return { avgCompras: 0, avgLimite: 0, avgScore: 0 };
   }
 
-  // Use sample for large datasets (> 50k) to avoid performance issues
-  const dataToAnalyze = sampleDataForAnalysis(clientesData, 50000);
-
   // Map column names for safe access
-  const compras = dataToAnalyze.map((c) => {
+  const compras = clientesData.map((c) => {
     const val = getColumnValue(c, ["qtd de compras", "compras", "qtd compras", "numero de compras"]);
     return parseNumber(val);
   });
 
-  const limites = dataToAnalyze.map((c) => {
+  const limites = clientesData.map((c) => {
     const val = getColumnValue(c, ["limite total", "limite", "limit total", "limite_total"]);
     return parseNumber(val);
   });
 
-  const scores = dataToAnalyze.map((c) => {
+  const scores = clientesData.map((c) => {
     const val = getColumnValue(c, ["score de crédito", "score", "score_credito", "credit score"]);
     return parseNumber(val);
   });
@@ -214,37 +211,13 @@ export function calculateThresholds(clientesData: ClienteRow[]): SegmentationThr
   };
 }
 
-// Sample data for large datasets - maintains statistical representativeness
-function sampleDataForAnalysis(
-  data: ClienteRow[],
-  maxSize: number = 50000
-): ClienteRow[] {
-  if (data.length <= maxSize) {
-    return data;
-  }
-
-  // Stratified random sampling
-  const sampleRate = maxSize / data.length;
-  const sampled: ClienteRow[] = [];
-
-  for (let i = 0; i < data.length; i++) {
-    if (Math.random() < sampleRate) {
-      sampled.push(data[i]);
-    }
-  }
-
-  return sampled.length > 0 ? sampled : [data[0]];
-}
-
 // Segment customers using behavior-driven rules
 export function segmentarClientes(clientesData: ClienteRow[]): Segment[] {
   if (!clientesData || clientesData.length === 0) {
     return [];
   }
 
-  // Use sample for large datasets to avoid performance issues
-  const dataToAnalyze = sampleDataForAnalysis(clientesData, 50000);
-  const thresholds = calculateThresholds(dataToAnalyze);
+  const thresholds = calculateThresholds(clientesData);
 
   const negados: ClienteRow[] = [];
   const aprovadosNaoAtivados: ClienteRow[] = [];
@@ -414,9 +387,6 @@ export function generateSegmentInsights(
 export function calculatePurchaseDistribution(clientesData: ClienteRow[]): PurchaseDistribution[] {
   if (!clientesData || clientesData.length === 0) return [];
 
-  // Use sample for large datasets
-  const dataToAnalyze = sampleDataForAnalysis(clientesData, 50000);
-
   const distribution = {
     0: 0,
     1: 0,
@@ -424,7 +394,7 @@ export function calculatePurchaseDistribution(clientesData: ClienteRow[]): Purch
     "3+": 0,
   };
 
-  dataToAnalyze.forEach((cliente) => {
+  clientesData.forEach((cliente) => {
     const compras = parseNumber(getColumnValue(cliente, ["qtd de compras", "compras", "qtd compras"])) || 0;
 
     if (compras === 0) distribution[0]++;
@@ -433,7 +403,7 @@ export function calculatePurchaseDistribution(clientesData: ClienteRow[]): Purch
     else distribution["3+"]++;
   });
 
-  const total = dataToAnalyze.length;
+  const total = clientesData.length;
   return [
     {
       range: "0 compras",
@@ -462,16 +432,13 @@ export function calculatePurchaseDistribution(clientesData: ClienteRow[]): Purch
 export function calculatePurchaseGroupComparison(clientesData: ClienteRow[]): PurchaseGroupComparison[] {
   if (!clientesData || clientesData.length === 0) return [];
 
-  // Use sample for large datasets
-  const dataToAnalyze = sampleDataForAnalysis(clientesData, 50000);
-
   const groups: Record<string, ClienteRow[]> = {
     "0 compras": [],
     "1 compra": [],
     "2+ compras": [],
   };
 
-  dataToAnalyze.forEach((cliente) => {
+  clientesData.forEach((cliente) => {
     const compras = parseNumber(getColumnValue(cliente, ["qtd de compras", "compras", "qtd compras"])) || 0;
 
     if (compras === 0) groups["0 compras"].push(cliente);

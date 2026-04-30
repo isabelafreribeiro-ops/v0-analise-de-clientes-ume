@@ -2,12 +2,14 @@
 
 import { createContext, useContext, useState, type ReactNode } from "react";
 import type { ClienteRow, VarejoRow, DataContextType } from "./types";
+import type { AggregatedMetrics } from "./aggregation-types";
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export function DataProvider({ children }: { children: ReactNode }) {
   const [clientesData, setClientesData] = useState<ClienteRow[]>([]);
   const [varejoData, setVarejoData] = useState<VarejoRow[]>([]);
+  const [aggregatedMetrics, setAggregatedMetrics] = useState<AggregatedMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSetClientesData = (data: ClienteRow[]) => {
@@ -22,13 +24,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   };
 
+  const handleSetAggregatedMetrics = (metrics: AggregatedMetrics) => {
+    setAggregatedMetrics(metrics);
+  };
+
   return (
     <DataContext.Provider
       value={{
         clientesData,
         varejoData,
+        aggregatedMetrics,
         setClientesData: handleSetClientesData,
         setVarejoData: handleSetVarejoData,
+        setAggregatedMetrics: handleSetAggregatedMetrics,
         isLoading,
       }}
     >

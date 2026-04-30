@@ -25,6 +25,36 @@ export function parseBRNumber(value: string | number | undefined): number {
   return parseFloat(cleaned) || 0;
 }
 
+// Format number as Brazilian locale (e.g., 1.234,56)
+export function formatNumber(value: number | null): string {
+  if (value === null) return "—";
+  
+  return value.toLocaleString("pt-BR", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
+}
+
+// Format currency as Brazilian (R$ 1.234,56)
+export function formatCurrency(value: number | null): string {
+  if (value === null) return "—";
+  
+  return value.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+}
+
+// Format percentage (e.g., 45,5%)
+export function formatPercentage(value: number): string {
+  if (value === null || isNaN(value)) return "0%";
+  
+  return value.toLocaleString("pt-BR", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }) + "%";
+}
+
 // Trim column names and handle BOM/extra spaces
 export function normalizeColumnName(name: string): string {
   return name.trim().replace(/^\uFEFF/, ""); // Remove BOM
