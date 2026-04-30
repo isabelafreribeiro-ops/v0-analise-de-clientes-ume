@@ -12,7 +12,7 @@ import {
 import { useData } from "@/lib/data-context";
 import { FunnelChart } from "./funnel-chart";
 import { InsightCallout } from "./insight-callout";
-import { parseBRNumber, normalizeColumnName } from "@/lib/parse-utils";
+import { parseBRNumber, getSortedMonths } from "@/lib/parse-utils";
 import type { FunnelStep, VarejoRow } from "@/lib/types";
 
 interface VarejoFunnelProps {
@@ -35,10 +35,10 @@ export function VarejoFunnel({
   const { varejoData } = useData();
 
   // Get unique values with robust column matching
-  const { varejos, segmentos, meses } = useMemo(() => {
+  const { varejos, segmentos, meses, mesMap } = useMemo(() => {
     const varejoSet = new Set<string>();
     const segmentoSet = new Set<string>();
-    const mesSet = new Map<string, number>(); // Map to sort chronologically
+    const mesArray: string[] = [];
 
     varejoData.forEach((v: any) => {
       // Robust column name matching
@@ -49,38 +49,32 @@ export function VarejoFunnel({
       if (varejo) varejoSet.add(String(varejo).trim());
       if (segmento) segmentoSet.add(String(segmento).trim());
       if (mes) {
-        // Parse month for sorting (assumes format like "Jan/2025" or "01/2025")
-        const mesStr = String(mes).trim();
-        const monthNum = parseMonthToNumber(mesStr);
-        mesSet.set(mesStr, monthNum);
+        mesArray.push(String(mes).trim());
+      }
+    });
+
+    // Parse and sort months
+    const sortedMonths = getSortedMonths(mesArray);
+    const displayMeses = sortedMonths.map((m) => m.display);
+    
+    // Create map from display format back to original for filtering
+    const mMap = new Map<string, string>();
+    mesArray.forEach((original) => {
+      const { display } = sortedMonths.find((m) => 
+        m.original === display || m.sortKey > 0
+      ) || { display: original };
+      if (!mMap.has(display)) {
+        mMap.set(display, original);
       }
     });
 
     return {
       varejos: Array.from(varejoSet).sort(),
       segmentos: Array.from(segmentoSet).sort(),
-      meses: Array.from(mesSet.entries())
-        .sort((a, b) => a[1] - b[1])
-        .map((entry) => entry[0]),
+      meses: displayMeses,
+      mesMap: mMap,
     };
   }, [varejoData]);
-
-  // Helper to parse month for sorting
-  function parseMonthToNumber(mes: string): number {
-    const monthMap: Record<string, number> = {
-      jan: 1, fev: 2, mar: 3, abr: 4, mai: 5, jun: 6,
-      jul: 7, ago: 8, set: 9, out: 10, nov: 11, dez: 12,
-    };
-
-    const parts = mes.toLowerCase().split("/");
-    if (parts.length >= 2) {
-      const monthStr = parts[0];
-      const year = parseInt(parts[1], 10) || 0;
-      const monthNum = monthMap[monthStr] || parseInt(monthStr, 10) || 0;
-      return year * 100 + monthNum;
-    }
-    return 0;
-  }
 
   // Filter data by all selected filters
   const filteredVarejo = useMemo(() => {
