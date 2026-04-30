@@ -79,6 +79,7 @@ export function SegmentacaoTab() {
   const totalAprovados = cachedAnalytics?.metrics?.total?.aprovados ?? 0;
   const totalNegados = cachedAnalytics?.metrics?.total?.negados ?? 0;
   const totalAtivados = cachedAnalytics?.metrics?.total?.ativados ?? 0;
+  const totalAprovadosNaoAtivados = cachedAnalytics?.metrics?.total?.aprovadosNaoAtivados ?? totalAprovados - totalAtivados;
   const appAdoptionPct = cachedAnalytics?.metrics?.adoption?.app ?? 0;
   const avgScore = cachedAnalytics?.thresholds?.avgScore ?? 0;
   const avgLimite = cachedAnalytics?.thresholds?.avgLimite ?? 0;
