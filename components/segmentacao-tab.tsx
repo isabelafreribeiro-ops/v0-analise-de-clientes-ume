@@ -53,7 +53,10 @@ function formatCurrency(value: number | null): string {
 
 function formatPercentage(value: number | null): string {
   if (value === null || value === undefined || isNaN(value)) return "—";
-  return value.toFixed(1) + "%";
+  return new Intl.NumberFormat("pt-BR", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }).format(value) + "%";
 }
 
 export function SegmentacaoTab() {
@@ -182,7 +185,7 @@ export function SegmentacaoTab() {
                 {ageDistribution.map((g) => (
                   <div key={g.group} className="flex justify-between">
                     <span className="text-[#64748b]">{g.group}</span>
-                    <span className="font-medium text-[#1a1a1a]">{g.count} ({g.percentage.toFixed(0)}%)</span>
+                    <span className="font-medium text-[#1a1a1a]">{g.count} ({new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(g.percentage)}%)</span>
                   </div>
                 ))}
               </div>
@@ -190,7 +193,7 @@ export function SegmentacaoTab() {
                 {genderDistribution.map((g) => (
                   <div key={g.gender} className="flex justify-between text-xs">
                     <span className="text-[#64748b]">{g.gender}</span>
-                    <span className="font-medium text-[#1a1a1a]">{g.percentage.toFixed(0)}%</span>
+                    <span className="font-medium text-[#1a1a1a]">{new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(g.percentage)}%</span>
                   </div>
                 ))}
               </div>
@@ -239,7 +242,7 @@ export function SegmentacaoTab() {
                     {retailerDistribution.map((r) => (
                       <div key={r.group} className="flex justify-between">
                         <span className="text-[#94a3b8]">{r.group}</span>
-                        <span className="font-medium text-[#1a1a1a]">{r.percentage.toFixed(0)}%</span>
+                        <span className="font-medium text-[#1a1a1a]">{new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(r.percentage)}%</span>
                       </div>
                     ))}
                   </div>
@@ -280,7 +283,7 @@ export function SegmentacaoTab() {
             {/* Engagement */}
             <div className="p-4 bg-[#FFF3E0] rounded border border-[#FF9800]/20">
               <p className="text-xs font-semibold text-[#3E2723] uppercase mb-2">🛍️ Engajamento</p>
-              <div className="text-lg font-bold text-[#1a1a1a]">{distribution.find((d) => d.range === "0 compras")?.percentage.toFixed(0) || "0"}%</div>
+              <div className="text-lg font-bold text-[#1a1a1a]">{new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(distribution.find((d) => d.range === "0 compras")?.percentage || 0)}%</div>
               <p className="text-xs text-[#64748b] mt-1">Sem compras</p>
               <p className="text-xs text-[#94a3b8] mt-2">Base altamente concentrada em baixa frequência — necessário ativar e engajar.</p>
             </div>
@@ -318,7 +321,7 @@ export function SegmentacaoTab() {
                   <div className="bg-[#00C853] h-2 rounded" style={{ width: `${Math.min(d.percentage, 100)}%` }} />
                 </div>
                 <div className="w-16 text-xs text-right font-medium text-[#1a1a1a]">
-                  {d.count} ({d.percentage.toFixed(0)}%)
+                  {d.count} ({new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(d.percentage)}%)
                 </div>
               </div>
             ))}
@@ -398,7 +401,7 @@ export function SegmentacaoTab() {
                     {segment.name}
                   </p>
                   <p className="text-lg font-bold text-[#1a1a1a] mt-2">{segment.customers.length}</p>
-                  <p className="text-xs text-[#64748b] mt-1">{metric?.percentageOfBase.toFixed(1)}% da base</p>
+                  <p className="text-xs text-[#64748b] mt-1">{new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(metric?.percentageOfBase || 0)}% da base</p>
 
                   {metric && (
                     <div className="mt-3 pt-3 border-t" style={{ borderColor: colors.accent + "40" }}>

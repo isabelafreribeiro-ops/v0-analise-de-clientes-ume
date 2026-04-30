@@ -348,7 +348,7 @@ export function ClientesFunnel({
               {negadosMetric.count.toLocaleString("pt-BR")}
             </div>
             <p className="mt-1 text-xs text-[#64748b]">
-              {negadosMetric.percentage.toFixed(1)}% do total
+              {new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(negadosMetric.percentage)}% do total
             </p>
           </CardContent>
         </Card>
@@ -365,7 +365,7 @@ export function ClientesFunnel({
               {summaryMetrics.aprovados.toLocaleString("pt-BR")}
             </div>
             <p className="mt-1 text-xs text-[#64748b]">
-              {summaryMetrics.total > 0 ? ((summaryMetrics.aprovados / summaryMetrics.total) * 100).toFixed(1) : 0}% do total
+              {summaryMetrics.total > 0 ? new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format((summaryMetrics.aprovados / summaryMetrics.total) * 100) : 0}% do total
             </p>
           </CardContent>
         </Card>
@@ -382,7 +382,7 @@ export function ClientesFunnel({
               {summaryMetrics.ativos.toLocaleString("pt-BR")}
             </div>
             <p className="mt-1 text-xs text-[#64748b]">
-              {summaryMetrics.total > 0 ? ((summaryMetrics.ativos / summaryMetrics.total) * 100).toFixed(1) : 0}% do total
+              {summaryMetrics.total > 0 ? new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format((summaryMetrics.ativos / summaryMetrics.total) * 100) : 0}% do total
             </p>
           </CardContent>
         </Card>
@@ -396,7 +396,7 @@ export function ClientesFunnel({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-[#00C853]">
-              {summaryMetrics.taxaConversao.toFixed(1)}%
+              {new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(summaryMetrics.taxaConversao)}%
             </div>
           </CardContent>
         </Card>

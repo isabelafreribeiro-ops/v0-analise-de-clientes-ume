@@ -272,7 +272,7 @@ export function VarejoFunnel({
               {summaryMetrics.varejosAtivos.toLocaleString("pt-BR")}
             </div>
             <p className="mt-1 text-xs text-[#64748b]">
-              {summaryMetrics.totalVarejos > 0 ? ((summaryMetrics.varejosAtivos / summaryMetrics.totalVarejos) * 100).toFixed(1) : 0}% do total
+              {summaryMetrics.totalVarejos > 0 ? new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format((summaryMetrics.varejosAtivos / summaryMetrics.totalVarejos) * 100) : 0}% do total
             </p>
           </CardContent>
         </Card>
@@ -289,7 +289,7 @@ export function VarejoFunnel({
               {summaryMetrics.varejosComConversoes.toLocaleString("pt-BR")}
             </div>
             <p className="mt-1 text-xs text-[#64748b]">
-              {summaryMetrics.totalVarejos > 0 ? ((summaryMetrics.varejosComConversoes / summaryMetrics.totalVarejos) * 100).toFixed(1) : 0}% do total
+              {summaryMetrics.totalVarejos > 0 ? new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format((summaryMetrics.varejosComConversoes / summaryMetrics.totalVarejos) * 100) : 0}% do total
             </p>
           </CardContent>
         </Card>

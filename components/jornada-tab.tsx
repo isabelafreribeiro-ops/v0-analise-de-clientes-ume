@@ -33,14 +33,17 @@ const CHANNEL_ICONS = {
 
 function formatNumber(value: number | null): string {
   if (value === null || value === undefined || isNaN(value)) return "—";
-  if (value >= 1000000) return (value / 1000000).toFixed(1) + "M";
-  if (value >= 1000) return (value / 1000).toFixed(1) + "k";
+  if (value >= 1000000) return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 }).format(value / 1000000) + "M";
+  if (value >= 1000) return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 }).format(value / 1000) + "k";
   return new Intl.NumberFormat("pt-BR").format(Math.round(value));
 }
 
 function formatPercentage(value: number | null): string {
   if (value === null || value === undefined || isNaN(value)) return "—";
-  return value.toFixed(1) + "%";
+  return new Intl.NumberFormat("pt-BR", {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }).format(value) + "%";
 }
 
 export function JornadaTab() {
