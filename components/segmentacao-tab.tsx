@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Users, TrendingUp, Search } from "lucide-react";
+import { Search, ArrowRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useData } from "@/lib/data-context";
 import {
@@ -12,30 +12,38 @@ import {
   calculatePurchaseDistribution,
   calculatePurchaseGroupComparison,
   parseNumericField,
-  type Segment,
   type SegmentMetrics,
 } from "@/lib/segmentation";
 import type { ClienteRow } from "@/lib/types";
 
 const SEGMENT_COLORS: Record<string, { bg: string; accent: string; text: string }> = {
   "high-value": { bg: "#F0F4F3", accent: "#00C853", text: "#001a0f" },
-  "potencial-alto": { bg: "#FFF3E0", accent: "#FF9800", text: "#3E2723" },
+  "potencial": { bg: "#FFF3E0", accent: "#FF9800", text: "#3E2723" },
   "aprovados-nao-ativados": { bg: "#E3F2FD", accent: "#2196F3", text: "#0D47A1" },
-  "recorrentes-leves": { bg: "#F3E5F5", accent: "#9C27B0", text: "#4A148C" },
-  "baixo-valor": { bg: "#FCE4EC", accent: "#E91E63", text: "#880E4F" },
-  negados: { bg: "#FFEBEE", accent: "#F44336", text: "#B71C1C" },
-  "outros-aprovados": { bg: "#F5F5F5", accent: "#9E9E9E", text: "#424242" },
+  "recorrentes": { bg: "#F3E5F5", accent: "#9C27B0", text: "#4A148C" },
+  "negados": { bg: "#FFEBEE", accent: "#F44336", text: "#B71C1C" },
 };
 
-const SEGMENT_ORDER = [
-  "negados",
-  "aprovados-nao-ativados",
-  "high-value",
-  "potencial-alto",
-  "recorrentes-leves",
-  "baixo-valor",
-  "outros-aprovados",
-];
+const SEGMENT_ORDER = ["negados", "aprovados-nao-ativados", "high-value", "potencial", "recorrentes"];
+
+const SEGMENT_DESCRIPTIONS: Record<string, string> = {
+  "high-value":
+    "Clientes com alto nível de uso e limite elevado. Maior potencial de receita e engagement.",
+  "potencial":
+    "Clientes com bom perfil de crédito, mas baixa recorrência. Oportunidade de ativação.",
+  "aprovados-nao-ativados":
+    "Clientes aprovados que ainda não usaram o crédito. Maior desafio de ativação.",
+  "recorrentes":
+    "Clientes com uso consistente do crédito (2+ compras). Alto nível de engajamento.",
+  "negados": "Clientes que não foram aprovados na avaliação de crédito.",
+};
+
+function formatNumber(value: number | null): string {
+  if (value === null || value === undefined || isNaN(value)) return "—";
+  if (value >= 1000000) return (value / 1000000).toFixed(1) + "M";
+  if (value >= 1000) return (value / 1000).toFixed(1) + "k";
+  return value.toFixed(2);
+}
 
 export function SegmentacaoTab() {
   const { clientesData } = useData();
@@ -44,12 +52,11 @@ export function SegmentacaoTab() {
   const [pageIndex, setPageIndex] = useState(0);
   const ROWS_PER_PAGE = 50;
 
-  const { segments, metrics, thresholds, insights, distribution, comparison } = useMemo(() => {
+  const { segments, metrics, insights, distribution, comparison } = useMemo(() => {
     if (!clientesData || clientesData.length === 0) {
       return {
         segments: [],
         metrics: [],
-        thresholds: null,
         insights: [],
         distribution: [],
         comparison: [],
@@ -57,16 +64,14 @@ export function SegmentacaoTab() {
     }
 
     const segs = segmentarClientes(clientesData);
-    const thr = calculateThresholds(clientesData);
     const mets = calculateSegmentMetrics(segs, clientesData.length);
-    const insi = generateSegmentInsights(mets, thr);
+    const insi = generateSegmentInsights(mets, null);
     const dist = calculatePurchaseDistribution(clientesData);
     const comp = calculatePurchaseGroupComparison(clientesData);
 
     return {
       segments: segs,
       metrics: mets,
-      thresholds: thr,
       insights: insi,
       distribution: dist,
       comparison: comp,
@@ -99,13 +104,13 @@ export function SegmentacaoTab() {
     return filteredCustomers.slice(start, start + ROWS_PER_PAGE);
   }, [filteredCustomers, pageIndex]);
 
+  const totalPages = Math.ceil(filteredCustomers.length / ROWS_PER_PAGE);
+
   if (!clientesData || clientesData.length === 0) {
     return (
-      <div className="flex h-96 flex-col items-center justify-center rounded-lg border border-[#E2E8F0] bg-[#F7FAF8]">
-        <Users className="mb-3 h-8 w-8 text-[#cbd5e1]" />
-        <p className="text-base font-medium text-[#64748b]">Nenhum dado de clientes disponível</p>
-        <p className="mt-1 text-sm text-[#94a3b8]">
-          Carregue a Base de Clientes para visualizar a segmentação
+      <div className="rounded-lg border border-[#E2E8F0] bg-[#F7FAF8] p-6 text-center">
+        <p className="text-sm text-[#64748b]">
+          Nenhum dado de clientes disponível. Por favor, envie o arquivo &quot;Base de Clientes&quot;.
         </p>
       </div>
     );
@@ -113,303 +118,431 @@ export function SegmentacaoTab() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
+      {/* Title & Objective */}
       <div>
         <h2 className="text-2xl font-bold text-[#1a1a1a]">Segmentação de Clientes</h2>
-        <p className="mt-1 text-sm text-[#64748b]">
-          Análise comportamental da base de clientes em {clientesData.length.toLocaleString("pt-BR")} registros
+        <p className="mt-2 text-sm text-[#64748b]">
+          Entender o perfil dos clientes da Ume, identificar segmentos comportamentais relevantes e mapear oportunidades de crescimento, ativação e monetização.
         </p>
       </div>
 
-      {/* Insights */}
+      {/* 1. INSIGHTS EXECUTIVOS */}
       {insights.length > 0 && (
-        <div className="space-y-2">
-          <h3 className="text-sm font-semibold text-[#1a1a1a]">Insights Principais</h3>
-          <div className="space-y-2">
-            {insights.map((insight, idx) => (
-              <div
-                key={idx}
-                className="flex items-start gap-3 rounded-lg border border-[#E2E8F0] bg-[#F7FAF8] p-3"
-              >
-                <TrendingUp className="h-4 w-4 flex-shrink-0 text-[#00C853] mt-0.5" />
-                <p className="text-sm text-[#64748b]">{insight}</p>
-              </div>
-            ))}
-          </div>
-        </div>
+        <Card className="border-[#E2E8F0] bg-white">
+          <CardHeader>
+            <CardTitle className="text-base font-semibold text-[#1a1a1a]">Insights Executivos</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2">
+              {insights.map((insight, idx) => (
+                <li key={idx} className="flex items-start gap-2 text-sm text-[#64748b]">
+                  <ArrowRight className="h-4 w-4 flex-shrink-0 text-[#00C853] mt-0.5" />
+                  <span>{insight}</span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
       )}
 
-      {/* Segment Criteria Explanation */}
-      <div className="space-y-2">
-        <h3 className="text-sm font-semibold text-[#1a1a1a]">Como os segmentos foram definidos</h3>
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          {sortedMetrics.map((metric) => (
-            <div key={metric.segmentId} className="rounded-lg border border-[#E2E8F0] bg-[#F7FAF8] p-3">
-              <p className="text-xs font-medium text-[#1a1a1a]">{metric.segmentName}</p>
-              <p className="mt-1 text-xs text-[#64748b] leading-relaxed">
-                {segments.find((s) => s.id === metric.segmentId)?.description}
-              </p>
-            </div>
-          ))}
-        </div>
+      {/* 2. PERFIL DA BASE */}
+      <Card className="border-[#E2E8F0] bg-white">
+        <CardHeader>
+          <CardTitle className="text-base font-semibold text-[#1a1a1a]">Perfil da Base</CardTitle>
+          <p className="text-xs text-[#64748b] mt-1">Quem são os clientes da Ume?</p>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-2">
+            {/* Score Distribution */}
+            <div>
+              <p className="text-xs font-medium text-[#64748b] mb-2">Distribuição de Score</p>
+              {(() => {
+                const scores = clientesData
+                  .map((c) => parseNumericField(c["Score"]) || 0)
+                  .filter((s) => s > 0);
+                const avgScore = scores.length > 0 ? scores.reduce((a, b) => a + b) / scores.length : 0;
+                const lowScore = scores.filter((s) => s < avgScore / 1.5).length;
+                const mediumScore = scores.filter((s) => s >= avgScore / 1.5 && s <= avgScore * 1.5).length;
+                const highScore = scores.filter((s) => s > avgScore * 1.5).length;
+                const total = scores.length;
 
-        {/* Calculated Thresholds */}
-        {thresholds && (
-          <div className="mt-3 rounded-lg bg-[#F7FAF8] p-3">
-            <p className="text-xs font-medium text-[#1a1a1a]">Limiares calculados (percentis)</p>
-            <div className="mt-2 grid grid-cols-2 gap-2 text-xs md:grid-cols-3">
-              <div>
-                <span className="text-[#94a3b8]">p75 compras:</span>
-                <span className="ml-1 font-semibold text-[#1a1a1a]">{thresholds.p75Compras.toFixed(0)}</span>
-              </div>
-              <div>
-                <span className="text-[#94a3b8]">p75 limite:</span>
-                <span className="ml-1 font-semibold text-[#1a1a1a]">
-                  R$ {thresholds.p75Limite.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}
-                </span>
-              </div>
-              <div>
-                <span className="text-[#94a3b8]">p75 score:</span>
-                <span className="ml-1 font-semibold text-[#1a1a1a]">{thresholds.p75Score.toFixed(0)}</span>
-              </div>
-              <div>
-                <span className="text-[#94a3b8]">mediana limite:</span>
-                <span className="ml-1 font-semibold text-[#1a1a1a]">
-                  R$ {thresholds.p50Limite.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}
-                </span>
-              </div>
-              <div>
-                <span className="text-[#94a3b8]">mediana score:</span>
-                <span className="ml-1 font-semibold text-[#1a1a1a]">{thresholds.p50Score.toFixed(0)}</span>
-              </div>
-              <div>
-                <span className="text-[#94a3b8]">mediana compras:</span>
-                <span className="ml-1 font-semibold text-[#1a1a1a]">{thresholds.p50Compras.toFixed(0)}</span>
-              </div>
+                return (
+                  <div className="space-y-1">
+                    {lowScore > 0 && (
+                      <div className="flex items-center gap-2">
+                        <div className="w-12 text-xs text-[#64748b]">Baixo</div>
+                        <div className="flex-1 bg-[#E2E8F0] rounded h-2" style={{ width: "100%" }}>
+                          <div
+                            className="bg-[#F44336] h-2 rounded"
+                            style={{ width: `${(lowScore / total) * 100}%` }}
+                          />
+                        </div>
+                        <div className="w-12 text-xs text-right text-[#64748b]">
+                          {((lowScore / total) * 100).toFixed(0)}%
+                        </div>
+                      </div>
+                    )}
+                    {mediumScore > 0 && (
+                      <div className="flex items-center gap-2">
+                        <div className="w-12 text-xs text-[#64748b]">Médio</div>
+                        <div className="flex-1 bg-[#E2E8F0] rounded h-2">
+                          <div
+                            className="bg-[#FF9800] h-2 rounded"
+                            style={{ width: `${(mediumScore / total) * 100}%` }}
+                          />
+                        </div>
+                        <div className="w-12 text-xs text-right text-[#64748b]">
+                          {((mediumScore / total) * 100).toFixed(0)}%
+                        </div>
+                      </div>
+                    )}
+                    {highScore > 0 && (
+                      <div className="flex items-center gap-2">
+                        <div className="w-12 text-xs text-[#64748b]">Alto</div>
+                        <div className="flex-1 bg-[#E2E8F0] rounded h-2">
+                          <div
+                            className="bg-[#00C853] h-2 rounded"
+                            style={{ width: `${(highScore / total) * 100}%` }}
+                          />
+                        </div>
+                        <div className="w-12 text-xs text-right text-[#64748b]">
+                          {((highScore / total) * 100).toFixed(0)}%
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* App Adoption */}
+            <div>
+              <p className="text-xs font-medium text-[#64748b] mb-2">Adoção de App</p>
+              {(() => {
+                const comApp = clientesData.filter(
+                  (c) => String(c["App"] || "").toLowerCase() === "sim"
+                ).length;
+                const total = clientesData.length;
+                const pct = ((comApp / total) * 100).toFixed(1);
+
+                return (
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <div className="w-12 text-xs text-[#64748b]">Com App</div>
+                      <div className="flex-1 bg-[#E2E8F0] rounded h-2">
+                        <div className="bg-[#00C853] h-2 rounded" style={{ width: `${pct}%` }} />
+                      </div>
+                      <div className="w-12 text-xs text-right text-[#64748b]">{pct}%</div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-12 text-xs text-[#64748b]">Sem App</div>
+                      <div className="flex-1 bg-[#E2E8F0] rounded h-2">
+                        <div
+                          className="bg-[#CBD5E1] h-2 rounded"
+                          style={{ width: `${100 - parseFloat(pct)}%` }}
+                        />
+                      </div>
+                      <div className="w-12 text-xs text-right text-[#64748b]">
+                        {(100 - parseFloat(pct)).toFixed(1)}%
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           </div>
-        )}
-      </div>
+        </CardContent>
+      </Card>
 
-      {/* Purchase Distribution */}
-      <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-[#1a1a1a]">Distribuição de Compras</h3>
-        <div className="space-y-2">
-          {distribution.map((dist, idx) => (
-            <div key={idx} className="rounded-lg border border-[#E2E8F0] bg-white p-3">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-[#1a1a1a]">{dist.range}</span>
-                <span className="text-xs font-semibold text-[#64748b]">{dist.count.toLocaleString("pt-BR")}</span>
+      {/* 3. DISTRIBUIÇÃO DE COMPRAS */}
+      <Card className="border-[#E2E8F0] bg-white">
+        <CardHeader>
+          <CardTitle className="text-base font-semibold text-[#1a1a1a]">Distribuição de Compras</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3">
+            {distribution.map((item) => (
+              <div key={item.range} className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-[#64748b]">{item.range}</span>
+                  <span className="text-sm font-medium text-[#1a1a1a]">
+                    {item.count} clientes ({item.percentage.toFixed(1)}%)
+                  </span>
+                </div>
+                <div className="w-full bg-[#E2E8F0] rounded h-2">
+                  <div className="bg-[#00C853] h-2 rounded" style={{ width: `${item.percentage}%` }} />
+                </div>
               </div>
-              <div className="relative h-2 overflow-hidden rounded-full bg-[#E2E8F0]">
-                <div
-                  className="h-full bg-[#00C853]"
-                  style={{ width: `${dist.percentage}%` }}
-                />
-              </div>
-              <div className="mt-1 text-xs text-[#94a3b8]">{dist.percentage.toFixed(1)}% da base</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Purchase Group Comparison */}
-      <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-[#1a1a1a]">Comparação por Grupo de Compras</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs">
-            <thead>
-              <tr className="border-b border-[#E2E8F0]">
-                <th className="text-left px-3 py-2 font-semibold text-[#1a1a1a]">Grupo</th>
-                <th className="text-right px-3 py-2 font-semibold text-[#1a1a1a]">Clientes</th>
-                <th className="text-right px-3 py-2 font-semibold text-[#1a1a1a]">Limite Médio</th>
-                <th className="text-right px-3 py-2 font-semibold text-[#1a1a1a]">Score Médio</th>
-                <th className="text-center px-3 py-2 font-semibold text-[#1a1a1a]">% com App</th>
-                <th className="text-center px-3 py-2 font-semibold text-[#1a1a1a]">% Aumento</th>
-              </tr>
-            </thead>
-            <tbody>
-              {comparison.map((comp, idx) => (
-                <tr key={idx} className="border-b border-[#E2E8F0] hover:bg-[#F7FAF8]">
-                  <td className="px-3 py-2 text-[#1a1a1a] font-medium">{comp.group}</td>
-                  <td className="text-right px-3 py-2 text-[#64748b]">{comp.count.toLocaleString("pt-BR")}</td>
-                  <td className="text-right px-3 py-2 text-[#64748b]">
-                    R$ {comp.avgLimite.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}
-                  </td>
-                  <td className="text-right px-3 py-2 text-[#64748b]">{comp.avgScore.toFixed(0)}</td>
-                  <td className="text-center px-3 py-2 text-[#64748b]">{comp.percentageComApp.toFixed(0)}%</td>
-                  <td className="text-center px-3 py-2 text-[#64748b]">{comp.percentageComAumento.toFixed(0)}%</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <p className="text-xs text-[#94a3b8] italic">
-          Clientes com 2+ compras são usados como proxy de recorrência, pois já demonstraram mais de uma experiência de uso do crédito.
-        </p>
-      </div>
-
-      {/* Segment Selection */}
-      <div className="space-y-3">
-        <h3 className="text-sm font-semibold text-[#1a1a1a]">Segmentos ({metrics.length})</h3>
-        <div className="grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-3">
-          {sortedMetrics.map((metric) => (
-            <button
-              key={metric.segmentId}
-              onClick={() => {
-                setSelectedSegmentId(metric.segmentId);
-                setPageIndex(0);
-              }}
-              className={`rounded-lg border-2 p-3 text-left transition-all ${
-                selectedSegmentId === metric.segmentId
-                  ? "border-[#00C853] bg-[#F0F4F3]"
-                  : "border-[#E2E8F0] hover:border-[#cbd5e1]"
-              }`}
-              style={{
-                backgroundColor:
-                  selectedSegmentId === metric.segmentId
-                    ? SEGMENT_COLORS[metric.segmentId]?.bg
-                    : "white",
-              }}
-            >
-              <div className="flex items-center justify-between mb-1">
-                <span className="font-semibold text-[#1a1a1a]">{metric.segmentName}</span>
-                <div
-                  className="h-3 w-3 rounded-full"
-                  style={{ backgroundColor: SEGMENT_COLORS[metric.segmentId]?.accent }}
-                />
-              </div>
-              <div className="text-xs text-[#64748b]">
-                {metric.totalClientes.toLocaleString("pt-BR")} clientes ({metric.percentageOfBase.toFixed(1)}%)
-              </div>
-              <div className="mt-2 text-xs text-[#94a3b8] line-clamp-2">
-                Compras: {metric.avgCompras.toFixed(1)} | Limite: R$
-                {metric.avgLimite.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Customer Table */}
-      {activeSegment ? (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-[#1a1a1a]">
-              Clientes do segmento: {activeSegment.name} ({filteredCustomers.length})
-            </h3>
+            ))}
+            <p className="mt-4 text-xs text-[#64748b] italic">
+              A base é altamente concentrada em clientes sem compras, indicando desafio de ativação.
+            </p>
           </div>
+        </CardContent>
+      </Card>
 
-          {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-[#cbd5e1]" />
-            <input
-              type="text"
-              placeholder="Buscar por nome..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setPageIndex(0);
-              }}
-              className="w-full rounded-lg border border-[#E2E8F0] bg-white py-2 pl-9 pr-3 text-sm text-[#1a1a1a] placeholder-[#cbd5e1] focus:border-[#00C853] focus:outline-none"
-            />
-          </div>
-
-          {/* Table */}
-          <div className="overflow-x-auto rounded-lg border border-[#E2E8F0]">
-            <table className="w-full text-xs">
+      {/* 4. COMPARAÇÃO POR GRUPO DE COMPRAS */}
+      <Card className="border-[#E2E8F0] bg-white">
+        <CardHeader>
+          <CardTitle className="text-base font-semibold text-[#1a1a1a]">Comparação por Grupo de Compras</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
               <thead>
-                <tr className="bg-[#F7FAF8] border-b border-[#E2E8F0]">
-                  <th className="text-left px-3 py-2 font-semibold text-[#1a1a1a]">Nome</th>
-                  <th className="text-right px-3 py-2 font-semibold text-[#1a1a1a]">Compras</th>
-                  <th className="text-right px-3 py-2 font-semibold text-[#1a1a1a]">Limite Total</th>
-                  <th className="text-right px-3 py-2 font-semibold text-[#1a1a1a]">Limite Disp.</th>
-                  <th className="text-right px-3 py-2 font-semibold text-[#1a1a1a]">Score</th>
-                  <th className="text-center px-3 py-2 font-semibold text-[#1a1a1a]">App</th>
-                  <th className="text-center px-3 py-2 font-semibold text-[#1a1a1a]">Aumento</th>
-                  <th className="text-right px-3 py-2 font-semibold text-[#1a1a1a]">Taxa Juros</th>
+                <tr className="border-b border-[#E2E8F0]">
+                  <th className="text-left py-2 px-2 text-xs font-medium text-[#64748b]">Grupo</th>
+                  <th className="text-left py-2 px-2 text-xs font-medium text-[#64748b]">Clientes</th>
+                  <th className="text-left py-2 px-2 text-xs font-medium text-[#64748b]">Avg Limite</th>
+                  <th className="text-left py-2 px-2 text-xs font-medium text-[#64748b]">Avg Score</th>
+                  <th className="text-left py-2 px-2 text-xs font-medium text-[#64748b]">Com App</th>
+                  <th className="text-left py-2 px-2 text-xs font-medium text-[#64748b]">Taxa Juros</th>
                 </tr>
               </thead>
               <tbody>
-                {paginatedCustomers.length > 0 ? (
-                  paginatedCustomers.map((customer, idx) => (
-                    <tr key={idx} className="border-b border-[#E2E8F0] hover:bg-[#F7FAF8]">
-                      <td className="px-3 py-2 text-[#1a1a1a] font-medium">{customer["Nome"] || "—"}</td>
-                      <td className="text-right px-3 py-2 text-[#64748b]">
-                        {parseNumericField(customer["Qtd de Compras"])?.toFixed(0) || "—"}
-                      </td>
-                      <td className="text-right px-3 py-2 text-[#64748b]">
-                        {parseNumericField(customer["Limite Total"])
-                          ? `R$ ${parseNumericField(customer["Limite Total"])!.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}`
-                          : "—"}
-                      </td>
-                      <td className="text-right px-3 py-2 text-[#64748b]">
-                        {parseNumericField(customer["Limite Disponível"])
-                          ? `R$ ${parseNumericField(customer["Limite Disponível"])!.toLocaleString("pt-BR", { maximumFractionDigits: 0 })}`
-                          : "—"}
-                      </td>
-                      <td className="text-right px-3 py-2 text-[#64748b]">
-                        {parseNumericField(customer["Score de Crédito"])?.toFixed(0) || "—"}
-                      </td>
-                      <td className="text-center px-3 py-2 text-[#64748b]">
-                        {customer["Tem App?"]?.toString().toLowerCase() === "sim" ||
-                        customer["Tem App?"] === "1" ||
-                        customer["Tem App?"] === 1
-                          ? "Sim"
-                          : "Não"}
-                      </td>
-                      <td className="text-center px-3 py-2 text-[#64748b]">
-                        {customer["Já teve Aumento de limite?"]?.toString().toLowerCase() === "sim" ||
-                        customer["Já teve Aumento de limite?"] === "1" ||
-                        customer["Já teve Aumento de limite?"] === 1
-                          ? "Sim"
-                          : "Não"}
-                      </td>
-                      <td className="text-right px-3 py-2 text-[#64748b]">
-                        {parseNumericField(customer["Taxa de Juros Média (ao mês)"])?.toFixed(2) || "—"}%
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={8} className="px-3 py-4 text-center text-sm text-[#94a3b8]">
-                      Nenhum cliente encontrado
-                    </td>
+                {comparison.map((row) => (
+                  <tr key={row.group} className="border-b border-[#E2E8F0] hover:bg-[#F7FAF8]">
+                    <td className="py-2 px-2 text-[#1a1a1a] font-medium">{row.group}</td>
+                    <td className="py-2 px-2 text-[#64748b]">{row.count}</td>
+                    <td className="py-2 px-2 text-[#64748b]">{formatNumber(row.avgLimite)}</td>
+                    <td className="py-2 px-2 text-[#64748b]">{formatNumber(row.avgScore)}</td>
+                    <td className="py-2 px-2 text-[#64748b]">{row.percentageComApp.toFixed(1)}%</td>
+                    <td className="py-2 px-2 text-[#64748b]">{row.avgTaxaJuros.toFixed(2)}%</td>
                   </tr>
-                )}
+                ))}
               </tbody>
             </table>
           </div>
+          <p className="mt-4 text-xs text-[#64748b] italic">
+            Clientes com 2+ compras apresentam maior score e adoção de app, indicando maior engajamento e potencial de valor.
+          </p>
+        </CardContent>
+      </Card>
 
-          {/* Pagination */}
-          {filteredCustomers.length > ROWS_PER_PAGE && (
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-[#64748b]">
-                Exibindo {pageIndex * ROWS_PER_PAGE + 1} a {Math.min((pageIndex + 1) * ROWS_PER_PAGE, filteredCustomers.length)} de {filteredCustomers.length}
-              </span>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setPageIndex(Math.max(0, pageIndex - 1))}
-                  disabled={pageIndex === 0}
-                  className="rounded px-2 py-1 text-xs font-medium text-[#1a1a1a] border border-[#E2E8F0] hover:bg-[#F7FAF8] disabled:opacity-50"
+      {/* 5. SEGMENTAÇÃO DE CLIENTES */}
+      <Card className="border-[#E2E8F0] bg-white">
+        <CardHeader>
+          <CardTitle className="text-base font-semibold text-[#1a1a1a]">Segmentação de Clientes</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+            {sortedMetrics.map((metric) => {
+              const colors = SEGMENT_COLORS[metric.segmentId] || {
+                bg: "#F5F5F5",
+                accent: "#9E9E9E",
+                text: "#424242",
+              };
+              const isSelected = selectedSegmentId === metric.segmentId;
+
+              return (
+                <div
+                  key={metric.segmentId}
+                  onClick={() => setSelectedSegmentId(metric.segmentId)}
+                  className={`p-4 rounded-lg cursor-pointer transition-all border-2 ${
+                    isSelected
+                      ? `border-[${colors.accent}] bg-[${colors.bg}]`
+                      : "border-[#E2E8F0] hover:border-[#CBD5E1]"
+                  }`}
+                  style={{
+                    backgroundColor: isSelected ? colors.bg : "#FFFFFF",
+                    borderColor: isSelected ? colors.accent : "#E2E8F0",
+                  }}
                 >
-                  Anterior
-                </button>
-                <button
-                  onClick={() => setPageIndex(pageIndex + 1)}
-                  disabled={(pageIndex + 1) * ROWS_PER_PAGE >= filteredCustomers.length}
-                  className="rounded px-2 py-1 text-xs font-medium text-[#1a1a1a] border border-[#E2E8F0] hover:bg-[#F7FAF8] disabled:opacity-50"
-                >
-                  Próximo
-                </button>
+                  <div className="font-medium text-[#1a1a1a]">{metric.segmentName}</div>
+                  <div className="text-2xl font-bold mt-1" style={{ color: colors.accent }}>
+                    {metric.totalClientes}
+                  </div>
+                  <div className="text-xs text-[#64748b] mt-1">{metric.percentageOfBase.toFixed(1)}% da base</div>
+                  <div className="text-xs text-[#64748b] mt-2">
+                    Avg: {metric.avgCompras.toFixed(1)} compras
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 6. EXPLICAÇÃO DOS SEGMENTOS */}
+      <Card className="border-[#E2E8F0] bg-white">
+        <CardHeader>
+          <CardTitle className="text-base font-semibold text-[#1a1a1a]">Como os Segmentos foram Definidos</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 md:grid-cols-2">
+            {Object.entries(SEGMENT_DESCRIPTIONS).map(([segmentId, description]) => (
+              <div key={segmentId} className="pb-4 border-b border-[#E2E8F0] last:border-0">
+                <div className="font-medium text-[#1a1a1a]">{segmentId === "high-value" ? "High Value" : segmentId === "aprovados-nao-ativados" ? "Aprovados Não Ativados" : segmentId === "potencial" ? "Potencial" : segmentId === "recorrentes" ? "Recorrentes" : "Negados"}</div>
+                <p className="text-sm text-[#64748b] mt-1">{description}</p>
+              </div>
+            ))}
+          </div>
+          <p className="mt-4 text-xs text-[#94a3b8] italic">
+            A segmentação foi construída com base em regras comportamentais e de crédito, priorizando interpretabilidade e valor de negócio.
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* 7. INSIGHTS POR SEGMENTO */}
+      {activeSegment && (
+        <Card className="border-[#E2E8F0] bg-white">
+          <CardHeader>
+            <CardTitle className="text-base font-semibold text-[#1a1a1a]">Insights - {activeSegment.name}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2">
+              {activeSegment.id === "aprovados-nao-ativados" && (
+                <>
+                  <li className="flex items-start gap-2 text-sm text-[#64748b]">
+                    <ArrowRight className="h-4 w-4 flex-shrink-0 text-[#2196F3] mt-0.5" />
+                    <span>Maior oportunidade de ativação do portfólio</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm text-[#64748b]">
+                    <ArrowRight className="h-4 w-4 flex-shrink-0 text-[#2196F3] mt-0.5" />
+                    <span>Foco em melhorar experiência de onboarding e engajamento inicial</span>
+                  </li>
+                </>
+              )}
+              {activeSegment.id === "high-value" && (
+                <>
+                  <li className="flex items-start gap-2 text-sm text-[#64748b]">
+                    <ArrowRight className="h-4 w-4 flex-shrink-0 text-[#00C853] mt-0.5" />
+                    <span>Concentra maior potencial de receita</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm text-[#64748b]">
+                    <ArrowRight className="h-4 w-4 flex-shrink-0 text-[#00C853] mt-0.5" />
+                    <span>Priorizar retenção e ofertas de limite aumentado</span>
+                  </li>
+                </>
+              )}
+              {activeSegment.id === "recorrentes" && (
+                <>
+                  <li className="flex items-start gap-2 text-sm text-[#64748b]">
+                    <ArrowRight className="h-4 w-4 flex-shrink-0 text-[#9C27B0] mt-0.5" />
+                    <span>Alto nível de engajamento e confiança estabelecida</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm text-[#64748b]">
+                    <ArrowRight className="h-4 w-4 flex-shrink-0 text-[#9C27B0] mt-0.5" />
+                    <span>Potencial de upgrade para High Value</span>
+                  </li>
+                </>
+              )}
+              {activeSegment.id === "potencial" && (
+                <>
+                  <li className="flex items-start gap-2 text-sm text-[#64748b]">
+                    <ArrowRight className="h-4 w-4 flex-shrink-0 text-[#FF9800] mt-0.5" />
+                    <span>Bom perfil de crédito, mas com baixa recorrência</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm text-[#64748b]">
+                    <ArrowRight className="h-4 w-4 flex-shrink-0 text-[#FF9800] mt-0.5" />
+                    <span>Foco em conversão para compras recorrentes</span>
+                  </li>
+                </>
+              )}
+              {activeSegment.id === "negados" && (
+                <>
+                  <li className="flex items-start gap-2 text-sm text-[#64748b]">
+                    <ArrowRight className="h-4 w-4 flex-shrink-0 text-[#F44336] mt-0.5" />
+                    <span>Clientes não aprovados na avaliação de risco</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-sm text-[#64748b]">
+                    <ArrowRight className="h-4 w-4 flex-shrink-0 text-[#F44336] mt-0.5" />
+                    <span>Considerar estratégias de reabilitação de crédito</span>
+                  </li>
+                </>
+              )}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* 8. TABELA DE CLIENTES */}
+      {activeSegment && (
+        <Card className="border-[#E2E8F0] bg-white">
+          <CardHeader>
+            <div className="space-y-3">
+              <CardTitle className="text-base font-semibold text-[#1a1a1a]">
+                Clientes do Segmento: {activeSegment.name}
+              </CardTitle>
+              <div className="flex items-center gap-2 border border-[#E2E8F0] rounded-lg px-3 py-2 bg-[#F7FAF8]">
+                <Search className="h-4 w-4 text-[#94a3b8]" />
+                <input
+                  type="text"
+                  placeholder="Buscar por nome..."
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setPageIndex(0);
+                  }}
+                  className="flex-1 bg-transparent text-sm outline-none text-[#1a1a1a]"
+                />
               </div>
             </div>
-          )}
-        </div>
-      ) : (
-        <div className="flex h-32 flex-col items-center justify-center rounded-lg border border-[#E2E8F0] bg-[#F7FAF8]">
-          <p className="text-sm text-[#64748b]">Selecione um segmento para visualizar os clientes</p>
-        </div>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-[#E2E8F0]">
+                    <th className="text-left py-2 px-2 text-xs font-medium text-[#64748b]">Nome</th>
+                    <th className="text-left py-2 px-2 text-xs font-medium text-[#64748b]">Compras</th>
+                    <th className="text-left py-2 px-2 text-xs font-medium text-[#64748b]">Limite Total</th>
+                    <th className="text-left py-2 px-2 text-xs font-medium text-[#64748b]">Score</th>
+                    <th className="text-left py-2 px-2 text-xs font-medium text-[#64748b]">App</th>
+                    <th className="text-left py-2 px-2 text-xs font-medium text-[#64748b]">Taxa Juros</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {paginatedCustomers.map((cliente, idx) => (
+                    <tr key={idx} className="border-b border-[#E2E8F0] hover:bg-[#F7FAF8]">
+                      <td className="py-2 px-2 text-[#1a1a1a] font-medium">{cliente["Nome"]}</td>
+                      <td className="py-2 px-2 text-[#64748b]">
+                        {formatNumber(parseNumericField(cliente["Qtd de Compras"]))}
+                      </td>
+                      <td className="py-2 px-2 text-[#64748b]">
+                        {formatNumber(parseNumericField(cliente["Limite Total"]))}
+                      </td>
+                      <td className="py-2 px-2 text-[#64748b]">
+                        {formatNumber(parseNumericField(cliente["Score"]))}
+                      </td>
+                      <td className="py-2 px-2 text-[#64748b]">
+                        {String(cliente["App"] || "").toLowerCase() === "sim" ? "Sim" : "Não"}
+                      </td>
+                      <td className="py-2 px-2 text-[#64748b]">
+                        {formatNumber(parseNumericField(cliente["Taxa de Juros"]))}%
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="mt-4 flex items-center justify-between">
+                <div className="text-xs text-[#64748b]">
+                  Página {pageIndex + 1} de {totalPages} ({filteredCustomers.length} clientes)
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setPageIndex(Math.max(0, pageIndex - 1))}
+                    disabled={pageIndex === 0}
+                    className="px-3 py-1 text-xs border border-[#E2E8F0] rounded text-[#64748b] disabled:opacity-50"
+                  >
+                    Anterior
+                  </button>
+                  <button
+                    onClick={() => setPageIndex(Math.min(totalPages - 1, pageIndex + 1))}
+                    disabled={pageIndex === totalPages - 1}
+                    className="px-3 py-1 text-xs border border-[#E2E8F0] rounded text-[#64748b] disabled:opacity-50"
+                  >
+                    Próxima
+                  </button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       )}
     </div>
   );

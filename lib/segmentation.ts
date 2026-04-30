@@ -23,12 +23,9 @@ export interface SegmentMetrics {
 }
 
 export interface SegmentationThresholds {
-  p75Compras: number;
-  p75Limite: number;
-  p75Score: number;
-  p50Limite: number;
-  p50Score: number;
-  p50Compras: number;
+  avgCompras: number;
+  avgLimite: number;
+  avgScore: number;
 }
 
 export interface PurchaseDistribution {
@@ -70,382 +67,278 @@ export function parseNumericField(value: any): number | null {
   return null;
 }
 
-// Calculate percentiles from array of numbers
-function calculatePercentile(numbers: number[], p: number): number {
-  if (numbers.length === 0) return 0;
-
-  const sorted = [...numbers].sort((a, b) => a - b);
-  const index = Math.ceil((p / 100) * sorted.length) - 1;
-  return sorted[Math.max(0, index)] || 0;
+// Calculate average from array of numbers, ignoring nulls
+function calculateAverage(numbers: (number | null)[]): number {
+  const valid = numbers.filter((n) => n !== null) as number[];
+  if (valid.length === 0) return 0;
+  return valid.reduce((a, b) => a + b, 0) / valid.length;
 }
 
-// Calculate all thresholds
-export function calculateThresholds(clientes: ClienteRow[]): SegmentationThresholds {
-  const compras = clientes
-    .map((c) => parseNumericField(c["Qtd de Compras"]))
-    .filter((v) => v !== null) as number[];
-
-  const limites = clientes
-    .map((c) => parseNumericField(c["Limite Total"]))
-    .filter((v) => v !== null) as number[];
-
-  const scores = clientes
-    .map((c) => parseNumericField(c["Score de Crédito"]))
-    .filter((v) => v !== null) as number[];
-
-  return {
-    p75Compras: calculatePercentile(compras, 75),
-    p75Limite: calculatePercentile(limites, 75),
-    p75Score: calculatePercentile(scores, 75),
-    p50Limite: calculatePercentile(limites, 50),
-    p50Score: calculatePercentile(scores, 50),
-    p50Compras: calculatePercentile(compras, 50),
-  };
+// Calculate percentages
+function calculatePercentage(count: number, total: number): number {
+  return total > 0 ? (count / total) * 100 : 0;
 }
 
-// Calculate average values for a subset of customers - ignores invalid values
-function calculateAverages(clientes: ClienteRow[]) {
-  if (clientes.length === 0) {
-    return {
-      avgCompras: 0,
-      avgLimite: 0,
-      avgScore: 0,
-      avgTaxaJuros: 0,
-      percentageComApp: 0,
-      percentageComAumento: 0,
-    };
+// Calculate thresholds for behavior-driven segmentation
+export function calculateThresholds(clientesData: ClienteRow[]): SegmentationThresholds {
+  if (!clientesData || clientesData.length === 0) {
+    return { avgCompras: 0, avgLimite: 0, avgScore: 0 };
   }
 
-  // Parse numeric fields safely
-  const comprasValues = clientes
-    .map((c) => parseNumericField(c["Qtd de Compras"]))
-    .filter((v) => v !== null) as number[];
-
-  const limiteValues = clientes
-    .map((c) => parseNumericField(c["Limite Total"]))
-    .filter((v) => v !== null) as number[];
-
-  const scoreValues = clientes
-    .map((c) => parseNumericField(c["Score de Crédito"]))
-    .filter((v) => v !== null) as number[];
-
-  const taxaValues = clientes
-    .map((c) => parseNumericField(c["Taxa de Juros Média (ao mês)"]))
-    .filter((v) => v !== null) as number[];
-
-  const avgCompras = comprasValues.length > 0 ? comprasValues.reduce((a, b) => a + b, 0) / comprasValues.length : 0;
-  const avgLimite = limiteValues.length > 0 ? limiteValues.reduce((a, b) => a + b, 0) / limiteValues.length : 0;
-  const avgScore = scoreValues.length > 0 ? scoreValues.reduce((a, b) => a + b, 0) / scoreValues.length : 0;
-  const avgTaxaJuros = taxaValues.length > 0 ? taxaValues.reduce((a, b) => a + b, 0) / taxaValues.length : 0;
-
-  const comApp = clientes.filter((c) => {
-    const val = c["Tem App?"];
-    return val?.toString().toLowerCase() === "sim" || val === "1" || val === 1;
-  }).length;
-  const percentageComApp = (comApp / clientes.length) * 100;
-
-  const comAumento = clientes.filter((c) => {
-    const val = c["Já teve Aumento de limite?"];
-    return val?.toString().toLowerCase() === "sim" || val === "1" || val === 1;
-  }).length;
-  const percentageComAumento = (comAumento / clientes.length) * 100;
+  const compras = clientesData.map((c) => parseNumericField(c["Qtd de Compras"]) || 0);
+  const limites = clientesData.map((c) => parseNumericField(c["Limite Total"]) || 0);
+  const scores = clientesData.map((c) => parseNumericField(c["Score"]) || 0);
 
   return {
-    avgCompras,
-    avgLimite,
-    avgScore,
-    avgTaxaJuros,
-    percentageComApp,
-    percentageComAumento,
+    avgCompras: calculateAverage(compras),
+    avgLimite: calculateAverage(limites),
+    avgScore: calculateAverage(scores),
   };
 }
 
-// Main segmentation function with percentile-based logic
-export function segmentarClientes(clientes: ClienteRow[]): Segment[] {
-  if (!clientes || clientes.length === 0) {
+// Segment customers using behavior-driven rules
+export function segmentarClientes(clientesData: ClienteRow[]): Segment[] {
+  if (!clientesData || clientesData.length === 0) {
     return [];
   }
 
-  const thresholds = calculateThresholds(clientes);
-  const segments: Segment[] = [];
-  const assigned = new Set<string>();
+  const thresholds = calculateThresholds(clientesData);
 
-  // Helper: get customer unique identifier
-  function getCustomerId(c: ClienteRow): string {
-    return JSON.stringify(c);
-  }
+  const negados: ClienteRow[] = [];
+  const aprovadosNaoAtivados: ClienteRow[] = [];
+  const potencial: ClienteRow[] = [];
+  const recorrentes: ClienteRow[] = [];
+  const highValue: ClienteRow[] = [];
 
-  // 1. Negados
-  const negados = clientes.filter((c) => {
-    const situacao = c["Situação"]?.toString().toLowerCase() || "";
-    if (situacao === "negada") {
-      assigned.add(getCustomerId(c));
-      return true;
+  clientesData.forEach((cliente) => {
+    const situacao = String(cliente["Situação"] || "").trim();
+    const compras = parseNumericField(cliente["Qtd de Compras"]) || 0;
+    const limite = parseNumericField(cliente["Limite Total"]) || 0;
+    const score = parseNumericField(cliente["Score"]) || 0;
+
+    // Rule 1: Negados
+    if (situacao === "Negada") {
+      negados.push(cliente);
+      return;
     }
-    return false;
-  });
 
-  segments.push({
-    id: "negados",
-    name: "Negados",
-    description: "Clientes que solicitaram crédito, mas não foram aprovados.",
-    customers: negados,
-  });
-
-  // 2. Aprovados Não Ativados
-  const aprovadosNaoAtivados = clientes.filter((c) => {
-    if (assigned.has(getCustomerId(c))) return false;
-
-    const situacao = c["Situação"]?.toString().toLowerCase() || "";
-    const compras = parseNumericField(c["Qtd de Compras"]) || 0;
-
-    if (situacao !== "negada" && compras === 0) {
-      assigned.add(getCustomerId(c));
-      return true;
+    // Rule 2: Aprovados Não Ativados
+    if (compras === 0) {
+      aprovadosNaoAtivados.push(cliente);
+      return;
     }
-    return false;
-  });
 
-  segments.push({
-    id: "aprovados-nao-ativados",
-    name: "Aprovados Não Ativados",
-    description: "Clientes aprovados que ainda não realizaram a primeira compra.",
-    customers: aprovadosNaoAtivados,
-  });
-
-  // 3. High Value
-  const highValue = clientes.filter((c) => {
-    if (assigned.has(getCustomerId(c))) return false;
-
-    const situacao = c["Situação"]?.toString().toLowerCase() || "";
-    const compras = parseNumericField(c["Qtd de Compras"]) || 0;
-    const limite = parseNumericField(c["Limite Total"]) || 0;
-
-    if (situacao !== "negada" && compras >= thresholds.p75Compras && limite >= thresholds.p75Limite) {
-      assigned.add(getCustomerId(c));
-      return true;
+    // Rule 3: High Value (3+ purchases AND above-average limit)
+    if (compras >= 3 && limite >= thresholds.avgLimite) {
+      highValue.push(cliente);
+      return;
     }
-    return false;
-  });
 
-  segments.push({
-    id: "high-value",
-    name: "High Value",
-    description: "Clientes no topo da distribuição de compras e limite, indicando maior engajamento e potencial de valor.",
-    customers: highValue,
-  });
-
-  // 4. Potencial Alto
-  const potentialAlto = clientes.filter((c) => {
-    if (assigned.has(getCustomerId(c))) return false;
-
-    const situacao = c["Situação"]?.toString().toLowerCase() || "";
-    const score = parseNumericField(c["Score de Crédito"]) || 0;
-    const limite = parseNumericField(c["Limite Total"]) || 0;
-    const compras = parseNumericField(c["Qtd de Compras"]) || 0;
-
-    if (
-      situacao !== "negada" &&
-      score >= thresholds.p75Score &&
-      limite >= thresholds.p75Limite &&
-      (compras <= thresholds.p50Compras || compras <= 2)
-    ) {
-      assigned.add(getCustomerId(c));
-      return true;
+    // Rule 4: Potencial (above-average score OR above-average limit AND <= 1 purchase)
+    if ((score >= thresholds.avgScore || limite >= thresholds.avgLimite) && compras <= 1) {
+      potencial.push(cliente);
+      return;
     }
-    return false;
-  });
 
-  segments.push({
-    id: "potencial-alto",
-    name: "Potencial Alto",
-    description: "Clientes com alto score e limite, mas ainda com baixa recorrência.",
-    customers: potentialAlto,
-  });
-
-  // 5. Recorrentes Leves
-  const recurrentesLeves = clientes.filter((c) => {
-    if (assigned.has(getCustomerId(c))) return false;
-
-    const situacao = c["Situação"]?.toString().toLowerCase() || "";
-    const compras = parseNumericField(c["Qtd de Compras"]) || 0;
-
-    if (situacao !== "negada" && compras >= 1 && compras < thresholds.p75Compras) {
-      assigned.add(getCustomerId(c));
-      return true;
+    // Rule 5: Recorrentes (2+ purchases)
+    if (compras >= 2) {
+      recorrentes.push(cliente);
+      return;
     }
-    return false;
   });
 
-  segments.push({
-    id: "recorrentes-leves",
-    name: "Recorrentes Leves",
-    description: "Clientes que já compraram, mas ainda não estão entre os mais recorrentes.",
-    customers: recurrentesLeves,
-  });
+  const segments: Segment[] = [
+    {
+      id: "negados",
+      name: "Negados",
+      description: "Clientes não aprovados",
+      customers: negados,
+    },
+    {
+      id: "aprovados-nao-ativados",
+      name: "Aprovados Não Ativados",
+      description: "Clientes aprovados que ainda não usaram o crédito",
+      customers: aprovadosNaoAtivados,
+    },
+    {
+      id: "high-value",
+      name: "High Value",
+      description: "Clientes com alto nível de uso e limite elevado",
+      customers: highValue,
+    },
+    {
+      id: "potencial",
+      name: "Potencial",
+      description: "Clientes com bom perfil de crédito, mas baixa recorrência",
+      customers: potencial,
+    },
+    {
+      id: "recorrentes",
+      name: "Recorrentes",
+      description: "Clientes com uso consistente do crédito",
+      customers: recorrentes,
+    },
+  ];
 
-  // 6. Baixo Valor
-  const baixoValor = clientes.filter((c) => {
-    if (assigned.has(getCustomerId(c))) return false;
-
-    const situacao = c["Situação"]?.toString().toLowerCase() || "";
-    const compras = parseNumericField(c["Qtd de Compras"]) || 0;
-    const limite = parseNumericField(c["Limite Total"]) || 0;
-    const score = parseNumericField(c["Score de Crédito"]) || 0;
-
-    if (
-      situacao !== "negada" &&
-      compras >= 1 &&
-      limite < thresholds.p50Limite &&
-      score < thresholds.p50Score
-    ) {
-      assigned.add(getCustomerId(c));
-      return true;
-    }
-    return false;
-  });
-
-  segments.push({
-    id: "baixo-valor",
-    name: "Baixo Valor",
-    description: "Clientes com uso e potencial de crédito mais baixos.",
-    customers: baixoValor,
-  });
-
-  // 7. Outros Aprovados (catch-all for remaining approved customers)
-  const outrosAprovados = clientes.filter((c) => {
-    if (assigned.has(getCustomerId(c))) return false;
-
-    const situacao = c["Situação"]?.toString().toLowerCase() || "";
-    if (situacao !== "negada") {
-      assigned.add(getCustomerId(c));
-      return true;
-    }
-    return false;
-  });
-
-  if (outrosAprovados.length > 0) {
-    segments.push({
-      id: "outros-aprovados",
-      name: "Outros Aprovados",
-      description: "Clientes aprovados que não se encaixam nos critérios principais.",
-      customers: outrosAprovados,
-    });
-  }
-
-  return segments;
+  return segments.filter((s) => s.customers.length > 0);
 }
 
-// Calculate metrics for all segments
-export function calculateSegmentMetrics(segments: Segment[], totalBase: number = 0): SegmentMetrics[] {
-  const allClientes = segments.reduce((sum, s) => sum + s.customers.length, 0);
-  const divisor = totalBase > 0 ? totalBase : allClientes;
-
+// Calculate metrics for each segment
+export function calculateSegmentMetrics(segments: Segment[], totalClientes: number): SegmentMetrics[] {
   return segments.map((segment) => {
-    const avgs = calculateAverages(segment.customers);
+    const compras = segment.customers.map((c) => parseNumericField(c["Qtd de Compras"]) || 0);
+    const limites = segment.customers.map((c) => parseNumericField(c["Limite Total"]) || 0);
+    const scores = segment.customers.map((c) => parseNumericField(c["Score"]) || 0);
+    const taxas = segment.customers.map((c) => parseNumericField(c["Taxa de Juros"]) || 0);
+
+    const comApp = segment.customers.filter(
+      (c) => String(c["App"] || "").toLowerCase() === "sim"
+    ).length;
+    const comAumento = segment.customers.filter(
+      (c) => String(c["Aumento Limite"] || "").toLowerCase() === "sim"
+    ).length;
 
     return {
       segmentId: segment.id,
       segmentName: segment.name,
       totalClientes: segment.customers.length,
-      percentageOfBase: divisor > 0 ? (segment.customers.length / divisor) * 100 : 0,
-      avgCompras: avgs.avgCompras,
-      avgLimite: avgs.avgLimite,
-      avgScore: avgs.avgScore,
-      avgTaxaJuros: avgs.avgTaxaJuros,
-      percentageComApp: avgs.percentageComApp,
-      percentageComAumento: avgs.percentageComAumento,
+      percentageOfBase: calculatePercentage(segment.customers.length, totalClientes),
+      avgCompras: calculateAverage(compras),
+      avgLimite: calculateAverage(limites),
+      avgScore: calculateAverage(scores),
+      avgTaxaJuros: calculateAverage(taxas),
+      percentageComApp: calculatePercentage(comApp, segment.customers.length),
+      percentageComAumento: calculatePercentage(comAumento, segment.customers.length),
     };
   });
 }
 
-// Calculate purchase distribution
-export function calculatePurchaseDistribution(clientes: ClienteRow[]): PurchaseDistribution[] {
-  const groups: Record<string, number> = {
-    "0 compras": 0,
-    "1 compra": 0,
-    "2 compras": 0,
-    "3+ compras": 0,
-  };
+// Generate insights based on segment metrics
+export function generateSegmentInsights(
+  metrics: SegmentMetrics[],
+  _thresholds: SegmentationThresholds | null
+): string[] {
+  const insights: string[] = [];
 
-  clientes.forEach((c) => {
-    const compras = parseNumericField(c["Qtd de Compras"]) || 0;
-    if (compras === 0) groups["0 compras"]++;
-    else if (compras === 1) groups["1 compra"]++;
-    else if (compras === 2) groups["2 compras"]++;
-    else groups["3+ compras"]++;
-  });
+  const negados = metrics.find((m) => m.segmentId === "negados");
+  const aprovadosNaoAtivados = metrics.find((m) => m.segmentId === "aprovados-nao-ativados");
+  const highValue = metrics.find((m) => m.segmentId === "high-value");
+  const recorrentes = metrics.find((m) => m.segmentId === "recorrentes");
 
-  const total = clientes.length;
-  return Object.entries(groups).map(([range, count]) => ({
-    range,
-    count,
-    percentage: total > 0 ? (count / total) * 100 : 0,
-  }));
+  // Insight 1: Base concentration
+  const totalBase = metrics.reduce((sum, m) => sum + m.totalClientes, 0);
+  const notActivatedPct = aprovadosNaoAtivados
+    ? (aprovadosNaoAtivados.totalClientes / totalBase) * 100
+    : 0;
+
+  if (notActivatedPct > 80) {
+    insights.push(
+      `Base altamente concentrada em clientes não ativados (~${Math.round(notActivatedPct)}%)`
+    );
+  }
+
+  // Insight 2: Retenção
+  if (recorrentes && recorrentes.avgCompras > 2) {
+    insights.push("Forte retenção após primeira compra (clientes recorrentes têm alta continuidade)");
+  }
+
+  // Insight 3: Oportunidade de crescimento
+  if (aprovadosNaoAtivados && aprovadosNaoAtivados.totalClientes > 0) {
+    insights.push(
+      "Clientes aprovados não ativados representam a principal oportunidade de crescimento"
+    );
+  }
+
+  return insights;
 }
 
-// Calculate purchase group comparison
-export function calculatePurchaseGroupComparison(clientes: ClienteRow[]): PurchaseGroupComparison[] {
+// Calculate purchase distribution
+export function calculatePurchaseDistribution(clientesData: ClienteRow[]): PurchaseDistribution[] {
+  if (!clientesData || clientesData.length === 0) return [];
+
+  const distribution = {
+    0: 0,
+    1: 0,
+    2: 0,
+    "3+": 0,
+  };
+
+  clientesData.forEach((cliente) => {
+    const compras = parseNumericField(cliente["Qtd de Compras"]) || 0;
+
+    if (compras === 0) distribution[0]++;
+    else if (compras === 1) distribution[1]++;
+    else if (compras === 2) distribution[2]++;
+    else distribution["3+"]++;
+  });
+
+  const total = clientesData.length;
+  return [
+    {
+      range: "0 compras",
+      count: distribution[0],
+      percentage: calculatePercentage(distribution[0], total),
+    },
+    {
+      range: "1 compra",
+      count: distribution[1],
+      percentage: calculatePercentage(distribution[1], total),
+    },
+    {
+      range: "2 compras",
+      count: distribution[2],
+      percentage: calculatePercentage(distribution[2], total),
+    },
+    {
+      range: "3+ compras",
+      count: distribution["3+"],
+      percentage: calculatePercentage(distribution["3+"], total),
+    },
+  ];
+}
+
+// Calculate comparison by purchase groups
+export function calculatePurchaseGroupComparison(clientesData: ClienteRow[]): PurchaseGroupComparison[] {
+  if (!clientesData || clientesData.length === 0) return [];
+
   const groups: Record<string, ClienteRow[]> = {
     "0 compras": [],
     "1 compra": [],
     "2+ compras": [],
   };
 
-  clientes.forEach((c) => {
-    const compras = parseNumericField(c["Qtd de Compras"]) || 0;
-    if (compras === 0) groups["0 compras"].push(c);
-    else if (compras === 1) groups["1 compra"].push(c);
-    else groups["2+ compras"].push(c);
+  clientesData.forEach((cliente) => {
+    const compras = parseNumericField(cliente["Qtd de Compras"]) || 0;
+
+    if (compras === 0) groups["0 compras"].push(cliente);
+    else if (compras === 1) groups["1 compra"].push(cliente);
+    else groups["2+ compras"].push(cliente);
   });
 
-  return Object.entries(groups).map(([group, items]) => {
-    const avgs = calculateAverages(items);
-    return {
-      group,
-      count: items.length,
-      avgLimite: avgs.avgLimite,
-      avgScore: avgs.avgScore,
-      percentageComApp: avgs.percentageComApp,
-      percentageComAumento: avgs.percentageComAumento,
-      avgTaxaJuros: avgs.avgTaxaJuros,
-      avgCompras: avgs.avgCompras,
-    };
-  });
-}
+  return Object.entries(groups)
+    .filter(([, customers]) => customers.length > 0)
+    .map(([group, customers]) => {
+      const limites = customers.map((c) => parseNumericField(c["Limite Total"]) || 0);
+      const scores = customers.map((c) => parseNumericField(c["Score"]) || 0);
+      const compras = customers.map((c) => parseNumericField(c["Qtd de Compras"]) || 0);
+      const taxas = customers.map((c) => parseNumericField(c["Taxa de Juros"]) || 0);
 
-// Generate business insights from segments
-export function generateSegmentInsights(metrics: SegmentMetrics[], thresholds: SegmentationThresholds): string[] {
-  const insights: string[] = [];
+      const comApp = customers.filter(
+        (c) => String(c["App"] || "").toLowerCase() === "sim"
+      ).length;
+      const comAumento = customers.filter(
+        (c) => String(c["Aumento Limite"] || "").toLowerCase() === "sim"
+      ).length;
 
-  // Sort by size
-  const bySize = [...metrics].sort((a, b) => b.totalClientes - a.totalClientes);
-
-  // Insight 1: Aprovados Não Ativados opportunity
-  const aprovadosNaoAtivados = metrics.find((m) => m.segmentId === "aprovados-nao-ativados");
-  if (aprovadosNaoAtivados && aprovadosNaoAtivados.totalClientes > 0) {
-    const baseAprovada = metrics
-      .filter((m) => m.segmentId !== "negados")
-      .reduce((sum, m) => sum + m.totalClientes, 0);
-    const pctBase = baseAprovada > 0 ? (aprovadosNaoAtivados.totalClientes / baseAprovada) * 100 : 0;
-    insights.push(
-      `"Aprovados Não Ativados" representam ${pctBase.toFixed(1)}% da base aprovada e são a principal oportunidade de ativação.`
-    );
-  }
-
-  // Insight 2: High Value concentration
-  const highValue = metrics.find((m) => m.segmentId === "high-value");
-  if (highValue && highValue.totalClientes > 0) {
-    insights.push(
-      `"High Value" representa ${highValue.percentageOfBase.toFixed(1)}% da base, com limite médio de R$ ${highValue.avgLimite.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} e ${highValue.avgCompras.toFixed(1)} compras em média.`
-    );
-  }
-
-  // Insight 3: Correlation between 1 and 2+ purchases
-  const purchaseComparison = calculatePurchaseGroupComparison([]);
-  insights.push(
-    `Clientes com 2+ compras demonstram maior score de crédito e taxa de app adoption, validando a recorrência como proxy de engajamento.`
-  );
-
-  return insights.slice(0, 3);
+      return {
+        group,
+        count: customers.length,
+        avgLimite: calculateAverage(limites),
+        avgScore: calculateAverage(scores),
+        avgCompras: calculateAverage(compras),
+        avgTaxaJuros: calculateAverage(taxas),
+        percentageComApp: calculatePercentage(comApp, customers.length),
+        percentageComAumento: calculatePercentage(comAumento, customers.length),
+      };
+    });
 }
