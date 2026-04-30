@@ -21,21 +21,32 @@ export function FunnelChart({ data }: FunnelChartProps) {
 
   // Calculate widths ensuring each bar is narrower or equal to previous
   const widths = useMemo(() => {
-    const firstStepValue = data[0].value;
-    const minWidth = 35; // Minimum 35% for readability
+    if (!data || data.length === 0) return [];
     
-    return data.map((step, index) => {
-      const calculatedWidth = firstStepValue > 0 ? (step.value / firstStepValue) * 100 : 0;
-      // Clamp to minimum width
-      const width = Math.max(calculatedWidth, minWidth);
+    const firstStepValue = data[0]?.value || 0;
+    const minWidth = 35; // Minimum 35% for readability
+    const maxWidth = 100;
+    
+    const calculatedWidths: number[] = [];
+    
+    data.forEach((step, index) => {
+      // Calculate width based on proportion to first step
+      let width = firstStepValue > 0 ? (step.value / firstStepValue) * 100 : 0;
+      
+      // Apply min and max bounds
+      width = Math.max(width, minWidth);
+      width = Math.min(width, maxWidth);
       
       // Ensure each bar doesn't exceed the previous one
-      if (index > 0) {
-        const prevWidth = widths[index - 1];
-        return Math.min(width, prevWidth);
+      if (index > 0 && calculatedWidths.length > 0) {
+        const prevWidth = calculatedWidths[index - 1];
+        width = Math.min(width, prevWidth);
       }
-      return width;
+      
+      calculatedWidths.push(width);
     });
+    
+    return calculatedWidths;
   }, [data]);
 
   return (
@@ -44,7 +55,7 @@ export function FunnelChart({ data }: FunnelChartProps) {
         const isLast = index === data.length - 1;
         const colorIndex = Math.min(index, FUNNEL_COLORS.length - 1);
         const { bg, text } = FUNNEL_COLORS[colorIndex];
-        const displayWidth = widths[index];
+        const displayWidth = widths[index] || 35;
 
         return (
           <div key={step.name} className="relative">
