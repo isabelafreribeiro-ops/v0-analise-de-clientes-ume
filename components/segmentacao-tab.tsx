@@ -11,7 +11,9 @@ import {
   calculateThresholds,
   calculatePurchaseDistribution,
   calculatePurchaseGroupComparison,
-  parseNumericField,
+  parseNumber,
+  parseBoolean,
+  getColumnValue,
   type SegmentMetrics,
 } from "@/lib/segmentation";
 import type { ClienteRow } from "@/lib/types";
@@ -42,7 +44,20 @@ function formatNumber(value: number | null): string {
   if (value === null || value === undefined || isNaN(value)) return "—";
   if (value >= 1000000) return (value / 1000000).toFixed(1) + "M";
   if (value >= 1000) return (value / 1000).toFixed(1) + "k";
-  return value.toFixed(2);
+  return value.toFixed(1);
+}
+
+function formatCurrency(value: number | null): string {
+  if (value === null || value === undefined || isNaN(value)) return "—";
+  return new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(value);
+}
+
+function formatPercentage(value: number | null): string {
+  if (value === null || value === undefined || isNaN(value)) return "—";
+  return value.toFixed(1) + "%";
 }
 
 export function SegmentacaoTab() {
@@ -157,28 +172,33 @@ export function SegmentacaoTab() {
             <div>
               <p className="text-xs font-medium text-[#64748b] mb-2">Distribuição de Score</p>
               {(() => {
-                const scores = clientesData
-                  .map((c) => parseNumericField(c["Score"]) || 0)
-                  .filter((s) => s > 0);
-                const avgScore = scores.length > 0 ? scores.reduce((a, b) => a + b) / scores.length : 0;
-                const lowScore = scores.filter((s) => s < avgScore / 1.5).length;
-                const mediumScore = scores.filter((s) => s >= avgScore / 1.5 && s <= avgScore * 1.5).length;
-                const highScore = scores.filter((s) => s > avgScore * 1.5).length;
-                const total = scores.length;
+                const lowScore = clientesData.filter((c) => {
+                  const score = parseNumber(getColumnValue(c, ["score de crédito", "score", "score_credito"]));
+                  return score !== null && score < 400;
+                }).length;
+                const mediumScore = clientesData.filter((c) => {
+                  const score = parseNumber(getColumnValue(c, ["score de crédito", "score", "score_credito"]));
+                  return score !== null && score >= 400 && score < 700;
+                }).length;
+                const highScore = clientesData.filter((c) => {
+                  const score = parseNumber(getColumnValue(c, ["score de crédito", "score", "score_credito"]));
+                  return score !== null && score >= 700;
+                }).length;
+                const total = lowScore + mediumScore + highScore;
 
                 return (
                   <div className="space-y-1">
                     {lowScore > 0 && (
                       <div className="flex items-center gap-2">
                         <div className="w-12 text-xs text-[#64748b]">Baixo</div>
-                        <div className="flex-1 bg-[#E2E8F0] rounded h-2" style={{ width: "100%" }}>
+                        <div className="flex-1 bg-[#E2E8F0] rounded h-2">
                           <div
                             className="bg-[#F44336] h-2 rounded"
-                            style={{ width: `${(lowScore / total) * 100}%` }}
+                            style={{ width: `${total > 0 ? (lowScore / total) * 100 : 0}%` }}
                           />
                         </div>
                         <div className="w-12 text-xs text-right text-[#64748b]">
-                          {((lowScore / total) * 100).toFixed(0)}%
+                          {total > 0 ? ((lowScore / total) * 100).toFixed(0) : 0}%
                         </div>
                       </div>
                     )}
@@ -188,11 +208,11 @@ export function SegmentacaoTab() {
                         <div className="flex-1 bg-[#E2E8F0] rounded h-2">
                           <div
                             className="bg-[#FF9800] h-2 rounded"
-                            style={{ width: `${(mediumScore / total) * 100}%` }}
+                            style={{ width: `${total > 0 ? (mediumScore / total) * 100 : 0}%` }}
                           />
                         </div>
                         <div className="w-12 text-xs text-right text-[#64748b]">
-                          {((mediumScore / total) * 100).toFixed(0)}%
+                          {total > 0 ? ((mediumScore / total) * 100).toFixed(0) : 0}%
                         </div>
                       </div>
                     )}
@@ -202,11 +222,11 @@ export function SegmentacaoTab() {
                         <div className="flex-1 bg-[#E2E8F0] rounded h-2">
                           <div
                             className="bg-[#00C853] h-2 rounded"
-                            style={{ width: `${(highScore / total) * 100}%` }}
+                            style={{ width: `${total > 0 ? (highScore / total) * 100 : 0}%` }}
                           />
                         </div>
                         <div className="w-12 text-xs text-right text-[#64748b]">
-                          {((highScore / total) * 100).toFixed(0)}%
+                          {total > 0 ? ((highScore / total) * 100).toFixed(0) : 0}%
                         </div>
                       </div>
                     )}
@@ -219,8 +239,8 @@ export function SegmentacaoTab() {
             <div>
               <p className="text-xs font-medium text-[#64748b] mb-2">Adoção de App</p>
               {(() => {
-                const comApp = clientesData.filter(
-                  (c) => String(c["App"] || "").toLowerCase() === "sim"
+                const comApp = clientesData.filter((c) =>
+                  parseBoolean(getColumnValue(c, ["tem app", "app", "has app"]))
                 ).length;
                 const total = clientesData.length;
                 const pct = ((comApp / total) * 100).toFixed(1);
@@ -495,21 +515,23 @@ export function SegmentacaoTab() {
                 <tbody>
                   {paginatedCustomers.map((cliente, idx) => (
                     <tr key={idx} className="border-b border-[#E2E8F0] hover:bg-[#F7FAF8]">
-                      <td className="py-2 px-2 text-[#1a1a1a] font-medium">{cliente["Nome"]}</td>
-                      <td className="py-2 px-2 text-[#64748b]">
-                        {formatNumber(parseNumericField(cliente["Qtd de Compras"]))}
+                      <td className="py-2 px-2 text-[#1a1a1a] font-medium">
+                        {String(getColumnValue(cliente, ["nome", "name"]) || "—")}
                       </td>
                       <td className="py-2 px-2 text-[#64748b]">
-                        {formatNumber(parseNumericField(cliente["Limite Total"]))}
+                        {formatNumber(parseNumber(getColumnValue(cliente, ["qtd de compras", "compras", "qtd compras"])))}
                       </td>
                       <td className="py-2 px-2 text-[#64748b]">
-                        {formatNumber(parseNumericField(cliente["Score"]))}
+                        {formatCurrency(parseNumber(getColumnValue(cliente, ["limite total", "limite", "limit total"])))}
                       </td>
                       <td className="py-2 px-2 text-[#64748b]">
-                        {String(cliente["App"] || "").toLowerCase() === "sim" ? "Sim" : "Não"}
+                        {formatNumber(parseNumber(getColumnValue(cliente, ["score de crédito", "score", "score_credito"])))}
                       </td>
                       <td className="py-2 px-2 text-[#64748b]">
-                        {formatNumber(parseNumericField(cliente["Taxa de Juros"]))}%
+                        {parseBoolean(getColumnValue(cliente, ["tem app", "app", "has app"])) ? "Sim" : "Não"}
+                      </td>
+                      <td className="py-2 px-2 text-[#64748b]">
+                        {formatPercentage(parseNumber(getColumnValue(cliente, ["taxa de juros média (ao mês)", "taxa de juros", "taxa juros", "interest rate"])))}
                       </td>
                     </tr>
                   ))}

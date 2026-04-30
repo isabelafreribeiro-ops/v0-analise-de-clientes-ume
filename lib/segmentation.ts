@@ -45,37 +45,84 @@ export interface PurchaseGroupComparison {
   avgCompras: number;
 }
 
-// Safe numeric parsing
-export function parseNumericField(value: any): number | null {
+// Safe numeric parsing - returns null for invalid/missing values
+export function parseNumber(value: any): number | null {
   if (value === null || value === undefined) return null;
-  if (value === "-" || value === "NaN" || value === "NAN") return null;
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+
+    // Handle empty, dash, NaN strings
+    if (!trimmed || trimmed === "-" || trimmed.toLowerCase() === "nan") {
+      return null;
+    }
+
+    // Remove currency symbol
+    let cleaned = trimmed.replace(/R\$\s?/g, "");
+
+    // Handle Brazilian number format: "1.234,56" → convert to 1234.56
+    if (cleaned.includes(",")) {
+      cleaned = cleaned.replace(/\./g, "").replace(",", ".");
+    }
+
+    const parsed = parseFloat(cleaned);
+    return isNaN(parsed) ? null : parsed;
+  }
 
   if (typeof value === "number") {
     return isNaN(value) ? null : value;
   }
 
-  if (typeof value === "string") {
-    const trimmed = value.trim();
-    if (!trimmed || trimmed === "-" || trimmed === "NaN" || trimmed === "NAN") return null;
+  return null;
+}
 
-    // Handle Brazilian number format: "1.234,56"
-    const normalized = trimmed.replace(/\./g, "").replace(/,/, ".");
-    const parsed = parseFloat(normalized);
-    return isNaN(parsed) ? null : parsed;
+// Parse boolean from CSV (handles "sim", "true", "1", etc.)
+export function parseBoolean(value: any): boolean {
+  if (!value) return false;
+  const v = String(value).toLowerCase().trim();
+  return v === "sim" || v === "true" || v === "1" || v === "yes";
+}
+
+// Normalize CSV header names for consistent access
+export function normalizeHeaders<T extends Record<string, any>>(row: T): T {
+  const normalized: Record<string, any> = {};
+
+  for (const key in row) {
+    if (Object.prototype.hasOwnProperty.call(row, key)) {
+      const normalizedKey = key.trim().toLowerCase();
+      normalized[normalizedKey] = row[key];
+    }
+  }
+
+  return normalized as T;
+}
+
+// Safe accessor for CSV columns with multiple possible names
+export function getColumnValue(
+  row: any,
+  possibleNames: string[]
+): string | number | boolean | null {
+  const normalized = normalizeHeaders(row);
+
+  for (const name of possibleNames) {
+    const normalizedName = name.toLowerCase().trim();
+    if (normalizedName in normalized) {
+      return normalized[normalizedName];
+    }
   }
 
   return null;
 }
 
-// Calculate average from array of numbers, ignoring nulls
-function calculateAverage(numbers: (number | null)[]): number {
-  const valid = numbers.filter((n) => n !== null) as number[];
-  if (valid.length === 0) return 0;
+// Calculate average from array, ignoring nulls
+export function calculateAverage(values: (number | null)[]): number | null {
+  const valid = values.filter((v) => v !== null) as number[];
+  if (valid.length === 0) return null;
   return valid.reduce((a, b) => a + b, 0) / valid.length;
 }
 
-// Calculate percentages
-function calculatePercentage(count: number, total: number): number {
+// Calculate percentage
+export function calculatePercentage(count: number, total: number): number {
   return total > 0 ? (count / total) * 100 : 0;
 }
 
@@ -85,14 +132,26 @@ export function calculateThresholds(clientesData: ClienteRow[]): SegmentationThr
     return { avgCompras: 0, avgLimite: 0, avgScore: 0 };
   }
 
-  const compras = clientesData.map((c) => parseNumericField(c["Qtd de Compras"]) || 0);
-  const limites = clientesData.map((c) => parseNumericField(c["Limite Total"]) || 0);
-  const scores = clientesData.map((c) => parseNumericField(c["Score"]) || 0);
+  // Map column names for safe access
+  const compras = clientesData.map((c) => {
+    const val = getColumnValue(c, ["qtd de compras", "compras", "qtd compras", "numero de compras"]);
+    return parseNumber(val);
+  });
+
+  const limites = clientesData.map((c) => {
+    const val = getColumnValue(c, ["limite total", "limite", "limit total", "limite_total"]);
+    return parseNumber(val);
+  });
+
+  const scores = clientesData.map((c) => {
+    const val = getColumnValue(c, ["score de crédito", "score", "score_credito", "credit score"]);
+    return parseNumber(val);
+  });
 
   return {
-    avgCompras: calculateAverage(compras),
-    avgLimite: calculateAverage(limites),
-    avgScore: calculateAverage(scores),
+    avgCompras: calculateAverage(compras) || 0,
+    avgLimite: calculateAverage(limites) || 0,
+    avgScore: calculateAverage(scores) || 0,
   };
 }
 
@@ -111,13 +170,13 @@ export function segmentarClientes(clientesData: ClienteRow[]): Segment[] {
   const highValue: ClienteRow[] = [];
 
   clientesData.forEach((cliente) => {
-    const situacao = String(cliente["Situação"] || "").trim();
-    const compras = parseNumericField(cliente["Qtd de Compras"]) || 0;
-    const limite = parseNumericField(cliente["Limite Total"]) || 0;
-    const score = parseNumericField(cliente["Score"]) || 0;
+    const situacao = String(getColumnValue(cliente, ["situacao", "status", "situation"]) || "").trim();
+    const compras = parseNumber(getColumnValue(cliente, ["qtd de compras", "compras", "qtd compras"])) || 0;
+    const limite = parseNumber(getColumnValue(cliente, ["limite total", "limite", "limit total"])) || 0;
+    const score = parseNumber(getColumnValue(cliente, ["score de crédito", "score", "score_credito"])) || 0;
 
     // Rule 1: Negados
-    if (situacao === "Negada") {
+    if (situacao.toLowerCase() === "negada") {
       negados.push(cliente);
       return;
     }
@@ -186,27 +245,41 @@ export function segmentarClientes(clientesData: ClienteRow[]): Segment[] {
 // Calculate metrics for each segment
 export function calculateSegmentMetrics(segments: Segment[], totalClientes: number): SegmentMetrics[] {
   return segments.map((segment) => {
-    const compras = segment.customers.map((c) => parseNumericField(c["Qtd de Compras"]) || 0);
-    const limites = segment.customers.map((c) => parseNumericField(c["Limite Total"]) || 0);
-    const scores = segment.customers.map((c) => parseNumericField(c["Score"]) || 0);
-    const taxas = segment.customers.map((c) => parseNumericField(c["Taxa de Juros"]) || 0);
+    const compras = segment.customers.map((c) =>
+      parseNumber(getColumnValue(c, ["qtd de compras", "compras", "qtd compras"]))
+    );
+    const limites = segment.customers.map((c) =>
+      parseNumber(getColumnValue(c, ["limite total", "limite", "limit total"]))
+    );
+    const scores = segment.customers.map((c) =>
+      parseNumber(getColumnValue(c, ["score de crédito", "score", "score_credito"]))
+    );
+    const taxas = segment.customers.map((c) =>
+      parseNumber(getColumnValue(c, ["taxa de juros média (ao mês)", "taxa de juros", "taxa juros", "interest rate"]))
+    );
 
-    const comApp = segment.customers.filter(
-      (c) => String(c["App"] || "").toLowerCase() === "sim"
+    const comApp = segment.customers.filter((c) =>
+      parseBoolean(getColumnValue(c, ["tem app", "app", "has app"]))
     ).length;
-    const comAumento = segment.customers.filter(
-      (c) => String(c["Aumento Limite"] || "").toLowerCase() === "sim"
+
+    const comAumento = segment.customers.filter((c) =>
+      parseBoolean(getColumnValue(c, ["aumento limite", "limite aumentado", "limit increase"]))
     ).length;
+
+    const avgComprasVal = calculateAverage(compras) || 0;
+    const avgLimiteVal = calculateAverage(limites) || 0;
+    const avgScoreVal = calculateAverage(scores) || 0;
+    const avgTaxaVal = calculateAverage(taxas) || 0;
 
     return {
       segmentId: segment.id,
       segmentName: segment.name,
       totalClientes: segment.customers.length,
       percentageOfBase: calculatePercentage(segment.customers.length, totalClientes),
-      avgCompras: calculateAverage(compras),
-      avgLimite: calculateAverage(limites),
-      avgScore: calculateAverage(scores),
-      avgTaxaJuros: calculateAverage(taxas),
+      avgCompras: avgComprasVal,
+      avgLimite: avgLimiteVal,
+      avgScore: avgScoreVal,
+      avgTaxaJuros: avgTaxaVal,
       percentageComApp: calculatePercentage(comApp, segment.customers.length),
       percentageComAumento: calculatePercentage(comAumento, segment.customers.length),
     };
@@ -264,7 +337,7 @@ export function calculatePurchaseDistribution(clientesData: ClienteRow[]): Purch
   };
 
   clientesData.forEach((cliente) => {
-    const compras = parseNumericField(cliente["Qtd de Compras"]) || 0;
+    const compras = parseNumber(getColumnValue(cliente, ["qtd de compras", "compras", "qtd compras"])) || 0;
 
     if (compras === 0) distribution[0]++;
     else if (compras === 1) distribution[1]++;
@@ -308,7 +381,7 @@ export function calculatePurchaseGroupComparison(clientesData: ClienteRow[]): Pu
   };
 
   clientesData.forEach((cliente) => {
-    const compras = parseNumericField(cliente["Qtd de Compras"]) || 0;
+    const compras = parseNumber(getColumnValue(cliente, ["qtd de compras", "compras", "qtd compras"])) || 0;
 
     if (compras === 0) groups["0 compras"].push(cliente);
     else if (compras === 1) groups["1 compra"].push(cliente);
@@ -318,25 +391,34 @@ export function calculatePurchaseGroupComparison(clientesData: ClienteRow[]): Pu
   return Object.entries(groups)
     .filter(([, customers]) => customers.length > 0)
     .map(([group, customers]) => {
-      const limites = customers.map((c) => parseNumericField(c["Limite Total"]) || 0);
-      const scores = customers.map((c) => parseNumericField(c["Score"]) || 0);
-      const compras = customers.map((c) => parseNumericField(c["Qtd de Compras"]) || 0);
-      const taxas = customers.map((c) => parseNumericField(c["Taxa de Juros"]) || 0);
+      const limites = customers.map((c) =>
+        parseNumber(getColumnValue(c, ["limite total", "limite", "limit total"]))
+      );
+      const scores = customers.map((c) =>
+        parseNumber(getColumnValue(c, ["score de crédito", "score", "score_credito"]))
+      );
+      const compras = customers.map((c) =>
+        parseNumber(getColumnValue(c, ["qtd de compras", "compras", "qtd compras"]))
+      );
+      const taxas = customers.map((c) =>
+        parseNumber(getColumnValue(c, ["taxa de juros média (ao mês)", "taxa de juros", "taxa juros", "interest rate"]))
+      );
 
-      const comApp = customers.filter(
-        (c) => String(c["App"] || "").toLowerCase() === "sim"
+      const comApp = customers.filter((c) =>
+        parseBoolean(getColumnValue(c, ["tem app", "app", "has app"]))
       ).length;
-      const comAumento = customers.filter(
-        (c) => String(c["Aumento Limite"] || "").toLowerCase() === "sim"
+
+      const comAumento = customers.filter((c) =>
+        parseBoolean(getColumnValue(c, ["aumento limite", "limite aumentado", "limit increase"]))
       ).length;
 
       return {
         group,
         count: customers.length,
-        avgLimite: calculateAverage(limites),
-        avgScore: calculateAverage(scores),
-        avgCompras: calculateAverage(compras),
-        avgTaxaJuros: calculateAverage(taxas),
+        avgLimite: calculateAverage(limites) || 0,
+        avgScore: calculateAverage(scores) || 0,
+        avgCompras: calculateAverage(compras) || 0,
+        avgTaxaJuros: calculateAverage(taxas) || 0,
         percentageComApp: calculatePercentage(comApp, customers.length),
         percentageComAumento: calculatePercentage(comAumento, customers.length),
       };
