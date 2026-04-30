@@ -1,53 +1,97 @@
 "use client";
 
-import { useCallback, useState } from "react";
-import Papa from "papaparse";
-import { Upload, FileSpreadsheet, CheckCircle2, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Upload, FileSpreadsheet, CheckCircle2, X, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useData } from "@/lib/data-context";
 import type { ClienteRow, VarejoRow } from "@/lib/types";
 
 interface UploadState {
-  clientes: { uploaded: boolean; fileName: string | null; count: number };
-  varejo: { uploaded: boolean; fileName: string | null; count: number };
+  clientes: { uploaded: boolean; fileName: string | null; count: number; loading: boolean };
+  varejo: { uploaded: boolean; fileName: string | null; count: number; loading: boolean };
 }
 
 export function CSVUploader() {
   const { setClientesData, setVarejoData } = useData();
   const [uploadState, setUploadState] = useState<UploadState>({
-    clientes: { uploaded: false, fileName: null, count: 0 },
-    varejo: { uploaded: false, fileName: null, count: 0 },
+    clientes: { uploaded: false, fileName: null, count: 0, loading: false },
+    varejo: { uploaded: false, fileName: null, count: 0, loading: false },
   });
   const [isDragging, setIsDragging] = useState<"clientes" | "varejo" | null>(null);
+  const workerRef = useRef<Worker | null>(null);
+
+  // Cleanup worker on unmount
+  const cleanupWorker = useCallback(() => {
+    if (workerRef.current) {
+      workerRef.current.terminate();
+      workerRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => cleanupWorker();
+  }, [cleanupWorker]);
 
   const handleFileUpload = useCallback(
     (file: File, type: "clientes" | "varejo") => {
-      Papa.parse(file, {
-        header: true,
-        skipEmptyLines: true,
-        dynamicTyping: true,
-        complete: (results) => {
-          if (type === "clientes") {
-            const data = results.data as ClienteRow[];
-            setClientesData(data);
+      // Set loading state
+      setUploadState((prev) => ({
+        ...prev,
+        [type]: { ...prev[type], loading: true },
+      }));
+
+      // Read file as text
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const fileContent = e.target?.result as string;
+
+        // Initialize worker if not already done
+        if (!workerRef.current) {
+          workerRef.current = new Worker(new URL("../lib/csv-worker.ts", import.meta.url), {
+            type: "module",
+          });
+        }
+
+        // Handle worker message
+        const handleMessage = (event: MessageEvent) => {
+          const { type: resultType, data, count, error } = event.data;
+
+          if (error) {
+            console.error("[v0] Error parsing CSV:", error);
             setUploadState((prev) => ({
               ...prev,
-              clientes: { uploaded: true, fileName: file.name, count: data.length },
+              [type]: { ...prev[type], loading: false },
+            }));
+            return;
+          }
+
+          // Update state with parsed data
+          if (resultType === "clientes") {
+            setClientesData(data as ClienteRow[]);
+            setUploadState((prev) => ({
+              ...prev,
+              clientes: { uploaded: true, fileName: file.name, count, loading: false },
             }));
           } else {
-            const data = results.data as VarejoRow[];
-            setVarejoData(data);
+            setVarejoData(data as VarejoRow[]);
             setUploadState((prev) => ({
               ...prev,
-              varejo: { uploaded: true, fileName: file.name, count: data.length },
+              varejo: { uploaded: true, fileName: file.name, count, loading: false },
             }));
           }
-        },
-        error: (error) => {
-          console.error("[v0] Error parsing CSV:", error);
-        },
-      });
+
+          // Remove listener after processing
+          workerRef.current?.removeEventListener("message", handleMessage);
+        };
+
+        workerRef.current?.addEventListener("message", handleMessage);
+
+        // Send file to worker for parsing
+        workerRef.current?.postMessage({ type, fileContent });
+      };
+
+      reader.readAsText(file);
     },
     [setClientesData, setVarejoData]
   );
@@ -85,13 +129,13 @@ export function CSVUploader() {
       setClientesData([]);
       setUploadState((prev) => ({
         ...prev,
-        clientes: { uploaded: false, fileName: null, count: 0 },
+        clientes: { uploaded: false, fileName: null, count: 0, loading: false },
       }));
     } else {
       setVarejoData([]);
       setUploadState((prev) => ({
         ...prev,
-        varejo: { uploaded: false, fileName: null, count: 0 },
+        varejo: { uploaded: false, fileName: null, count: 0, loading: false },
       }));
     }
   };
@@ -112,7 +156,7 @@ export function CSVUploader() {
       <Card
         className={`transition-all duration-200 border-[#E2E8F0] bg-white ${
           isActive ? "border-[#00C853] ring-2 ring-[#00C853]/20" : ""
-        } ${state.uploaded ? "border-[#00C853]/50" : ""}`}
+        } ${state.uploaded ? "border-[#00C853]/50" : ""} ${state.loading ? "border-blue-400/50" : ""}`}
       >
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-lg text-[#1a1a1a]">
@@ -121,7 +165,12 @@ export function CSVUploader() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {state.uploaded ? (
+          {state.loading ? (
+            <div className="flex items-center justify-center rounded-lg bg-blue-50 border border-blue-200 p-4">
+              <Loader2 className="h-5 w-5 text-blue-500 animate-spin mr-2" />
+              <p className="text-sm font-medium text-blue-600">Processando arquivo...</p>
+            </div>
+          ) : state.uploaded ? (
             <div className="flex items-center justify-between rounded-lg bg-[#00C853]/10 border border-[#00C853]/30 p-4">
               <div className="flex items-center gap-3">
                 <CheckCircle2 className="h-5 w-5 text-[#00C853]" />
