@@ -6,7 +6,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useData } from "@/lib/data-context";
 import { parseCSVAsync } from "@/lib/csv-worker";
-import { aggregateFullDataset } from "@/lib/aggregation-worker";
 import type { ClienteRow, VarejoRow } from "@/lib/types";
 
 interface UploadState {
@@ -17,7 +16,7 @@ interface UploadState {
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB max file size
 
 export function CSVUploader() {
-  const { setClientesData, setVarejoData, setAggregationResult, setIsLoading } = useData();
+  const { setClientesData, setVarejoData } = useData();
   const [uploadState, setUploadState] = useState<UploadState>({
     clientes: { uploaded: false, fileName: null, count: 0, loading: false, progress: 0, error: undefined },
     varejo: { uploaded: false, fileName: null, count: 0, loading: false, progress: 0, error: undefined },
@@ -69,13 +68,6 @@ export function CSVUploader() {
         // Update state with parsed data
         if (type === "clientes") {
           setClientesData(data as ClienteRow[]);
-          
-          // Compute aggregations from full dataset (chunked processing)
-          setIsLoading(true);
-          const aggregation = await aggregateFullDataset(data as ClienteRow[]);
-          setAggregationResult(aggregation);
-          setIsLoading(false);
-          
           setUploadState((prev) => ({
             ...prev,
             clientes: { uploaded: true, fileName: file.name, count, loading: false, progress: 100, error: undefined },

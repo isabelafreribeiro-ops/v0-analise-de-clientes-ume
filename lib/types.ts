@@ -1,5 +1,3 @@
-import type { AggregationResult } from "./aggregation-worker";
-
 export interface ClienteRow {
   Nome: string;
   Idade: number;
@@ -40,10 +38,7 @@ export interface FunnelStep {
 export interface DataContextType {
   clientesData: ClienteRow[];
   varejoData: VarejoRow[];
-  aggregationResult: AggregationResult | null;
   setClientesData: (data: ClienteRow[]) => void;
   setVarejoData: (data: VarejoRow[]) => void;
-  setAggregationResult: (result: AggregationResult) => void;
   isLoading: boolean;
-  setIsLoading: (loading: boolean) => void;
 }
