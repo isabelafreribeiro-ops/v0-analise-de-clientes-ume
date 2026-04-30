@@ -69,7 +69,7 @@ export function JornadaTab() {
   const percentageAtivacao = totalAprovados > 0 ? ((totalClientes - totalAprovados) / totalAprovados) * 100 : 0;
   const percentageSemCompras = purchaseDistribution.find((d) => d.range === "0 compras")?.percentage || 0;
   const avgScore = aggregated?.avgScore || 0;
-  const comApp = clientesData.filter((c) => parseBoolean(getColumnValue(c, ["tem app", "app"]))).length;
+  const comApp = clientesData.filter((c) => parseBoolean(getColumnValue(c, ["tem app?", "tem app", "app"]))).length;
   const percentageComApp = (comApp / totalClientes) * 100;
 
   // Journey definitions

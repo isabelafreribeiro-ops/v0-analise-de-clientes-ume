@@ -91,7 +91,7 @@ export function SegmentacaoTab() {
       return compras > 0 && situacao !== "negada";
     }).length;
 
-    const comApp = clientesData.filter((c) => parseBoolean(getColumnValue(c, ["tem app", "app"]))).length;
+    const comApp = clientesData.filter((c) => parseBoolean(getColumnValue(c, ["tem app?", "tem app", "app"]))).length;
     const appAdoptionPct = (comApp / clientesData.length) * 100;
 
     return { totalNegados, totalAprovados, totalAprovedNaoAtivados, totalAtivados, comApp, appAdoptionPct };

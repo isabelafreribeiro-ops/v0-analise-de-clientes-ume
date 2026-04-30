@@ -344,7 +344,7 @@ export function calculateSegmentMetrics(segments: Segment[], totalClientes: numb
     );
 
     const comApp = segment.customers.filter((c) =>
-      parseBoolean(getColumnValue(c, ["tem app", "app", "has app"]))
+      parseBoolean(getColumnValue(c, ["tem app?", "tem app", "app", "has app"]))
     ).length;
 
     const comAumento = segment.customers.filter((c) =>
@@ -496,7 +496,7 @@ export function calculatePurchaseGroupComparison(clientesData: ClienteRow[]): Pu
       );
 
       const comApp = customers.filter((c) =>
-        parseBoolean(getColumnValue(c, ["tem app", "app", "has app"]))
+        parseBoolean(getColumnValue(c, ["tem app?", "tem app", "app", "has app"]))
       ).length;
 
       const comAumento = customers.filter((c) =>
