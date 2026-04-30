@@ -69,31 +69,26 @@ function calculateSegmentSizes(clientesData: ClienteRow[]) {
     const situacao = String(getColumnValue(cliente, ["situação", "situacao", "status"]) || "").toLowerCase().trim();
     const compras = parseNumber(getColumnValue(cliente, ["qtd de compras", "compras"])) || 0;
     const score = parseNumber(getColumnValue(cliente, ["score de crédito", "score"])) || 0;
+    const limite = parseNumber(getColumnValue(cliente, ["limite total", "limite"])) || 0;
 
-    // Inadimplentes
     if (situacao === "inadimplente") {
       sizes["inadimplentes"]++;
-    }
-    // Negados
-    else if (situacao === "negada") {
-      if (score >= 300 && score < 400) {
-        sizes["negados-recuperaveis"]++;
-      } else if (score < 300) {
+    } else if (situacao === "negada") {
+      if (score < 300) {
         sizes["negados-alto-risco"]++;
       } else {
-        sizes["negados-alto-risco"]++; // Default to alto risco if score >= 400
+        sizes["negados-recuperaveis"]++;
       }
-    }
-    // Approved (Adimplente or other)
-    else {
+    } else {
+      // Adimplente / aprovado
       if (compras === 0) {
         sizes["aprovados-nao-ativados"]++;
       } else if (compras === 1) {
         sizes["potencial"]++;
-      } else if (compras === 2) {
-        sizes["recorrentes"]++;
-      } else if (compras >= 3) {
+      } else if (compras >= 3 && score >= 700 && limite >= 1000) {
         sizes["ume-plus"]++;
+      } else {
+        sizes["recorrentes"]++;
       }
     }
   });
