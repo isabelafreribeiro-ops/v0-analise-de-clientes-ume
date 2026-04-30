@@ -76,11 +76,22 @@ export function parseNumber(value: any): number | null {
   return null;
 }
 
-// Parse boolean from CSV (handles "sim", "true", "1", etc.)
+// Parse boolean from CSV with accent normalization (handles "sim", "Não", true, 1, etc.)
 export function parseBoolean(value: any): boolean {
   if (!value) return false;
-  const v = String(value).toLowerCase().trim();
+  let v = String(value).toLowerCase().trim();
+  // Normalize accents: Não -> nao
+  v = v.replace(/ã/g, "a").replace(/ç/g, "c");
   return v === "sim" || v === "true" || v === "1" || v === "yes";
+}
+
+// Parse rejection (opposite of boolean for "Tem App?" logic)
+export function hasRejected(value: any): boolean {
+  if (!value) return false;
+  let v = String(value).toLowerCase().trim();
+  // Normalize accents
+  v = v.replace(/ã/g, "a").replace(/ç/g, "c");
+  return v === "nao" || v === "false" || v === "0" || v === "no";
 }
 
 // Normalize CSV header names for consistent access
@@ -421,6 +432,170 @@ export function calculatePurchaseGroupComparison(clientesData: ClienteRow[]): Pu
         avgTaxaJuros: calculateAverage(taxas) || 0,
         percentageComApp: calculatePercentage(comApp, customers.length),
         percentageComAumento: calculatePercentage(comAumento, customers.length),
+      };
+    });
+}
+
+// Calculate proxy de valor: Qtd Compras × N. Médio Parcelas × Taxa Juros × Limite Total
+export function calculateProxyDeValor(cliente: ClienteRow): number | null {
+  const compras = parseNumber(getColumnValue(cliente, ["qtd de compras", "compras"])) || 0;
+  const parcelas = parseNumber(getColumnValue(cliente, ["n. médio de parcelas", "num medio parcelas", "n parcelas"])) || 1;
+  const taxa = parseNumber(getColumnValue(cliente, ["taxa de juros média (ao mês)", "taxa juros", "taxa"])) || 0;
+  const limite = parseNumber(getColumnValue(cliente, ["limite total", "limite"])) || 0;
+
+  if (compras === 0 || limite === 0) return null;
+  return compras * parcelas * taxa * limite;
+}
+
+// Distribution by age groups
+export interface AgeDistribution {
+  group: string;
+  count: number;
+  percentage: number;
+}
+
+export function calculateAgeDistribution(clientesData: ClienteRow[]): AgeDistribution[] {
+  if (!clientesData || clientesData.length === 0) return [];
+
+  const groups = {
+    "<25": 0,
+    "25-35": 0,
+    "35-50": 0,
+    "50+": 0,
+  };
+
+  clientesData.forEach((c) => {
+    const age = parseNumber(getColumnValue(c, ["idade", "age"])) || 0;
+    if (age < 25) groups["<25"]++;
+    else if (age < 35) groups["25-35"]++;
+    else if (age < 50) groups["35-50"]++;
+    else groups["50+"]++;
+  });
+
+  const total = clientesData.length;
+  return [
+    { group: "< 25 anos", count: groups["<25"], percentage: calculatePercentage(groups["<25"], total) },
+    { group: "25 - 35 anos", count: groups["25-35"], percentage: calculatePercentage(groups["25-35"], total) },
+    { group: "35 - 50 anos", count: groups["35-50"], percentage: calculatePercentage(groups["35-50"], total) },
+    { group: "50+ anos", count: groups["50+"], percentage: calculatePercentage(groups["50+"], total) },
+  ];
+}
+
+// Gender distribution
+export interface GenderDistribution {
+  gender: string;
+  count: number;
+  percentage: number;
+}
+
+export function calculateGenderDistribution(clientesData: ClienteRow[]): GenderDistribution[] {
+  if (!clientesData || clientesData.length === 0) return [];
+
+  const genders: Record<string, number> = {};
+
+  clientesData.forEach((c) => {
+    const sexo = String(getColumnValue(c, ["sexo", "gender"]) || "").trim().toUpperCase();
+    genders[sexo] = (genders[sexo] || 0) + 1;
+  });
+
+  const total = clientesData.length;
+  return Object.entries(genders)
+    .map(([gender, count]) => ({
+      gender: gender || "N/A",
+      count,
+      percentage: calculatePercentage(count, total),
+    }))
+    .sort((a, b) => b.count - a.count);
+}
+
+// Retailer count distribution
+export interface RetailerDistribution {
+  group: string;
+  count: number;
+  percentage: number;
+}
+
+export function calculateRetailerDistribution(clientesData: ClienteRow[]): RetailerDistribution[] {
+  if (!clientesData || clientesData.length === 0) return [];
+
+  const groups = {
+    "0": 0,
+    "1": 0,
+    "2": 0,
+    "3+": 0,
+  };
+
+  clientesData.forEach((c) => {
+    const qty = parseNumber(getColumnValue(c, ["qtd de varejos que já comprou", "num varejos", "retailers"])) || 0;
+    if (qty === 0) groups["0"]++;
+    else if (qty === 1) groups["1"]++;
+    else if (qty === 2) groups["2"]++;
+    else groups["3+"]++;
+  });
+
+  const total = clientesData.length;
+  return [
+    { group: "0 varejos", count: groups["0"], percentage: calculatePercentage(groups["0"], total) },
+    { group: "1 varejo", count: groups["1"], percentage: calculatePercentage(groups["1"], total) },
+    { group: "2 varejos", count: groups["2"], percentage: calculatePercentage(groups["2"], total) },
+    { group: "3+ varejos", count: groups["3+"], percentage: calculatePercentage(groups["3+"], total) },
+  ];
+}
+
+// Cohort analysis by entry month
+export interface CohortMetrics {
+  month: string;
+  totalClientes: number;
+  percentageAprovados: number;
+  percentageAtivados: number;
+  percentageRecorrentes: number;
+  avgScore: number;
+  avgLimite: number;
+}
+
+export function calculateCohortAnalysis(clientesData: ClienteRow[]): CohortMetrics[] {
+  if (!clientesData || clientesData.length === 0) return [];
+
+  const cohorts: Record<string, ClienteRow[]> = {};
+
+  clientesData.forEach((c) => {
+    const dataEntrada = String(getColumnValue(c, ["data de entrada na ume", "data entrada", "entry date"]) || "");
+    if (dataEntrada) {
+      const monthKey = dataEntrada.substring(0, 7); // Extract YYYY-MM
+      if (!cohorts[monthKey]) cohorts[monthKey] = [];
+      cohorts[monthKey].push(c);
+    }
+  });
+
+  return Object.entries(cohorts)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([month, customers]) => {
+      const aprovados = customers.filter((c) => {
+        const situacao = String(getColumnValue(c, ["situacao", "status"]) || "").toLowerCase();
+        return situacao !== "negada";
+      }).length;
+
+      const ativados = customers.filter((c) => {
+        const compras = parseNumber(getColumnValue(c, ["qtd de compras", "compras"])) || 0;
+        return compras > 0;
+      }).length;
+
+      const recorrentes = customers.filter((c) => {
+        const compras = parseNumber(getColumnValue(c, ["qtd de compras", "compras"])) || 0;
+        return compras >= 2;
+      }).length;
+
+      const scores = customers.map((c) => parseNumber(getColumnValue(c, ["score de crédito", "score"])));
+      const limites = customers.map((c) => parseNumber(getColumnValue(c, ["limite total", "limite"])));
+
+      return {
+        month,
+        totalClientes: customers.length,
+        percentageAprovados: calculatePercentage(aprovados, customers.length),
+        percentageAtivados: calculatePercentage(ativados, customers.length),
+        percentageRecorrentes: calculatePercentage(recorrentes, customers.length),
+        avgScore: calculateAverage(scores) || 0,
+        avgLimite: calculateAverage(limites) || 0,
       };
     });
 }
