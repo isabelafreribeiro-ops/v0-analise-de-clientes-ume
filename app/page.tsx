@@ -9,6 +9,7 @@ import { VarejoFunnel } from "@/components/varejo-funnel";
 import { ClientesFunnel } from "@/components/clientes-funnel";
 import { SegmentacaoTab } from "@/components/segmentacao-tab";
 import { JornadaTab } from "@/components/jornada-tab";
+import { GlobalMetricsDisplay } from "@/components/global-metrics-display";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("aquisicao");
@@ -38,6 +39,17 @@ export default function Home() {
                   Carregue as bases de dados CSV para análise dos funis
                 </p>
                 <CSVUploader />
+              </section>
+
+              {/* Global Metrics */}
+              <section className="mb-12">
+                <h2 className="mb-2 text-xl font-bold text-[#1a1a1a]">
+                  Métricas Globais (Base Completa)
+                </h2>
+                <p className="mb-4 text-sm text-[#64748b]">
+                  Indicadores calculados sobre os dados completos - nunca amostrados
+                </p>
+                <GlobalMetricsDisplay />
               </section>
 
               {/* Funnel 1: Aquisição de Varejos */}

@@ -1,3 +1,5 @@
+import type { GlobalMetrics } from "./segmentation";
+
 export interface ClienteRow {
   Nome: string;
   Idade: number;
@@ -41,4 +43,6 @@ export interface DataContextType {
   setClientesData: (data: ClienteRow[]) => void;
   setVarejoData: (data: VarejoRow[]) => void;
   isLoading: boolean;
+  globalMetrics: GlobalMetrics | null;
+  setGlobalMetrics: (metrics: GlobalMetrics) => void;
 }

@@ -28,6 +28,19 @@ export interface SegmentationThresholds {
   avgScore: number;
 }
 
+export interface GlobalMetrics {
+  totalClientes: number;
+  totalAprovados: number;
+  totalNegados: number;
+  totalAtivados: number;
+  taxaAprovacao: number; // clientes com Situação ∈ {Adimplente, Inadimplente} / total
+  taxaAtivacao: number; // aprovados com Qtd de Compras > 0 / total de aprovados
+  scoreMediaGeral: number; // média de "Score de Crédito" em todas as linhas
+  scoreMediaAprovados: number; // média filtrando Situação ∈ {Adimplente, Inadimplente}
+  appAdoptionGeral: number; // "Tem App?" = "Sim" / total
+  appAdoptionAprovados: number; // "Tem App?" = "Sim" / aprovados
+}
+
 export interface PurchaseDistribution {
   range: string;
   count: number;
@@ -778,5 +791,86 @@ export function calculateAggregatedMetrics(clientesData: ClienteRow[]): Aggregat
       purchaseGroups,
     },
     insights,
+  };
+}
+
+// GLOBAL METRICS LAYER — Always operates on full dataset, never sampled
+// Returns the canonical metrics used across all dashboard cards
+export function calculateGlobalMetrics(clientesData: ClienteRow[]): GlobalMetrics {
+  if (!clientesData || clientesData.length === 0) {
+    return {
+      totalClientes: 0,
+      totalAprovados: 0,
+      totalNegados: 0,
+      totalAtivados: 0,
+      taxaAprovacao: 0,
+      taxaAtivacao: 0,
+      scoreMediaGeral: 0,
+      scoreMediaAprovados: 0,
+      appAdoptionGeral: 0,
+      appAdoptionAprovados: 0,
+    };
+  }
+
+  const totalClientes = clientesData.length;
+
+  // Approved = Situação ∈ {Adimplente, Inadimplente}
+  const aprovados = clientesData.filter((c) => {
+    const situacao = String(getColumnValue(c, ["situação", "situacao", "status"]) || "")
+      .toLowerCase()
+      .trim();
+    return situacao === "adimplente" || situacao === "inadimplente";
+  });
+
+  const totalAprovados = aprovados.length;
+  const totalNegados = totalClientes - totalAprovados;
+
+  // Activated = Aprovados with Qtd de Compras > 0
+  const totalAtivados = aprovados.filter((c) => {
+    const compras = parseNumber(getColumnValue(c, ["qtd de compras", "compras"])) || 0;
+    return compras > 0;
+  }).length;
+
+  // Taxa de Aprovação = approved / total
+  const taxaAprovacao = calculatePercentage(totalAprovados, totalClientes);
+
+  // Taxa de Ativação = activated / approved
+  const taxaAtivacao = totalAprovados > 0 ? calculatePercentage(totalAtivados, totalAprovados) : 0;
+
+  // Score Médio (geral) = average of all scores
+  const allScores = clientesData
+    .map((c) => parseNumber(getColumnValue(c, ["score de crédito", "score"])))
+    .filter((s) => s !== null && s !== 0) as number[];
+  const scoreMediaGeral = allScores.length > 0 ? allScores.reduce((a, b) => a + b, 0) / allScores.length : 0;
+
+  // Score Médio (aprovados) = average of scores for approved customers
+  const aprovadosScores = aprovados
+    .map((c) => parseNumber(getColumnValue(c, ["score de crédito", "score"])))
+    .filter((s) => s !== null && s !== 0) as number[];
+  const scoreMediaAprovados = aprovadosScores.length > 0 ? aprovadosScores.reduce((a, b) => a + b, 0) / aprovadosScores.length : 0;
+
+  // App Adoption (geral) = "Tem App?" = "Sim" / total
+  const comAppGeral = clientesData.filter((c) =>
+    parseBoolean(getColumnValue(c, ["tem app?", "tem app", "app"]))
+  ).length;
+  const appAdoptionGeral = calculatePercentage(comAppGeral, totalClientes);
+
+  // App Adoption (aprovados) = "Tem App?" = "Sim" / approved
+  const comAppAprovados = aprovados.filter((c) =>
+    parseBoolean(getColumnValue(c, ["tem app?", "tem app", "app"]))
+  ).length;
+  const appAdoptionAprovados = totalAprovados > 0 ? calculatePercentage(comAppAprovados, totalAprovados) : 0;
+
+  return {
+    totalClientes,
+    totalAprovados,
+    totalNegados,
+    totalAtivados,
+    taxaAprovacao,
+    taxaAtivacao,
+    scoreMediaGeral,
+    scoreMediaAprovados,
+    appAdoptionGeral,
+    appAdoptionAprovados,
   };
 }

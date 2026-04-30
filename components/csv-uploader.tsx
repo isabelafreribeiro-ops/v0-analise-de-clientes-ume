@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useData } from "@/lib/data-context";
 import { parseCSVAsync } from "@/lib/csv-worker";
+import { calculateGlobalMetrics } from "@/lib/segmentation";
 import type { ClienteRow, VarejoRow } from "@/lib/types";
 
 interface UploadState {
@@ -16,7 +17,7 @@ interface UploadState {
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB max file size
 
 export function CSVUploader() {
-  const { setClientesData, setVarejoData } = useData();
+  const { setClientesData, setVarejoData, setGlobalMetrics } = useData();
   const [uploadState, setUploadState] = useState<UploadState>({
     clientes: { uploaded: false, fileName: null, count: 0, loading: false, progress: 0, error: undefined },
     varejo: { uploaded: false, fileName: null, count: 0, loading: false, progress: 0, error: undefined },
@@ -68,6 +69,11 @@ export function CSVUploader() {
         // Update state with parsed data
         if (type === "clientes") {
           setClientesData(data as ClienteRow[]);
+          
+          // Compute global metrics from full dataset for dashboard cards
+          const metrics = calculateGlobalMetrics(data as ClienteRow[]);
+          setGlobalMetrics(metrics);
+          
           setUploadState((prev) => ({
             ...prev,
             clientes: { uploaded: true, fileName: file.name, count, loading: false, progress: 100, error: undefined },

@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, type ReactNode } from "react";
 import type { ClienteRow, VarejoRow, DataContextType } from "./types";
+import type { GlobalMetrics } from "./segmentation";
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
@@ -9,6 +10,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [clientesData, setClientesData] = useState<ClienteRow[]>([]);
   const [varejoData, setVarejoData] = useState<VarejoRow[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [globalMetrics, setGlobalMetrics] = useState<GlobalMetrics | null>(null);
 
   const handleSetClientesData = (data: ClienteRow[]) => {
     setIsLoading(true);
@@ -30,6 +32,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setClientesData: handleSetClientesData,
         setVarejoData: handleSetVarejoData,
         isLoading,
+        globalMetrics,
+        setGlobalMetrics,
       }}
     >
       {children}
