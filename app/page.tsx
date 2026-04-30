@@ -7,6 +7,7 @@ import { NavTabs } from "@/components/nav-tabs";
 import { CSVUploader } from "@/components/csv-uploader";
 import { VarejoFunnel } from "@/components/varejo-funnel";
 import { ClientesFunnel } from "@/components/clientes-funnel";
+import { SegmentacaoTab } from "@/components/segmentacao-tab";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("aquisicao");
@@ -69,14 +70,9 @@ export default function Home() {
 
           {/* Segmentação Tab */}
           {activeTab === "segmentacao" && (
-            <div className="flex h-96 flex-col items-center justify-center text-center">
-              <p className="text-lg font-medium text-[#64748b]">
-                Segmentação em desenvolvimento
-              </p>
-              <p className="text-sm text-[#94a3b8]">
-                Esta seção será adicionada em breve
-              </p>
-            </div>
+            <section>
+              <SegmentacaoTab />
+            </section>
           )}
 
           {/* Jornada Tab */}
