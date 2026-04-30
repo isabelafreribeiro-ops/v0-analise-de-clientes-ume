@@ -23,36 +23,43 @@ import type { ClienteRow } from "@/lib/types";
 const SEGMENT_CONFIG = {
   "aprovados-nao-ativados": {
     bg: "#E3F2FD", accent: "#2196F3", text: "#0D47A1",
+    icon: "🔵",
     label: "Aprovados Não Ativados",
     criterio: "Aprovado + 0 compras",
   },
   "potencial": {
     bg: "#FFF3E0", accent: "#FF9800", text: "#3E2723",
+    icon: "🟠",
     label: "Potencial",
     criterio: "Aprovado + 1 compra",
   },
   "recorrentes": {
     bg: "#F3E5F5", accent: "#9C27B0", text: "#4A148C",
+    icon: "🟣",
     label: "Recorrentes",
     criterio: "Aprovado + 2+ compras (sem critério Plus)",
   },
   "ume-plus": {
     bg: "#F0F4F3", accent: "#00C853", text: "#001a0f",
+    icon: "🟢",
     label: "Ume Plus",
     criterio: "3+ compras + score ≥700 + limite ≥R$1.000",
   },
   "negados-recuperaveis": {
     bg: "#FFF9C4", accent: "#FBC02D", text: "#F57F17",
+    icon: "🟡",
     label: "Negados Recuperáveis",
     criterio: "Negada + score ≥300",
   },
   "negados-alto-risco": {
     bg: "#FFEBEE", accent: "#E53935", text: "#B71C1C",
+    icon: "🔴",
     label: "Negados Alto Risco",
     criterio: "Negada + score <300",
   },
   "inadimplentes": {
     bg: "#FCE4EC", accent: "#C2185B", text: "#880E4F",
+    icon: "🩷",
     label: "Inadimplentes",
     criterio: "Situação = Inadimplente",
   },
@@ -71,12 +78,30 @@ const SEGMENT_ORDER = [
 type SegmentId = typeof SEGMENT_ORDER[number];
 
 // ============================================================================
-// FORMATTERS
+// FINANCIAL ASSUMPTIONS — must match Q4 (Rentabilidade) calculations
+// ============================================================================
+const TICKET_MEDIO_BRL = 227.78;
+const TAXA_PROCESSAMENTO = 0.03;
+const CAC_BRL = 50.0;
+const CUSTO_MSG_ANUAL: Record<SegmentId, number> = {
+  "aprovados-nao-ativados": 0.69,
+  "potencial": 0.63,
+  "recorrentes": 4.20,
+  "ume-plus": 8.16,
+  "negados-recuperaveis": 0.09,
+  "negados-alto-risco": 0.03,
+  "inadimplentes": 0.66,
+};
+
+// ============================================================================
+// FORMATTERS — using "M" for millions (per Ume case convention)
 // ============================================================================
 function formatNumber(value: number | null): string {
   if (value === null || value === undefined || isNaN(value)) return "—";
-  if (value >= 1000000) return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 }).format(value / 1000000) + "M";
-  if (value >= 1000) return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 }).format(value / 1000) + "k";
+  if (value >= 1000000)
+    return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 }).format(value / 1000000) + "M";
+  if (value >= 1000)
+    return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 1 }).format(value / 1000) + "k";
   return new Intl.NumberFormat("pt-BR").format(Math.round(value));
 }
 
@@ -98,6 +123,20 @@ function formatPercentage(value: number | null): string {
   }).format(value) + "%";
 }
 
+// Format BRL values with "M" for millions, "mil" for thousands
+function formatBRL(value: number): string {
+  const abs = Math.abs(value);
+  let formatted: string;
+  if (abs >= 1_000_000) {
+    formatted = `R$ ${new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(abs / 1_000_000)} M`;
+  } else if (abs >= 1_000) {
+    formatted = `R$ ${new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(abs / 1_000)} mil`;
+  } else {
+    formatted = `R$ ${Math.round(abs)}`;
+  }
+  return value < 0 ? `-${formatted}` : formatted;
+}
+
 // ============================================================================
 // SEGMENT CLASSIFIER — single source of truth, must match jornada-tab.tsx
 // ============================================================================
@@ -113,13 +152,51 @@ function classifySegment(cliente: ClienteRow): SegmentId {
   if (situacao === "negada") {
     return score < 300 ? "negados-alto-risco" : "negados-recuperaveis";
   }
-  // Adimplente / aprovado
   if (compras === 0) return "aprovados-nao-ativados";
   if (compras === 1) return "potencial";
   if (compras >= 3 && score >= 700 && limite >= 1000) return "ume-plus";
   return "recorrentes";
 }
 
+// ============================================================================
+// RENTABILITY ESTIMATOR (per cliente) — same formula as Q4
+// ============================================================================
+function estimateRentabilidade(cliente: ClienteRow): number {
+  const segmentId = classifySegment(cliente);
+  const situacao = String(getColumnValue(cliente, ["situação", "situacao", "status"]) || "")
+    .toLowerCase()
+    .trim();
+  const compras = parseNumber(getColumnValue(cliente, ["qtd de compras", "compras"])) || 0;
+  const taxa =
+    parseNumber(
+      getColumnValue(cliente, [
+        "taxa de juros média ( ao mês)",
+        "taxa de juros média",
+        "taxa juros",
+        "taxa de juros",
+      ])
+    ) || 0;
+  const parcelas = parseNumber(getColumnValue(cliente, ["n. médio de parcelas", "parcelas"])) || 0;
+  const limiteTotal = parseNumber(getColumnValue(cliente, ["limite total", "limite"])) || 0;
+  const limiteDisp = parseNumber(getColumnValue(cliente, ["limite disponível", "limite disponivel"])) || 0;
+
+  const gmv = compras * TICKET_MEDIO_BRL;
+  const receitaProc = gmv * TAXA_PROCESSAMENTO;
+
+  let receitaJuros = 0;
+  if (situacao !== "negada" && situacao !== "inadimplente" && taxa && parcelas && compras > 0) {
+    receitaJuros = (compras * TICKET_MEDIO_BRL * taxa * (parcelas + 1)) / 2;
+  }
+
+  const perdaInad = situacao === "inadimplente" ? Math.max(limiteTotal - limiteDisp, 0) : 0;
+  const msgCost = CUSTO_MSG_ANUAL[segmentId] || 0;
+
+  return receitaProc + receitaJuros - CAC_BRL - perdaInad - msgCost;
+}
+
+// ============================================================================
+// SEGMENT METRICS COMPUTATION
+// ============================================================================
 interface SegmentMetric {
   id: SegmentId;
   count: number;
@@ -128,6 +205,8 @@ interface SegmentMetric {
   avgLimite: number | null;
   avgCompras: number | null;
   pctComApp: number;
+  rentTotalBRL: number;
+  rentMediaBRL: number;
   customers: ClienteRow[];
 }
 
@@ -152,14 +231,23 @@ function computeSegmentMetrics(clientesData: ClienteRow[]): SegmentMetric[] {
     const comAppCount = customers.filter((c) =>
       parseBoolean(getColumnValue(c, ["tem app?", "tem app", "app"]))
     ).length;
+    const rentTotal = customers.reduce((sum, c) => sum + estimateRentabilidade(c), 0);
     return {
       id,
       count: customers.length,
       pctOfBase: total > 0 ? (customers.length / total) * 100 : 0,
-      avgScore: calculateAverage(customers.map((c) => parseNumber(getColumnValue(c, ["score de crédito", "score"])))),
-      avgLimite: calculateAverage(customers.map((c) => parseNumber(getColumnValue(c, ["limite total", "limite"])))),
-      avgCompras: calculateAverage(customers.map((c) => parseNumber(getColumnValue(c, ["qtd de compras", "compras"])))),
+      avgScore: calculateAverage(
+        customers.map((c) => parseNumber(getColumnValue(c, ["score de crédito", "score"])))
+      ),
+      avgLimite: calculateAverage(
+        customers.map((c) => parseNumber(getColumnValue(c, ["limite total", "limite"])))
+      ),
+      avgCompras: calculateAverage(
+        customers.map((c) => parseNumber(getColumnValue(c, ["qtd de compras", "compras"])))
+      ),
       pctComApp: customers.length > 0 ? (comAppCount / customers.length) * 100 : 0,
+      rentTotalBRL: rentTotal,
+      rentMediaBRL: customers.length > 0 ? rentTotal / customers.length : 0,
       customers,
     };
   });
@@ -181,15 +269,27 @@ export function SegmentacaoTab() {
     );
   }
 
-  // === COMPUTED ===
   const segmentMetrics = useMemo(() => computeSegmentMetrics(clientesData), [clientesData]);
+
+  // Aprovados-only cohort (for the persona)
+  const aprovadosCohort = useMemo(
+    () =>
+      clientesData.filter((c) => {
+        const sit = String(getColumnValue(c, ["situação", "situacao", "status"]) || "")
+          .toLowerCase()
+          .trim();
+        return sit !== "negada";
+      }),
+    [clientesData]
+  );
+
   const distribution = useMemo(() => calculatePurchaseDistribution(clientesData), [clientesData]);
   const groupComparison = useMemo(() => calculatePurchaseGroupComparison(clientesData), [clientesData]);
-  const ageDistribution = useMemo(() => calculateAgeDistribution(clientesData), [clientesData]);
-  const genderDistribution = useMemo(() => calculateGenderDistribution(clientesData), [clientesData]);
-  const retailerDistribution = useMemo(() => calculateRetailerDistribution(clientesData), [clientesData]);
+  // Persona uses APROVADOS-only data
+  const ageDistribution = useMemo(() => calculateAgeDistribution(aprovadosCohort), [aprovadosCohort]);
+  const genderDistribution = useMemo(() => calculateGenderDistribution(aprovadosCohort), [aprovadosCohort]);
+  const retailerDistribution = useMemo(() => calculateRetailerDistribution(aprovadosCohort), [aprovadosCohort]);
 
-  // KPI metrics
   const kpis = useMemo(() => {
     const findSeg = (id: SegmentId) => segmentMetrics.find((s) => s.id === id);
 
@@ -215,6 +315,19 @@ export function SegmentacaoTab() {
       clientesData.map((c) => parseNumber(getColumnValue(c, ["score de crédito", "score"])))
     );
 
+    // APROVADOS-ONLY METRICS for persona
+    const avgScoreAprovados = calculateAverage(
+      aprovadosCohort.map((c) => parseNumber(getColumnValue(c, ["score de crédito", "score"])))
+    );
+    const avgComprasAprovados = calculateAverage(
+      aprovadosCohort.map((c) => parseNumber(getColumnValue(c, ["qtd de compras", "compras"])))
+    );
+    const comAppAprovados = aprovadosCohort.filter((c) =>
+      parseBoolean(getColumnValue(c, ["tem app?", "tem app", "app"]))
+    ).length;
+    const appAdoptionAprovadosPct =
+      aprovadosCohort.length > 0 ? (comAppAprovados / aprovadosCohort.length) * 100 : 0;
+
     return {
       negadosRec,
       negadosAlto,
@@ -226,8 +339,11 @@ export function SegmentacaoTab() {
       taxaAtivacao,
       appAdoptionPct,
       avgScore,
+      avgScoreAprovados,
+      avgComprasAprovados,
+      appAdoptionAprovadosPct,
     };
-  }, [segmentMetrics, clientesData]);
+  }, [segmentMetrics, clientesData, aprovadosCohort]);
 
   const scoreDistribution = useMemo(() => {
     const scores = clientesData
@@ -245,11 +361,6 @@ export function SegmentacaoTab() {
     [clientesData]
   );
 
-  const avgCompras = useMemo(
-    () => calculateAverage(clientesData.map((c) => parseNumber(getColumnValue(c, ["qtd de compras", "compras"])))),
-    [clientesData]
-  );
-
   const percentageComAumento = useMemo(() => {
     const count = clientesData.filter((c) =>
       parseBoolean(getColumnValue(c, ["aumento limite", "limite aumentado"]))
@@ -257,7 +368,8 @@ export function SegmentacaoTab() {
     return calculatePercentage(count, clientesData.length);
   }, [clientesData]);
 
-  // === RENDER ===
+  const getSegRent = (id: SegmentId) => segmentMetrics.find((s) => s.id === id);
+
   return (
     <div className="space-y-6">
       {/* Title */}
@@ -301,15 +413,17 @@ export function SegmentacaoTab() {
         </Card>
       </div>
 
-      {/* 2. QUEM É O CLIENTE UME */}
+      {/* 2. QUEM É O CLIENTE UME — APROVADOS-only */}
       <Card className="border-[#E2E8F0]">
         <CardHeader>
           <CardTitle>Quem é o Cliente Ume?</CardTitle>
-          <p className="text-xs text-[#64748b] mt-2">Perfil demográfico, comportamental e de crédito da base.</p>
+          <p className="text-xs text-[#64748b] mt-2">
+            Perfil dos {formatNumber(aprovadosCohort.length)} clientes aprovados (exclui negados) — quem realmente
+            usa ou pode usar o produto.
+          </p>
         </CardHeader>
         <CardContent>
           <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-            {/* Demographics */}
             <div>
               <p className="text-xs font-semibold text-[#64748b] mb-3 uppercase">👤 Demografia</p>
               <div className="space-y-2 text-xs">
@@ -317,7 +431,8 @@ export function SegmentacaoTab() {
                   <div key={g.group} className="flex justify-between">
                     <span className="text-[#64748b]">{g.group}</span>
                     <span className="font-medium text-[#1a1a1a]">
-                      {g.count} ({new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(g.percentage)}%)
+                      {formatNumber(g.count)} (
+                      {new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(g.percentage)}%)
                     </span>
                   </div>
                 ))}
@@ -334,12 +449,11 @@ export function SegmentacaoTab() {
               </div>
             </div>
 
-            {/* Credit */}
             <div>
               <p className="text-xs font-semibold text-[#64748b] mb-3 uppercase">💳 Crédito</p>
               <div className="space-y-2 text-xs mb-3">
                 <div>
-                  <span className="text-[#64748b] block mb-1">Score</span>
+                  <span className="text-[#64748b] block mb-1">Score (base total)</span>
                   <div className="flex justify-between font-medium text-[#1a1a1a]">
                     <span>Baixo: {formatNumber(scoreDistribution.low)}</span>
                     <span>Médio: {formatNumber(scoreDistribution.medium)}</span>
@@ -357,17 +471,20 @@ export function SegmentacaoTab() {
               </div>
             </div>
 
-            {/* Channel & Behavior */}
             <div>
               <p className="text-xs font-semibold text-[#64748b] mb-3 uppercase">📱 Canal & Comportamento</p>
               <div className="space-y-3 text-xs">
                 <div>
-                  <span className="text-[#64748b] block mb-1">Com App</span>
-                  <span className="font-medium text-[#1a1a1a] block">{formatPercentage(kpis.appAdoptionPct)}</span>
+                  <span className="text-[#64748b] block mb-1">Com App (aprovados)</span>
+                  <span className="font-medium text-[#1a1a1a] block">
+                    {formatPercentage(kpis.appAdoptionAprovadosPct)}
+                  </span>
                 </div>
                 <div>
-                  <span className="text-[#64748b] block mb-1">Compras Médias</span>
-                  <span className="font-medium text-[#1a1a1a] block">{formatNumber(avgCompras)}</span>
+                  <span className="text-[#64748b] block mb-1">Compras Médias (aprovados)</span>
+                  <span className="font-medium text-[#1a1a1a] block">
+                    {formatNumber(kpis.avgComprasAprovados)}
+                  </span>
                 </div>
                 <div>
                   <span className="text-[#64748b] block mb-1">Varejos</span>
@@ -386,13 +503,13 @@ export function SegmentacaoTab() {
             </div>
           </div>
 
-          {/* Persona */}
+          {/* Persona — APROVADOS-only */}
           <div className="mt-6 p-4 bg-[#F7FAF8] rounded border border-[#E2E8F0]">
-            <p className="text-xs font-semibold text-[#64748b] uppercase mb-2">🎯 Cliente Predominante</p>
+            <p className="text-xs font-semibold text-[#64748b] uppercase mb-2">🎯 Cliente Ume Predominante</p>
             <p className="text-sm text-[#1a1a1a]">
-              {ageDistribution.length > 0 ? ageDistribution[0].group : "Cliente"} com {Math.round(kpis.avgScore || 0)} de score,{" "}
-              {formatPercentage(kpis.appAdoptionPct)} de adoção de app e comportamento de{" "}
-              {distribution.length > 0 ? distribution[0].range : "baixo volume"}.
+              {ageDistribution.length > 0 ? ageDistribution[0].group : "Cliente"} com{" "}
+              {Math.round(kpis.avgScoreAprovados || 0)} de score, {formatPercentage(kpis.appAdoptionAprovadosPct)} de
+              adoção de app e {formatNumber(kpis.avgComprasAprovados)} compras médias.
             </p>
           </div>
         </CardContent>
@@ -406,7 +523,6 @@ export function SegmentacaoTab() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-            {/* Activation */}
             <div className="p-4 bg-[#E3F2FD] rounded border border-[#2196F3]/20">
               <p className="text-xs font-semibold text-[#0D47A1] uppercase mb-2">📊 Ativação</p>
               <div className="text-lg font-bold text-[#1a1a1a]">{formatPercentage(kpis.taxaAtivacao)}</div>
@@ -416,7 +532,6 @@ export function SegmentacaoTab() {
               </p>
             </div>
 
-            {/* Engagement */}
             <div className="p-4 bg-[#FFF3E0] rounded border border-[#FF9800]/20">
               <p className="text-xs font-semibold text-[#3E2723] uppercase mb-2">🛍️ Engajamento</p>
               <div className="text-lg font-bold text-[#1a1a1a]">
@@ -431,7 +546,6 @@ export function SegmentacaoTab() {
               </p>
             </div>
 
-            {/* Credit & Risk */}
             <div className="p-4 bg-[#F3E5F5] rounded border border-[#9C27B0]/20">
               <p className="text-xs font-semibold text-[#4A148C] uppercase mb-2">💳 Crédito & Risco</p>
               <div className="text-lg font-bold text-[#1a1a1a]">{formatNumber(scoreDistribution.low)}</div>
@@ -441,10 +555,11 @@ export function SegmentacaoTab() {
               </p>
             </div>
 
-            {/* Status — agora mostra breakdown de negados + inadimplentes */}
             <div className="p-4 bg-[#FFEBEE] rounded border border-[#F44336]/20">
               <p className="text-xs font-semibold text-[#B71C1C] uppercase mb-2">🚫 Fora da Base Ativa</p>
-              <div className="text-lg font-bold text-[#1a1a1a]">{formatNumber(kpis.totalNegados + kpis.inadimp)}</div>
+              <div className="text-lg font-bold text-[#1a1a1a]">
+                {formatNumber(kpis.totalNegados + kpis.inadimp)}
+              </div>
               <p className="text-xs text-[#64748b] mt-1">Negados + Inadimplentes</p>
               <p className="text-xs text-[#94a3b8] mt-2">
                 {formatNumber(kpis.negadosRec)} recuperáveis · {formatNumber(kpis.negadosAlto)} alto risco ·{" "}
@@ -516,7 +631,7 @@ export function SegmentacaoTab() {
         </Card>
       )}
 
-      {/* 6. SEGMENTAÇÃO — 7 cards consistentes com Jornada */}
+      {/* 6. SEGMENTAÇÃO — 7 cards com ícones e rent. média */}
       <Card className="border-[#E2E8F0]">
         <CardHeader>
           <CardTitle>Segmentação de Clientes (7 segmentos)</CardTitle>
@@ -531,6 +646,7 @@ export function SegmentacaoTab() {
             <ul className="text-xs text-[#64748b] space-y-1 list-disc list-inside">
               {SEGMENT_ORDER.map((id) => (
                 <li key={id}>
+                  <span className="mr-1">{SEGMENT_CONFIG[id].icon}</span>
                   <span className="font-medium" style={{ color: SEGMENT_CONFIG[id].accent }}>
                     {SEGMENT_CONFIG[id].label}:
                   </span>{" "}
@@ -540,7 +656,6 @@ export function SegmentacaoTab() {
             </ul>
           </div>
 
-          {/* 7 cards: 2 cols mobile, 3 cols tablet, 4 cols desktop */}
           <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
             {segmentMetrics.map((seg) => {
               const cfg = SEGMENT_CONFIG[seg.id];
@@ -553,9 +668,12 @@ export function SegmentacaoTab() {
                     borderLeftColor: cfg.accent,
                   }}
                 >
-                  <p className="text-xs font-semibold uppercase truncate" style={{ color: cfg.accent }}>
-                    {cfg.label}
-                  </p>
+                  <div className="flex items-start gap-2">
+                    <span className="text-base leading-none">{cfg.icon}</span>
+                    <p className="text-xs font-semibold uppercase truncate" style={{ color: cfg.accent }}>
+                      {cfg.label}
+                    </p>
+                  </div>
                   <p className="text-xl font-bold text-[#1a1a1a] mt-2">{formatNumber(seg.count)}</p>
                   <p className="text-xs text-[#64748b] mt-0.5">
                     {new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(
@@ -582,6 +700,18 @@ export function SegmentacaoTab() {
                         <span className="text-[#64748b]">App:</span>
                         <span className="font-medium text-[#1a1a1a]">{formatPercentage(seg.pctComApp)}</span>
                       </div>
+                      <div
+                        className="flex justify-between pt-1 mt-1 border-t"
+                        style={{ borderColor: cfg.accent + "33" }}
+                      >
+                        <span className="text-[#64748b]">Rent. média:</span>
+                        <span
+                          className="font-bold"
+                          style={{ color: seg.rentMediaBRL >= 0 ? "#00C853" : "#E53935" }}
+                        >
+                          {formatBRL(seg.rentMediaBRL)}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -589,7 +719,6 @@ export function SegmentacaoTab() {
             })}
           </div>
 
-          {/* Footer with checksum */}
           <div className="mt-4 p-3 bg-[#F7FAF8] rounded border border-[#E2E8F0] text-xs text-[#64748b]">
             ✓ Soma dos 7 segmentos: {formatNumber(segmentMetrics.reduce((s, m) => s + m.count, 0))} clientes ={" "}
             {formatNumber(clientesData.length)} total — cobertura 100%.
@@ -607,14 +736,15 @@ export function SegmentacaoTab() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
-            {/* Score distribution */}
             <div>
               <p className="text-xs font-semibold text-[#64748b] mb-3 uppercase">⚠️ Distribuição de Score</p>
               <div className="space-y-2">
                 <div>
                   <div className="flex justify-between text-xs mb-1">
                     <span className="text-[#64748b]">Baixo (&lt;400)</span>
-                    <span className="font-medium text-[#1a1a1a]">{formatNumber(scoreDistribution.low)} clientes</span>
+                    <span className="font-medium text-[#1a1a1a]">
+                      {formatNumber(scoreDistribution.low)} clientes
+                    </span>
                   </div>
                   <div className="bg-[#E2E8F0] rounded h-2">
                     <div
@@ -626,7 +756,9 @@ export function SegmentacaoTab() {
                 <div>
                   <div className="flex justify-between text-xs mb-1">
                     <span className="text-[#64748b]">Médio (400-700)</span>
-                    <span className="font-medium text-[#1a1a1a]">{formatNumber(scoreDistribution.medium)} clientes</span>
+                    <span className="font-medium text-[#1a1a1a]">
+                      {formatNumber(scoreDistribution.medium)} clientes
+                    </span>
                   </div>
                   <div className="bg-[#E2E8F0] rounded h-2">
                     <div
@@ -638,7 +770,9 @@ export function SegmentacaoTab() {
                 <div>
                   <div className="flex justify-between text-xs mb-1">
                     <span className="text-[#64748b]">Alto (≥700)</span>
-                    <span className="font-medium text-[#1a1a1a]">{formatNumber(scoreDistribution.high)} clientes</span>
+                    <span className="font-medium text-[#1a1a1a]">
+                      {formatNumber(scoreDistribution.high)} clientes
+                    </span>
                   </div>
                   <div className="bg-[#E2E8F0] rounded h-2">
                     <div
@@ -650,15 +784,15 @@ export function SegmentacaoTab() {
               </div>
             </div>
 
-            {/* Risk insights */}
             <div>
               <p className="text-xs font-semibold text-[#64748b] mb-3 uppercase">📊 Insights de Risco</p>
               <div className="space-y-2 text-xs">
                 <div className="p-2 bg-blue-50 rounded border border-blue-200">
                   <span className="font-medium text-[#0D47A1]">Score vs Compras:</span>
                   <p className="text-[#64748b] mt-1">
-                    Clientes Ume Plus têm score médio {formatNumber(segmentMetrics.find((s) => s.id === "ume-plus")?.avgScore)}{" "}
-                    e média de {formatNumber(segmentMetrics.find((s) => s.id === "ume-plus")?.avgCompras)} compras.
+                    Clientes Ume Plus têm score médio{" "}
+                    {formatNumber(getSegRent("ume-plus")?.avgScore || 0)} e média de{" "}
+                    {formatNumber(getSegRent("ume-plus")?.avgCompras || 0)} compras.
                   </p>
                 </div>
                 <div className="p-2 bg-orange-50 rounded border border-orange-200">
@@ -672,8 +806,7 @@ export function SegmentacaoTab() {
                   <span className="font-medium text-[#1B5E20]">Recorrência:</span>
                   <p className="text-[#64748b] mt-1">
                     {formatNumber(
-                      (segmentMetrics.find((s) => s.id === "recorrentes")?.count || 0) +
-                        (segmentMetrics.find((s) => s.id === "ume-plus")?.count || 0)
+                      (getSegRent("recorrentes")?.count || 0) + (getSegRent("ume-plus")?.count || 0)
                     )}{" "}
                     clientes ativos recorrentes — base com menor inadimplência esperada.
                   </p>
@@ -691,22 +824,24 @@ export function SegmentacaoTab() {
         </CardContent>
       </Card>
 
-      {/* 8. OPORTUNIDADES ESTRATÉGICAS — 7 cards alinhados com Jornada */}
+      {/* 8. OPORTUNIDADES ESTRATÉGICAS — 7 cards com âncora R$ */}
       <Card className="border-[#E2E8F0]">
         <CardHeader>
           <CardTitle>Oportunidades Estratégicas</CardTitle>
           <p className="text-xs text-[#64748b] mt-2">
-            Recomendações de ação para cada um dos 7 segmentos. Detalhamento da jornada disponível na aba Jornada.
+            Recomendações de ação por segmento, com impacto financeiro estimado. Detalhamento das jornadas na aba
+            Jornada; modelagem completa na aba Rentabilidade.
           </p>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-            {/* Aprovados Não Ativados */}
             <SegmentOpportunityCard
               segmentId="aprovados-nao-ativados"
               count={kpis.aprovNaoAtivados}
               total={clientesData.length}
-              insight="Maior oportunidade de crescimento — CAC já pago, basta ativar. ROI marginal alto."
+              rentTotal={getSegRent("aprovados-nao-ativados")?.rentTotalBRL || 0}
+              impactLabel="CAC desperdiçado"
+              insight="Maior oportunidade de crescimento — CAC já pago, basta ativar. Cada conversão recupera R$ 50 e gera receita futura."
               acoes={[
                 "Reengajamento via SMS + WhatsApp (sem Push: 0,6% têm app)",
                 "Abordagem em ponto de venda no varejo parceiro",
@@ -716,9 +851,11 @@ export function SegmentacaoTab() {
 
             <SegmentOpportunityCard
               segmentId="potencial"
-              count={segmentMetrics.find((s) => s.id === "potencial")?.count || 0}
+              count={getSegRent("potencial")?.count || 0}
               total={clientesData.length}
-              insight="Janela crítica de hábito — 30 dias após 1ª compra define se vira recorrente. Maior ROI em campanha."
+              rentTotal={getSegRent("potencial")?.rentTotalBRL || 0}
+              impactLabel="Rentabilidade atual"
+              insight="Janela crítica de hábito — 30 dias após 1ª compra define se vira recorrente. Maior ROI marginal em campanha."
               acoes={[
                 "Incentivo de segunda compra dentro de 30 dias",
                 "Personalização por score (educação se baixo, oferta se alto)",
@@ -728,9 +865,11 @@ export function SegmentacaoTab() {
 
             <SegmentOpportunityCard
               segmentId="recorrentes"
-              count={segmentMetrics.find((s) => s.id === "recorrentes")?.count || 0}
+              count={getSegRent("recorrentes")?.count || 0}
               total={clientesData.length}
-              insight="Maior contribuição absoluta de rentabilidade da base — foco em retenção e expansão de ticket."
+              rentTotal={getSegRent("recorrentes")?.rentTotalBRL || 0}
+              impactLabel="Maior contribuição absoluta"
+              insight="Maior contribuição de rentabilidade da base — foco em retenção e expansão de ticket. Proteger é prioridade."
               acoes={[
                 "Aumento de limite proativo por bom histórico",
                 "Cross-loja e diversificação de varejos",
@@ -740,8 +879,10 @@ export function SegmentacaoTab() {
 
             <SegmentOpportunityCard
               segmentId="ume-plus"
-              count={segmentMetrics.find((s) => s.id === "ume-plus")?.count || 0}
+              count={getSegRent("ume-plus")?.count || 0}
               total={clientesData.length}
+              rentTotal={getSegRent("ume-plus")?.rentTotalBRL || 0}
+              impactLabel="Maior valor unitário"
               insight="Core de rentabilidade — maior valor por cliente. Foco absoluto em retenção e advocacia."
               acoes={[
                 "Limite aumentado automático (sem ação do cliente)",
@@ -754,6 +895,8 @@ export function SegmentacaoTab() {
               segmentId="negados-recuperaveis"
               count={kpis.negadosRec}
               total={clientesData.length}
+              rentTotal={getSegRent("negados-recuperaveis")?.rentTotalBRL || 0}
+              impactLabel="Maior dreno isolado"
               insight="Maior segmento da base — score 300-400 pode subir. Educação financeira como ponte para reaplicação."
               acoes={[
                 "Apenas SMS (custo controlado, sem WhatsApp)",
@@ -766,7 +909,9 @@ export function SegmentacaoTab() {
               segmentId="negados-alto-risco"
               count={kpis.negadosAlto}
               total={clientesData.length}
-              insight="Score <300 — baixa probabilidade de aprovação no curto prazo. Contenção de custo."
+              rentTotal={getSegRent("negados-alto-risco")?.rentTotalBRL || 0}
+              impactLabel="CAC sem retorno"
+              insight="Score <300 — baixa probabilidade de aprovação no curto prazo. Contenção de custo é a estratégia."
               acoes={[
                 "1 único SMS de comunicação (custo mínimo)",
                 "Sem follow-up de reengajamento",
@@ -778,7 +923,9 @@ export function SegmentacaoTab() {
               segmentId="inadimplentes"
               count={kpis.inadimp}
               total={clientesData.length}
-              insight="Perda direta de principal — recuperação parcial via negociação tem ROI alto se rápido."
+              rentTotal={getSegRent("inadimplentes")?.rentTotalBRL || 0}
+              impactLabel="Perda de principal"
+              insight="Perda direta de principal — recuperação parcial via negociação tem ROI alto se feita rapidamente."
               acoes={[
                 "Jornada de cobrança: WhatsApp humanizado + SMS formal",
                 "Oferta de parcelamento da dívida com desconto",
@@ -793,35 +940,63 @@ export function SegmentacaoTab() {
 }
 
 // ============================================================================
-// SUB-COMPONENT: Strategic opportunity card per segment
+// SUB-COMPONENT: Strategic opportunity card per segment with R$ anchor
 // ============================================================================
 interface SegmentOpportunityCardProps {
   segmentId: SegmentId;
   count: number;
   total: number;
+  rentTotal: number;
+  impactLabel: string;
   insight: string;
   acoes: string[];
 }
 
-function SegmentOpportunityCard({ segmentId, count, total, insight, acoes }: SegmentOpportunityCardProps) {
+function SegmentOpportunityCard({
+  segmentId,
+  count,
+  total,
+  rentTotal,
+  impactLabel,
+  insight,
+  acoes,
+}: SegmentOpportunityCardProps) {
   const cfg = SEGMENT_CONFIG[segmentId];
   const pct = total > 0 ? (count / total) * 100 : 0;
+  const isPositive = rentTotal >= 0;
 
   return (
     <div
       className="p-4 rounded border-l-4 transition hover:shadow-md"
       style={{ backgroundColor: cfg.bg, borderLeftColor: cfg.accent }}
     >
-      <div className="mb-2">
-        <p className="text-sm font-semibold" style={{ color: cfg.text }}>
-          {cfg.label}
-        </p>
-        <p className="text-xs text-[#64748b] mt-1">
-          {formatNumber(count)} clientes •{" "}
-          {new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(pct)}% da base
+      <div className="flex items-start gap-2 mb-3">
+        <span className="text-xl leading-none">{cfg.icon}</span>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold" style={{ color: cfg.text }}>
+            {cfg.label}
+          </p>
+          <p className="text-xs text-[#64748b] mt-0.5">
+            {formatNumber(count)} clientes •{" "}
+            {new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(pct)}% da base
+          </p>
+        </div>
+      </div>
+
+      <div
+        className="p-2 mb-3 rounded text-center"
+        style={{
+          backgroundColor: isPositive ? "rgba(0, 200, 83, 0.1)" : "rgba(229, 57, 53, 0.1)",
+          border: `1px solid ${isPositive ? "rgba(0, 200, 83, 0.3)" : "rgba(229, 57, 53, 0.3)"}`,
+        }}
+      >
+        <p className="text-[10px] uppercase font-semibold tracking-wide text-[#64748b]">{impactLabel}</p>
+        <p className="text-lg font-bold mt-0.5" style={{ color: isPositive ? "#00C853" : "#E53935" }}>
+          {formatBRL(rentTotal)}
         </p>
       </div>
-      <p className="text-xs text-[#1a1a1a] font-medium mb-1 mt-3">Insight:</p>
+
+      <p className="text-xs text-[#1a1a1a] font-medium mb-1">Insight:</p>
       <p className="text-xs text-[#64748b] mb-3">{insight}</p>
       <p className="text-xs text-[#1a1a1a] font-medium mb-1">Ações:</p>
       <ul className="text-xs text-[#64748b] space-y-1 list-disc list-inside">
