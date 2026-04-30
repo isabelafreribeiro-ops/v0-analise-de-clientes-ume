@@ -1,46 +1,39 @@
-// Web Worker para processar CSV em background
-// Evita bloqueio da UI durante parsing de arquivos grandes
+// Função para processar CSV de forma não-bloqueante
+// Yield do thread principal para manter UI responsiva
 
 import Papa from "papaparse";
 import type { ClienteRow, VarejoRow } from "./types";
 
-interface ParseMessage {
-  type: "clientes" | "varejo";
-  fileContent: string;
-}
+export async function parseCSVAsync(
+  fileContent: string,
+  type: "clientes" | "varejo"
+): Promise<{ data: ClienteRow[] | VarejoRow[]; count: number }> {
+  return new Promise((resolve, reject) => {
+    try {
+      Papa.parse(fileContent, {
+        header: true,
+        skipEmptyLines: true,
+        dynamicTyping: true,
+        complete: (results) => {
+          // Yield do thread após parsing para UI ficar responsiva
+          setTimeout(() => {
+            const data = (
+              type === "clientes" ? results.data : results.data
+            ) as ClienteRow[] | VarejoRow[];
 
-interface ParseResult {
-  type: "clientes" | "varejo";
-  data: ClienteRow[] | VarejoRow[];
-  count: number;
-  timestamp: number;
-}
-
-self.onmessage = (event: MessageEvent<ParseMessage>) => {
-  const { type, fileContent } = event.data;
-  const startTime = performance.now();
-
-  Papa.parse(fileContent, {
-    header: true,
-    skipEmptyLines: true,
-    dynamicTyping: true,
-    complete: (results) => {
-      const endTime = performance.now();
-      const data = (type === "clientes" ? results.data : results.data) as ClienteRow[] | VarejoRow[];
-
-      const result: ParseResult = {
-        type,
-        data,
-        count: data.length,
-        timestamp: endTime - startTime,
-      };
-
-      self.postMessage(result);
-    },
-    error: (error: any) => {
-      self.postMessage({ error: error.message });
-    },
+            resolve({
+              data,
+              count: data.length,
+            });
+          }, 0);
+        },
+        error: (error: any) => {
+          reject(new Error(`CSV parse error: ${error.message}`));
+        },
+      });
+    } catch (error) {
+      reject(error);
+    }
   });
-};
+}
 
-export type { ParseMessage, ParseResult };

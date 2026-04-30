@@ -252,8 +252,8 @@ export function SegmentacaoTab() {
           <div className="mt-6 p-4 bg-[#F7FAF8] rounded border border-[#E2E8F0]">
             <p className="text-xs font-semibold text-[#64748b] uppercase mb-2">🎯 Cliente Predominante</p>
             <p className="text-sm text-[#1a1a1a]">
-              {ageDistribution[0]?.group || "Cliente"} com {Math.round(calculateAverage(clientesData.map((c) => parseNumber(getColumnValue(c, ["score de crédito", "score"])))) || 0)} de score,{" "}
-              {formatPercentage(appAdoptionPct)} de adoção de app e comportamento de {distribution[0]?.range || "baixo volume"}.
+              {ageDistribution.length > 0 ? ageDistribution[0].group : "Cliente"} com {Math.round(avgScore || 0)} de score,{" "}
+              {formatPercentage(appAdoptionPct)} de adoção de app e comportamento de {distribution.length > 0 ? distribution[0].range : "baixo volume"}.
             </p>
           </div>
         </CardContent>
@@ -478,7 +478,10 @@ export function SegmentacaoTab() {
                 <div className="p-2 bg-blue-50 rounded border border-blue-200">
                   <span className="font-medium text-[#0D47A1]">Score vs Compras:</span>
                   <p className="text-[#64748b] mt-1">
-                    Clientes com score alto têm média de {formatNumber(metrics.find((m) => m.avgScore >= 700)?.avgCompras || 0)} compras.
+                    {metrics && metrics.length > 0 
+                      ? `Clientes com score alto têm média de ${formatNumber(metrics.find((m) => m.avgScore >= 700)?.avgCompras || 0)} compras.`
+                      : "Nenhum dado disponível para análise."
+                    }
                   </p>
                 </div>
                 <div className="p-2 bg-orange-50 rounded border border-orange-200">
@@ -490,7 +493,10 @@ export function SegmentacaoTab() {
                 <div className="p-2 bg-green-50 rounded border border-green-200">
                   <span className="font-medium text-[#1B5E20]">Recorrência:</span>
                   <p className="text-[#64748b] mt-1">
-                    {metrics.find((m) => m.segmentId === "recorrentes")?.totalClientes || 0} clientes recorrentes representam a menor inadimplência esperada.
+                    {metrics && metrics.length > 0
+                      ? `${metrics.find((m) => m.segmentId === "recorrentes")?.totalClientes || 0} clientes recorrentes representam a menor inadimplência esperada.`
+                      : "Nenhum cliente recorrente identificado."
+                    }
                   </p>
                 </div>
               </div>

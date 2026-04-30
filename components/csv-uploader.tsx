@@ -5,6 +5,7 @@ import { Upload, FileSpreadsheet, CheckCircle2, X, Loader2 } from "lucide-react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useData } from "@/lib/data-context";
+import { parseCSVAsync } from "@/lib/csv-worker";
 import type { ClienteRow, VarejoRow } from "@/lib/types";
 
 interface UploadState {
@@ -19,79 +20,49 @@ export function CSVUploader() {
     varejo: { uploaded: false, fileName: null, count: 0, loading: false },
   });
   const [isDragging, setIsDragging] = useState<"clientes" | "varejo" | null>(null);
-  const workerRef = useRef<Worker | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Cleanup worker on unmount
-  const cleanupWorker = useCallback(() => {
-    if (workerRef.current) {
-      workerRef.current.terminate();
-      workerRef.current = null;
-    }
+  // Cleanup effect removed - no longer needed since we're not using workers
+  useEffect(() => {
+    return () => {};
   }, []);
 
-  useEffect(() => {
-    return () => cleanupWorker();
-  }, [cleanupWorker]);
-
   const handleFileUpload = useCallback(
-    (file: File, type: "clientes" | "varejo") => {
+    async (file: File, type: "clientes" | "varejo") => {
       // Set loading state
       setUploadState((prev) => ({
         ...prev,
         [type]: { ...prev[type], loading: true },
       }));
 
-      // Read file as text
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const fileContent = e.target?.result as string;
+      try {
+        // Read file as text
+        const fileContent = await file.text();
 
-        // Initialize worker if not already done
-        if (!workerRef.current) {
-          workerRef.current = new Worker(new URL("../lib/csv-worker.ts", import.meta.url), {
-            type: "module",
-          });
+        // Parse CSV asynchronously (non-blocking)
+        const { data, count } = await parseCSVAsync(fileContent, type);
+
+        // Update state with parsed data
+        if (type === "clientes") {
+          setClientesData(data as ClienteRow[]);
+          setUploadState((prev) => ({
+            ...prev,
+            clientes: { uploaded: true, fileName: file.name, count, loading: false },
+          }));
+        } else {
+          setVarejoData(data as VarejoRow[]);
+          setUploadState((prev) => ({
+            ...prev,
+            varejo: { uploaded: true, fileName: file.name, count, loading: false },
+          }));
         }
-
-        // Handle worker message
-        const handleMessage = (event: MessageEvent) => {
-          const { type: resultType, data, count, error } = event.data;
-
-          if (error) {
-            console.error("[v0] Error parsing CSV:", error);
-            setUploadState((prev) => ({
-              ...prev,
-              [type]: { ...prev[type], loading: false },
-            }));
-            return;
-          }
-
-          // Update state with parsed data
-          if (resultType === "clientes") {
-            setClientesData(data as ClienteRow[]);
-            setUploadState((prev) => ({
-              ...prev,
-              clientes: { uploaded: true, fileName: file.name, count, loading: false },
-            }));
-          } else {
-            setVarejoData(data as VarejoRow[]);
-            setUploadState((prev) => ({
-              ...prev,
-              varejo: { uploaded: true, fileName: file.name, count, loading: false },
-            }));
-          }
-
-          // Remove listener after processing
-          workerRef.current?.removeEventListener("message", handleMessage);
-        };
-
-        workerRef.current?.addEventListener("message", handleMessage);
-
-        // Send file to worker for parsing
-        workerRef.current?.postMessage({ type, fileContent });
-      };
-
-      reader.readAsText(file);
+      } catch (error) {
+        console.error("[v0] Error uploading CSV:", error);
+        setUploadState((prev) => ({
+          ...prev,
+          [type]: { ...prev[type], loading: false },
+        }));
+      }
     },
     [setClientesData, setVarejoData]
   );
