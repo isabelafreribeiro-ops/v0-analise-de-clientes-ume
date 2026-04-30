@@ -84,9 +84,10 @@ export function parseBoolean(value: any): boolean {
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .trim();
+    .trim()
+    .replace(/\s+/g, ""); // Remove all spaces
 
-  return ["sim", "true", "1", "yes"].includes(v);
+  return ["sim", "true", "1", "yes", "s", "y"].includes(v);
 }
 
 // Parse rejection (opposite of boolean for "Tem App?" logic)
@@ -96,6 +97,46 @@ export function hasRejected(value: any): boolean {
   // Normalize accents
   v = v.replace(/ã/g, "a").replace(/ç/g, "c");
   return v === "nao" || v === "false" || v === "0" || v === "no";
+}
+
+// Normalize "Situação" field for consistent comparison
+export function normalizeSituacao(value: any): "aprovada" | "negada" | "unknown" {
+  if (!value) return "unknown";
+  
+  let v = String(value)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .replace(/\s+/g, "");
+
+  // Map variations to standard values
+  if (v.includes("negada") || v.includes("nao") || v.includes("rejeitada") || v.includes("rejected")) {
+    return "negada";
+  }
+  
+  if (v.includes("aprovada") || v.includes("approved") || v.includes("ativa")) {
+    return "aprovada";
+  }
+
+  return "unknown";
+}
+
+// Filter valid numbers from array (removes null, undefined, NaN)
+export function filterValidNumbers(values: (number | null | undefined)[]): number[] {
+  return values.filter((v): v is number => v !== null && v !== undefined && !isNaN(v));
+}
+
+// Format number to Brazilian locale (e.g., 1234.56 → 1.234,56)
+export function formatBRNumber(value: number | null): string {
+  if (value === null) return "—";
+  
+  const formatted = value.toLocaleString("pt-BR", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  });
+  
+  return formatted;
 }
 
 // Normalize CSV header names for consistent access
@@ -185,13 +226,14 @@ export function segmentarClientes(clientesData: ClienteRow[]): Segment[] {
   const highValue: ClienteRow[] = [];
 
   clientesData.forEach((cliente) => {
-    const situacao = String(getColumnValue(cliente, ["situacao", "status", "situation"]) || "").trim();
+    const situacaoRaw = getColumnValue(cliente, ["situacao", "status", "situation"]);
+    const situacao = normalizeSituacao(situacaoRaw);
     const compras = parseNumber(getColumnValue(cliente, ["qtd de compras", "compras", "qtd compras"])) || 0;
     const limite = parseNumber(getColumnValue(cliente, ["limite total", "limite", "limit total"])) || 0;
     const score = parseNumber(getColumnValue(cliente, ["score de crédito", "score", "score_credito"])) || 0;
 
     // Rule 1: Negados
-    if (situacao.toLowerCase() === "negada") {
+    if (situacao === "negada") {
       negados.push(cliente);
       return;
     }
@@ -617,4 +659,90 @@ export function calculateCohortAnalysis(clientesData: ClienteRow[]): CohortMetri
         avgLimite: calculateAverage(limites) || 0,
       };
     });
+}
+
+// Pre-aggregated metrics for performance optimization
+export interface AggregatedMetrics {
+  totalClientes: number;
+  totalAprovados: number;
+  totalNegados: number;
+  totalAtivados: number;
+  percentageAtivados: number;
+  percentageAprovados: number;
+  segments: SegmentMetrics[];
+  distributions: {
+    purchases: PurchaseDistribution[];
+    age: AgeDistribution[];
+    gender: GenderDistribution[];
+    retailers: RetailerDistribution[];
+    purchaseGroups: PurchaseGroupComparison[];
+  };
+  insights: string[];
+}
+
+export function calculateAggregatedMetrics(clientesData: ClienteRow[]): AggregatedMetrics {
+  if (!clientesData || clientesData.length === 0) {
+    return {
+      totalClientes: 0,
+      totalAprovados: 0,
+      totalNegados: 0,
+      totalAtivados: 0,
+      percentageAtivados: 0,
+      percentageAprovados: 0,
+      segments: [],
+      distributions: {
+        purchases: [],
+        age: [],
+        gender: [],
+        retailers: [],
+        purchaseGroups: [],
+      },
+      insights: [],
+    };
+  }
+
+  // Calculate base metrics
+  const totalClientes = clientesData.length;
+  const totalAprovados = clientesData.filter((c) => {
+    const situacao = normalizeSituacao(getColumnValue(c, ["situacao", "status"]));
+    return situacao === "aprovada";
+  }).length;
+  const totalNegados = totalClientes - totalAprovados;
+  const totalAtivados = clientesData.filter((c) => {
+    const compras = parseNumber(getColumnValue(c, ["qtd de compras", "compras"])) || 0;
+    return compras > 0;
+  }).length;
+
+  // Calculate segments and metrics
+  const segments = segmentarClientes(clientesData);
+  const segmentMetrics = calculateSegmentMetrics(segments, totalClientes);
+
+  // Generate insights
+  const thresholds = calculateThresholds(clientesData);
+  const insights = generateSegmentInsights(segmentMetrics, thresholds);
+
+  // Calculate all distributions
+  const purchases = calculatePurchaseDistribution(clientesData);
+  const age = calculateAgeDistribution(clientesData);
+  const gender = calculateGenderDistribution(clientesData);
+  const retailers = calculateRetailerDistribution(clientesData);
+  const purchaseGroups = calculatePurchaseGroupComparison(clientesData);
+
+  return {
+    totalClientes,
+    totalAprovados,
+    totalNegados,
+    totalAtivados,
+    percentageAtivados: calculatePercentage(totalAtivados, totalClientes),
+    percentageAprovados: calculatePercentage(totalAprovados, totalClientes),
+    segments: segmentMetrics,
+    distributions: {
+      purchases,
+      age,
+      gender,
+      retailers,
+      purchaseGroups,
+    },
+    insights,
+  };
 }

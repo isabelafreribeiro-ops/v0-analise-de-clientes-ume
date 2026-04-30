@@ -13,12 +13,16 @@ import {
   calculateAgeDistribution,
   calculateGenderDistribution,
   calculateRetailerDistribution,
+  calculateAggregatedMetrics,
+  formatBRNumber,
+  normalizeSituacao,
   parseNumber,
   parseBoolean,
   getColumnValue,
   calculateAverage,
   calculatePercentage,
   type SegmentMetrics,
+  type AggregatedMetrics,
 } from "@/lib/segmentation";
 import type { ClienteRow } from "@/lib/types";
 
@@ -54,7 +58,6 @@ function formatPercentage(value: number | null): string {
 
 export function SegmentacaoTab() {
   const { clientesData } = useData();
-  const [selectedSegmentId, setSelectedSegmentId] = useState<string | null>(null);
 
   if (!clientesData || clientesData.length === 0) {
     return (
@@ -64,26 +67,37 @@ export function SegmentacaoTab() {
     );
   }
 
-  const segments = segmentarClientes(clientesData);
-  const metrics = calculateSegmentMetrics(segments, clientesData.length);
-  const thresholds = calculateThresholds(clientesData);
-  const distribution = calculatePurchaseDistribution(clientesData);
-  const groupComparison = calculatePurchaseGroupComparison(clientesData);
-  const ageDistribution = calculateAgeDistribution(clientesData);
-  const genderDistribution = calculateGenderDistribution(clientesData);
-  const retailerDistribution = calculateRetailerDistribution(clientesData);
+  // Pre-aggregated metrics for performance
+  const aggregated = useMemo(() => calculateAggregatedMetrics(clientesData), [clientesData]);
 
-  // Calculate key metrics
-  const totalNegados = segments.find((s) => s.id === "negados")?.customers.length || 0;
-  const totalAprovados = clientesData.length - totalNegados;
-  const totalAprovedNaoAtivados = segments.find((s) => s.id === "aprovados-nao-ativados")?.customers.length || 0;
-  const totalAtivados = clientesData.filter((c) => {
-    const compras = parseNumber(getColumnValue(c, ["qtd de compras", "compras"])) || 0;
-    return compras > 0 && String(getColumnValue(c, ["situacao", "status"]) || "").toLowerCase() !== "negada";
-  }).length;
+  // Memoized distributions and metrics
+  const segments = useMemo(() => segmentarClientes(clientesData), [clientesData]);
+  const metrics = useMemo(() => calculateSegmentMetrics(segments, clientesData.length), [segments, clientesData.length]);
+  const thresholds = useMemo(() => calculateThresholds(clientesData), [clientesData]);
+  const distribution = useMemo(() => calculatePurchaseDistribution(clientesData), [clientesData]);
+  const groupComparison = useMemo(() => calculatePurchaseGroupComparison(clientesData), [clientesData]);
+  const ageDistribution = useMemo(() => calculateAgeDistribution(clientesData), [clientesData]);
+  const genderDistribution = useMemo(() => calculateGenderDistribution(clientesData), [clientesData]);
+  const retailerDistribution = useMemo(() => calculateRetailerDistribution(clientesData), [clientesData]);
 
-  const comApp = clientesData.filter((c) => parseBoolean(getColumnValue(c, ["tem app", "app"]))).length;
-  const appAdoptionPct = (comApp / clientesData.length) * 100;
+  // Memoized key metrics
+  const keyMetrics = useMemo(() => {
+    const totalNegados = segments.find((s) => s.id === "negados")?.customers.length || 0;
+    const totalAprovados = clientesData.length - totalNegados;
+    const totalAprovedNaoAtivados = segments.find((s) => s.id === "aprovados-nao-ativados")?.customers.length || 0;
+    const totalAtivados = clientesData.filter((c) => {
+      const compras = parseNumber(getColumnValue(c, ["qtd de compras", "compras"])) || 0;
+      const situacao = normalizeSituacao(getColumnValue(c, ["situacao", "status"]));
+      return compras > 0 && situacao !== "negada";
+    }).length;
+
+    const comApp = clientesData.filter((c) => parseBoolean(getColumnValue(c, ["tem app", "app"]))).length;
+    const appAdoptionPct = (comApp / clientesData.length) * 100;
+
+    return { totalNegados, totalAprovados, totalAprovedNaoAtivados, totalAtivados, comApp, appAdoptionPct };
+  }, [segments, clientesData]);
+
+  const { totalNegados, totalAprovados, totalAprovedNaoAtivados, totalAtivados, comApp, appAdoptionPct } = keyMetrics;
 
   const scoreDistribution = useMemo(() => {
     const scores = clientesData.map((c) => parseNumber(getColumnValue(c, ["score de crédito", "score"]))).filter((s) => s !== null) as number[];
@@ -92,6 +106,23 @@ export function SegmentacaoTab() {
       medium: scores.filter((s) => s >= 400 && s < 700).length,
       high: scores.filter((s) => s >= 700).length,
     };
+  }, [clientesData]);
+
+  const avgScore = useMemo(() => {
+    return calculateAverage(clientesData.map((c) => parseNumber(getColumnValue(c, ["score de crédito", "score"]))));
+  }, [clientesData]);
+
+  const avgLimite = useMemo(() => {
+    return calculateAverage(clientesData.map((c) => parseNumber(getColumnValue(c, ["limite total", "limite"]))));
+  }, [clientesData]);
+
+  const avgCompras = useMemo(() => {
+    return calculateAverage(clientesData.map((c) => parseNumber(getColumnValue(c, ["qtd de compras", "compras"]))));
+  }, [clientesData]);
+
+  const percentageComAumento = useMemo(() => {
+    const count = clientesData.filter((c) => parseBoolean(getColumnValue(c, ["aumento limite", "limite aumentado"]))).length;
+    return calculatePercentage(count, clientesData.length);
   }, [clientesData]);
 
   // === RENDER ===
@@ -130,7 +161,7 @@ export function SegmentacaoTab() {
             <CardTitle className="text-xs font-semibold text-[#64748b] uppercase">Score Médio</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-[#1a1a1a]">{formatNumber(calculateAverage(clientesData.map((c) => parseNumber(getColumnValue(c, ["score de crédito", "score"])))))}</div>
+            <div className="text-2xl font-bold text-[#1a1a1a]">{formatNumber(avgScore)}</div>
             <p className="text-xs text-[#94a3b8] mt-1">base aprovada • Perfil de risco</p>
           </CardContent>
         </Card>
@@ -180,17 +211,12 @@ export function SegmentacaoTab() {
               </div>
               <div className="text-xs">
                 <span className="text-[#64748b]">Limite Médio</span>
-                <div className="font-medium text-[#1a1a1a]">{formatCurrency(calculateAverage(clientesData.map((c) => parseNumber(getColumnValue(c, ["limite total", "limite"])))))}</div>
+                <div className="font-medium text-[#1a1a1a]">{formatCurrency(avgLimite)}</div>
               </div>
               <div className="mt-2 pt-2 border-t border-[#E2E8F0] text-xs">
                 <span className="text-[#64748b]">Com aumento de limite</span>
                 <div className="font-medium text-[#1a1a1a]">
-                  {formatPercentage(
-                    calculatePercentage(
-                      clientesData.filter((c) => parseBoolean(getColumnValue(c, ["aumento limite", "limite aumentado"]))).length,
-                      clientesData.length
-                    )
-                  )}
+                  {formatPercentage(percentageComAumento)}
                 </div>
               </div>
             </div>
@@ -205,7 +231,7 @@ export function SegmentacaoTab() {
                 </div>
                 <div>
                   <span className="text-[#64748b] block mb-1">Compras Médias</span>
-                  <span className="font-medium text-[#1a1a1a] block">{formatNumber(calculateAverage(clientesData.map((c) => parseNumber(getColumnValue(c, ["qtd de compras", "compras"])))))}</span>
+                  <span className="font-medium text-[#1a1a1a] block">{formatNumber(avgCompras)}</span>
                 </div>
                 <div>
                   <span className="text-[#64748b] block mb-1">Varejos</span>
@@ -340,23 +366,32 @@ export function SegmentacaoTab() {
       <Card className="border-[#E2E8F0]">
         <CardHeader>
           <CardTitle>Segmentação de Clientes</CardTitle>
-          <p className="text-xs text-[#64748b] mt-2">Clique para detalhar análise de cada segmento.</p>
+          <p className="text-xs text-[#64748b] mt-2">Análise comportamental segmentada. Cada segmento possui características e oportunidades distintas.</p>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-3 grid-cols-1 md:grid-cols-2 lg:grid-cols-5">
+          <div className="mb-4 p-3 bg-[#F7FAF8] rounded border border-[#E2E8F0]">
+            <p className="text-xs font-semibold text-[#64748b] mb-2">Critérios de Segmentação:</p>
+            <ul className="text-xs text-[#64748b] space-y-1 list-disc list-inside">
+              <li><span className="font-medium text-[#1a1a1a]">Aprovados Não Ativados:</span> aprovado + 0 compras</li>
+              <li><span className="font-medium text-[#1a1a1a]">Potencial:</span> 1 compra + bom perfil de crédito</li>
+              <li><span className="font-medium text-[#1a1a1a]">Recorrentes:</span> 2+ compras</li>
+              <li><span className="font-medium text-[#1a1a1a]">High Value:</span> 3+ compras + alto limite</li>
+              <li><span className="font-medium text-[#1a1a1a]">Negados:</span> não aprovados na base</li>
+            </ul>
+          </div>
+
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-5">
             {segments.map((segment) => {
               const metric = metrics.find((m) => m.segmentId === segment.id);
               const colors = SEGMENT_COLORS[segment.id] || { bg: "#F7FAF8", accent: "#00C853", text: "#1a1a1a" };
-              const isSelected = selectedSegmentId === segment.id;
 
               return (
-                <button
+                <div
                   key={segment.id}
-                  onClick={() => setSelectedSegmentId(isSelected ? null : segment.id)}
-                  className="p-4 rounded border-2 transition-all"
+                  className="p-4 rounded border-2"
                   style={{
-                    backgroundColor: isSelected ? colors.bg : "white",
-                    borderColor: isSelected ? colors.accent : "#E2E8F0",
+                    backgroundColor: colors.bg,
+                    borderColor: colors.accent,
                   }}
                 >
                   <p className="text-xs font-semibold uppercase" style={{ color: colors.accent }}>
@@ -365,7 +400,7 @@ export function SegmentacaoTab() {
                   <p className="text-lg font-bold text-[#1a1a1a] mt-2">{segment.customers.length}</p>
                   <p className="text-xs text-[#64748b] mt-1">{metric?.percentageOfBase.toFixed(1)}% da base</p>
 
-                  {isSelected && metric && (
+                  {metric && (
                     <div className="mt-3 pt-3 border-t" style={{ borderColor: colors.accent + "40" }}>
                       <div className="text-xs space-y-1 text-left">
                         <div className="flex justify-between">
@@ -377,20 +412,94 @@ export function SegmentacaoTab() {
                           <span className="font-medium text-[#1a1a1a]">{formatNumber(metric.avgScore)}</span>
                         </div>
                         <div className="flex justify-between">
+                          <span className="text-[#64748b]">Limite:</span>
+                          <span className="font-medium text-[#1a1a1a]">{formatCurrency(metric.avgLimite)}</span>
+                        </div>
+                        <div className="flex justify-between">
                           <span className="text-[#64748b]">App:</span>
                           <span className="font-medium text-[#1a1a1a]">{formatPercentage(metric.percentageComApp)}</span>
                         </div>
                       </div>
                     </div>
                   )}
-                </button>
+                </div>
               );
             })}
           </div>
         </CardContent>
       </Card>
 
-      {/* 7. OPORTUNIDADES ESTRATÉGICAS */}
+      {/* 7. ANÁLISE DE RISCO */}
+      <Card className="border-[#E2E8F0]">
+        <CardHeader>
+          <CardTitle>Análise de Risco</CardTitle>
+          <p className="text-xs text-[#64748b] mt-2">Correlação entre perfil de risco, comportamento de compras e características do cliente.</p>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
+            {/* Risk Profile */}
+            <div>
+              <p className="text-xs font-semibold text-[#64748b] mb-3 uppercase">⚠️ Distribuição de Score</p>
+              <div className="space-y-2">
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-[#64748b]">Baixo (&lt;400)</span>
+                    <span className="font-medium text-[#1a1a1a]">{scoreDistribution.low} clientes</span>
+                  </div>
+                  <div className="bg-[#E2E8F0] rounded h-2">
+                    <div className="bg-[#F44336] h-2 rounded" style={{ width: `${Math.min((scoreDistribution.low / clientesData.length) * 100, 100)}%` }} />
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-[#64748b]">Médio (400-700)</span>
+                    <span className="font-medium text-[#1a1a1a]">{scoreDistribution.medium} clientes</span>
+                  </div>
+                  <div className="bg-[#E2E8F0] rounded h-2">
+                    <div className="bg-[#FF9800] h-2 rounded" style={{ width: `${Math.min((scoreDistribution.medium / clientesData.length) * 100, 100)}%` }} />
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-[#64748b]">Alto (≥700)</span>
+                    <span className="font-medium text-[#1a1a1a]">{scoreDistribution.high} clientes</span>
+                  </div>
+                  <div className="bg-[#E2E8F0] rounded h-2">
+                    <div className="bg-[#00C853] h-2 rounded" style={{ width: `${Math.min((scoreDistribution.high / clientesData.length) * 100, 100)}%` }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Purchase & Limit Correlation */}
+            <div>
+              <p className="text-xs font-semibold text-[#64748b] mb-3 uppercase">📊 Insights de Risco</p>
+              <div className="space-y-2 text-xs">
+                <div className="p-2 bg-blue-50 rounded border border-blue-200">
+                  <span className="font-medium text-[#0D47A1]">Score vs Compras:</span>
+                  <p className="text-[#64748b] mt-1">
+                    Clientes com score alto têm média de {formatNumber(metrics.find((m) => m.avgScore >= 700)?.avgCompras || 0)} compras.
+                  </p>
+                </div>
+                <div className="p-2 bg-orange-50 rounded border border-orange-200">
+                  <span className="font-medium text-[#E65100]">Limite vs App:</span>
+                  <p className="text-[#64748b] mt-1">
+                    {formatPercentage(appAdoptionPct)} da base usa app — correlação forte com maior confiança.
+                  </p>
+                </div>
+                <div className="p-2 bg-green-50 rounded border border-green-200">
+                  <span className="font-medium text-[#1B5E20]">Recorrência:</span>
+                  <p className="text-[#64748b] mt-1">
+                    {metrics.find((m) => m.segmentId === "recorrentes")?.totalClientes || 0} clientes recorrentes representam a menor inadimplência esperada.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 8. OPORTUNIDADES ESTRATÉGICAS */}
       <Card className="border-[#E2E8F0]">
         <CardHeader>
           <CardTitle>Oportunidades Estratégicas</CardTitle>
