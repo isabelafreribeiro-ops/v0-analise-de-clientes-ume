@@ -86,6 +86,7 @@ export function SegmentacaoTab() {
   const [selectedSegmentId, setSelectedSegmentId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [pageIndex, setPageIndex] = useState(0);
+  const [cohortMonthsFilter, setCohortMonthsFilter] = useState<"L3M" | "L6M" | "L12M" | "todos">("L6M");
   const ROWS_PER_PAGE = 50;
 
   const {
@@ -213,6 +214,34 @@ export function SegmentacaoTab() {
   const largestScoreGroup = scoreDistribution.high > scoreDistribution.low && scoreDistribution.high > scoreDistribution.medium ? "Alto" : scoreDistribution.medium > scoreDistribution.low ? "Médio" : "Baixo";
   const appAdoption = ((clientesData.filter((c) => parseBoolean(getColumnValue(c, ["tem app", "app"]))).length / clientesData.length) * 100).toFixed(0);
   const largestPurchaseGroup = distribution.reduce((max, g) => (g.count > max.count ? g : max), distribution[0]);
+
+  // Filter cohort data based on selected time period
+  const filteredCohortData = useMemo(() => {
+    if (cohortAnalysis.length === 0) return [];
+    
+    const now = new Date();
+    const getCohortDate = (monthStr: string) => {
+      const [year, month] = monthStr.split("-");
+      return new Date(parseInt(year), parseInt(month) - 1, 1);
+    };
+
+    switch (cohortMonthsFilter) {
+      case "L3M": {
+        const threeMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+        return cohortAnalysis.filter((c) => getCohortDate(c.month) >= threeMonthsAgo);
+      }
+      case "L6M": {
+        const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+        return cohortAnalysis.filter((c) => getCohortDate(c.month) >= sixMonthsAgo);
+      }
+      case "L12M": {
+        const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), 1);
+        return cohortAnalysis.filter((c) => getCohortDate(c.month) >= oneYearAgo);
+      }
+      default:
+        return cohortAnalysis;
+    }
+  }, [cohortAnalysis, cohortMonthsFilter]);
 
   // Aprovados Não Ativados segment
   const aprovadosNaoAtivadosSegment = segments.find((s) => s.id === "aprovados-nao-ativados");
@@ -376,10 +405,24 @@ export function SegmentacaoTab() {
       {cohortAnalysis.length > 0 && (
         <Card className="border-[#E2E8F0]">
           <CardHeader>
-            <CardTitle>Qualidade por Cohort de Entrada</CardTitle>
-            <p className="text-xs text-[#64748b] mt-1">
-              Mostra se a qualidade dos clientes adquiridos está melhorando ou piorando ao longo do tempo.
-            </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Qualidade por Cohort de Entrada</CardTitle>
+                <p className="text-xs text-[#64748b] mt-1">
+                  Mostra se a qualidade dos clientes adquiridos está melhorando ou piorando ao longo do tempo.
+                </p>
+              </div>
+              <select
+                value={cohortMonthsFilter}
+                onChange={(e) => setCohortMonthsFilter(e.target.value as "L3M" | "L6M" | "L12M" | "todos")}
+                className="px-3 py-2 border border-[#E2E8F0] rounded text-xs font-medium text-[#64748b] bg-white hover:border-[#CBD5E1]"
+              >
+                <option value="L3M">Últimos 3 meses</option>
+                <option value="L6M">Últimos 6 meses</option>
+                <option value="L12M">Últimos 12 meses</option>
+                <option value="todos">Todos</option>
+              </select>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
@@ -396,10 +439,10 @@ export function SegmentacaoTab() {
                   </tr>
                 </thead>
                 <tbody>
-                  {cohortAnalysis.map((c) => (
+                  {filteredCohortData.map((c) => (
                     <tr key={c.month} className="border-b border-[#E2E8F0] hover:bg-[#F7FAF8]">
-                      <td className="py-2 px-2 text-[#64748b] font-medium">{c.month}</td>
-                      <td className="py-2 px-2 text-right text-[#64748b]">{c.totalClientes}</td>
+                      <td className="py-2 px-2 text-[#64748b] font-medium">{c.monthDisplay}</td>
+                      <td className="py-2 px-2 text-right text-[#64748b]">{c.totalClientes.toLocaleString("pt-BR")}</td>
                       <td className="py-2 px-2 text-right text-[#64748b]">{formatPercentage(c.percentageAprovados)}</td>
                       <td className="py-2 px-2 text-right text-[#64748b]">{formatPercentage(c.percentageAtivados)}</td>
                       <td className="py-2 px-2 text-right text-[#64748b]">{formatPercentage(c.percentageRecorrentes)}</td>

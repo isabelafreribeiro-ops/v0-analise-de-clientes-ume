@@ -76,13 +76,17 @@ export function parseNumber(value: any): number | null {
   return null;
 }
 
-// Parse boolean from CSV with accent normalization (handles "sim", "Não", true, 1, etc.)
+// Parse boolean from CSV with proper Unicode normalization (handles "sim", "Não", true, 1, etc.)
 export function parseBoolean(value: any): boolean {
   if (!value) return false;
-  let v = String(value).toLowerCase().trim();
-  // Normalize accents: Não -> nao
-  v = v.replace(/ã/g, "a").replace(/ç/g, "c");
-  return v === "sim" || v === "true" || v === "1" || v === "yes";
+
+  const v = String(value)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim();
+
+  return ["sim", "true", "1", "yes"].includes(v);
 }
 
 // Parse rejection (opposite of boolean for "Tem App?" logic)
@@ -543,8 +547,22 @@ export function calculateRetailerDistribution(clientesData: ClienteRow[]): Retai
 }
 
 // Cohort analysis by entry month
+// Format date YYYY-MM to Portuguese format (e.g., "Jan/23")
+export function formatMonthDisplay(dateStr: string): string {
+  const monthNames = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+  const parts = dateStr.split("-");
+  if (parts.length !== 2) return dateStr;
+  
+  const month = parseInt(parts[1], 10);
+  const year = parts[0].slice(-2);
+  
+  if (month < 1 || month > 12) return dateStr;
+  return `${monthNames[month - 1]}/${year}`;
+}
+
 export interface CohortMetrics {
   month: string;
+  monthDisplay: string;
   totalClientes: number;
   percentageAprovados: number;
   percentageAtivados: number;
@@ -590,6 +608,7 @@ export function calculateCohortAnalysis(clientesData: ClienteRow[]): CohortMetri
 
       return {
         month,
+        monthDisplay: formatMonthDisplay(month),
         totalClientes: customers.length,
         percentageAprovados: calculatePercentage(aprovados, customers.length),
         percentageAtivados: calculatePercentage(ativados, customers.length),
