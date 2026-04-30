@@ -175,14 +175,17 @@ export function JornadaTab() {
       size: segmentSizes["recorrentes"],
       objetivo: "Aumentar frequência e ticket",
       trigger: "Cliente com 2+ compras",
-      timeline: ["Semanal", "Bi-semanal", "Mensal", "Trimestral"],
+      timeline: ["D0", "D15", "D30", "D60", "D90"],
       channels: ["sms", "whatsapp"],
-      fluxo: ["SMS", "WhatsApp", "SMS", "WhatsApp"],
+      fluxo: ["SMS", "WhatsApp", "SMS", "WhatsApp", "SMS"],
       detalhamentoPadrao: [
-        { momento: "Bi-semanal", canal: "WhatsApp", mensagem: "Bom histórico = mais crédito. Veja seu limite atualizado: R$[NOVO_LIMITE]", acao: "Reconhecimento real" },
-        { momento: "Mensal", canal: "SMS", mensagem: "[NOME], em [PERIODO] você usou R$[GMV] com taxa abaixo do cartão. Continue assim!", acao: "Retenção por valor" },
+        { momento: "D0", canal: "SMS", mensagem: "Compra registrada! Você tem R$[LIMITE_RESTANTE] disponível.", acao: "Reconhecimento" },
+        { momento: "D15", canal: "WhatsApp", mensagem: "Seu histórico tá bom! Limite pode aumentar em breve: [LINK]", acao: "Antecipação" },
+        { momento: "D30", canal: "SMS", mensagem: "[NOME], em 30 dias você usou R$[GMV] com taxa abaixo do cartão. Continue!", acao: "Retenção por valor" },
+        { momento: "D60", canal: "WhatsApp", mensagem: "Bom histórico = limite maior. Seu novo limite: R$[NOVO_LIMITE]. Use onde quiser.", acao: "Benefício real" },
+        { momento: "D90", canal: "SMS", mensagem: "Em 90 dias, você economizou R$[ECONOMIA] usando Ume. Parabéns!", acao: "Retenção acumulada" },
       ],
-      resultadoEsperado: ["Aumento de frequência", "Aumento de ticket médio"],
+      resultadoEsperado: ["Aumento de frequência", "Aumento de ticket médio", "~24 toques/ano (não 60)"],
     },
     {
       id: "ume-plus",
@@ -190,14 +193,17 @@ export function JornadaTab() {
       size: segmentSizes["ume-plus"],
       objetivo: "Retenção e maximizar LTV",
       trigger: "3+ compras + score alto",
-      timeline: ["Quinzenal", "Mensal", "Trimestral"],
+      timeline: ["D0", "D30", "D60", "D90", "D180"],
       channels: ["whatsapp", "sms"],
-      fluxo: ["WhatsApp", "SMS", "WhatsApp"],
+      fluxo: ["WhatsApp", "SMS", "WhatsApp", "SMS", "WhatsApp"],
       detalhamentoPadrao: [
-        { momento: "Quinzenal", canal: "WhatsApp", mensagem: "[NOME], limite aumentado automaticamente para R$[NOVO_LIMITE] pelo seu histórico.", acao: "Benefício real" },
-        { momento: "Mensal", canal: "SMS", mensagem: "Taxa reduzida para [TAXA_REDUZIDA]% — você está pagando abaixo da média.", acao: "ROI" },
+        { momento: "D0", canal: "WhatsApp", mensagem: "[NOME], limite aumentado automaticamente para R$[NOVO_LIMITE] pelo seu histórico impecável.", acao: "Reconhecimento automático" },
+        { momento: "D30", canal: "SMS", mensagem: "Você pagou R$[PARCELAS_PAGAS] em parcelas no mês. Taxa: [TAXA_CLIENTE]% — abaixo da média.", acao: "ROI financeiro" },
+        { momento: "D60", canal: "WhatsApp", mensagem: "[NOME], você pode antecipar parcelas com [X]% desconto. Economize R$[ECONOMIA_POTENCIAL]: [LINK]", acao: "Liquidez ao cliente" },
+        { momento: "D90", canal: "SMS", mensagem: "Em 90 dias: R$[GMV_90D] em compras, score [NOVO_SCORE] (era [SCORE_ANTERIOR]). Você cresceu!", acao: "Gamificação" },
+        { momento: "D180", canal: "WhatsApp", mensagem: "[NOME], você economizou R$[ECONOMIA_SEMESTRAL] vs. cartão tradicional. Atendimento prioritário disponível: [LINK]", acao: "Tier VIP confirmado" },
       ],
-      resultadoEsperado: ["Maximização de LTV", "Redução de churn"],
+      resultadoEsperado: ["Maximização de LTV", "Redução de churn em alto valor", "Advocacy e indicações"],
     },
     {
       id: "negados-recuperaveis",
@@ -396,6 +402,172 @@ export function JornadaTab() {
           <p>✓ Personalização por score aplicada em {(selectedScoreFilter !== "all" ? "3 segmentos" : "0 segmentos")} de aprovados</p>
         </CardContent>
       </Card>
+
+      {/* Behavioral Triggers Section */}
+      <div className="border-t border-[#E2E8F0] pt-8">
+        <h2 className="text-2xl font-bold text-[#1a1a1a] mb-2">Gatilhos Comportamentais (Event-Based)</h2>
+        <p className="text-sm text-[#64748b] mb-6">
+          Estes eventos têm prioridade sobre a jornada time-based. Quando ambos disparam no mesmo dia, envie apenas a mensagem do gatilho.
+        </p>
+
+        <div className="grid grid-cols-1 gap-6">
+          {/* Trigger A: Abandono de Carrinho */}
+          <Card className="border-l-4" style={{ borderLeftColor: "#FF9800", backgroundColor: "#FFF3E0" }}>
+            <CardHeader>
+              <CardTitle className="text-lg">Gatilho A: Abandono de Carrinho/Checkout</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="text-sm font-semibold text-[#64748b]">TRIGGER</p>
+                <p className="text-sm text-[#1a1a1a]">Cliente clicou em mensagem ou abriu app, mas não completou compra em 24h</p>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[#64748b]">SEGMENTOS APLICÁVEIS</p>
+                <p className="text-sm text-[#1a1a1a]">Potencial, Recorrentes, Ume Plus</p>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[#64748b]">FLUXO</p>
+                <ul className="text-sm text-[#1a1a1a] space-y-2">
+                  <li>• <strong>24h:</strong> WhatsApp — "Vi que você estava de olho em uma compra. Seu crédito Ume de R$[LIMITE] segue disponível — finalize aqui: [LINK]"</li>
+                  <li>• <strong>72h (se não converteu):</strong> SMS — "[NOME], seu crédito Ume continua reservado. Finalize a compra: [LINK]"</li>
+                </ul>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[#64748b]">RESULTADO ESPERADO</p>
+                <p className="text-sm text-[#1a1a1a]">Recuperação de ~10-15% dos abandonos</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Trigger B: Inatividade Prolongada */}
+          <Card className="border-l-4" style={{ borderLeftColor: "#E53935", backgroundColor: "#FFEBEE" }}>
+            <CardHeader>
+              <CardTitle className="text-lg">Gatilho B: Inatividade Prolongada (Churn Precoce)</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="text-sm font-semibold text-[#64748b]">TRIGGER</p>
+                <p className="text-sm text-[#1a1a1a]">Recorrente ou Ume Plus sem compra há 60 dias (ajustável)</p>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[#64748b]">SEGMENTOS APLICÁVEIS</p>
+                <p className="text-sm text-[#1a1a1a]">Recorrentes, Ume Plus</p>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[#64748b]">MENSAGEM</p>
+                <p className="text-sm text-[#1a1a1a]"><strong>WhatsApp:</strong> "[NOME], faz [N] dias que você não usa a Ume. Seu limite de R$[LIMITE] continua aqui. Algo mudou? [LINK_FAQ_OU_SUPORTE]"</p>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[#64748b]">RESULTADO ESPERADO</p>
+                <p className="text-sm text-[#1a1a1a]">Recuperação de ~5-8% dos inátivos</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Trigger C: Aproximação de Vencimento */}
+          <Card className="border-l-4" style={{ borderLeftColor: "#1976D2", backgroundColor: "#E3F2FD" }}>
+            <CardHeader>
+              <CardTitle className="text-lg">Gatilho C: Aproximação de Vencimento de Parcela</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="text-sm font-semibold text-[#64748b]">TRIGGER</p>
+                <p className="text-sm text-[#1a1a1a]">Parcela vence em 3 dias</p>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[#64748b]">SEGMENTOS APLICÁVEIS</p>
+                <p className="text-sm text-[#1a1a1a]">Todos os aprovados (com parcelas ativas)</p>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[#64748b]">MENSAGEM</p>
+                <p className="text-sm text-[#1a1a1a]"><strong>Push (se tem app) ou SMS:</strong> "Sua parcela Ume de R$[VALOR] vence em 3 dias. Pague ou antecipe com desconto: [LINK]"</p>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[#64748b]">RESULTADO ESPERADO</p>
+                <p className="text-sm text-[#1a1a1a]">Redução de inadimplência, aumento de antecipações</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Trigger D: Primeiro Uso de Novo Varejo */}
+          <Card className="border-l-4" style={{ borderLeftColor: "#9C27B0", backgroundColor: "#F3E5F5" }}>
+            <CardHeader>
+              <CardTitle className="text-lg">Gatilho D: Primeiro Uso de Novo Varejo</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="text-sm font-semibold text-[#64748b]">TRIGGER</p>
+                <p className="text-sm text-[#1a1a1a]">Cliente compra em varejo Ume novo na rede</p>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[#64748b]">SEGMENTOS APLICÁVEIS</p>
+                <p className="text-sm text-[#1a1a1a]">Recorrentes, Ume Plus</p>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[#64748b]">MENSAGEM</p>
+                <p className="text-sm text-[#1a1a1a]"><strong>Push:</strong> "Bem-vindo à [VAREJO]! Você acabou de descobrir mais um lugar pra usar Ume."</p>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[#64748b]">RESULTADO ESPERADO</p>
+                <p className="text-sm text-[#1a1a1a]">Cross-loja de 8-12%, diversificação de uso</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Trigger E: Aumento Automático de Limite */}
+          <Card className="border-l-4" style={{ borderLeftColor: "#00C853", backgroundColor: "#F0F4F3" }}>
+            <CardHeader>
+              <CardTitle className="text-lg">Gatilho E: Aumento Automático de Limite</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="text-sm font-semibold text-[#64748b]">TRIGGER</p>
+                <p className="text-sm text-[#1a1a1a]">Limite total foi aumentado pelo motor de crédito</p>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[#64748b]">SEGMENTOS APLICÁVEIS</p>
+                <p className="text-sm text-[#1a1a1a]">Todos os aprovados (com histórico positivo)</p>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[#64748b]">MENSAGEM</p>
+                <p className="text-sm text-[#1a1a1a]"><strong>WhatsApp:</strong> "Boas notícias [NOME]: seu limite Ume passou de R$[LIMITE_ANTIGO] para R$[LIMITE_NOVO] pelo seu bom histórico. Use onde quiser: [LINK]"</p>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[#64748b]">RESULTADO ESPERADO</p>
+                <p className="text-sm text-[#1a1a1a]">Aumento de AOV 15-25%, retenção reforçada</p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Trigger F: Recuperação Pós-Inadimplência */}
+          <Card className="border-l-4" style={{ borderLeftColor: "#FBC02D", backgroundColor: "#FFF9C4" }}>
+            <CardHeader>
+              <CardTitle className="text-lg">Gatilho F: Recuperação Pós-Inadimplência</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="text-sm font-semibold text-[#64748b]">TRIGGER</p>
+                <p className="text-sm text-[#1a1a1a]">Cliente que estava Inadimplente regularizou</p>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[#64748b]">SEGMENTOS APLICÁVEIS</p>
+                <p className="text-sm text-[#1a1a1a]">Inadimplentes (transição para ativo)</p>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[#64748b]">FLUXO</p>
+                <ul className="text-sm text-[#1a1a1a] space-y-2">
+                  <li>• <strong>SMS:</strong> "[NOME], débito quitado! Seu crédito Ume está reativado com limite de R$[NOVO_LIMITE]. Bom retorno!"</li>
+                  <li>• <strong>WhatsApp (1 dia depois):</strong> "Bem-vindo de volta! Seu histórico limpo abre oportunidades. Comece sua jornada Ume novamente: [LINK]"</li>
+                </ul>
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[#64748b]">RESULTADO ESPERADO</p>
+                <p className="text-sm text-[#1a1a1a]">Retenção de ~40-50% dos recuperados, reativação suave</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
