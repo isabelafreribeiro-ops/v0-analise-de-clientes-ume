@@ -146,18 +146,15 @@ export function ClientesFunnel({
     return filtered;
   }, [clientesData, periodFrom, periodTo, varejoFilter]);
 
-  // Calculate funnel data
+  // Calculate funnel data (4 steps: Solicitações → Aprovados → Ativados → Recorrentes)
   const funnelData = useMemo((): FunnelStep[] => {
     if (filteredClientes.length === 0) return [];
 
     const total = filteredClientes.length;
     const negados = filteredClientes.filter((c) => c.Situação === "Negada").length;
     const aprovados = total - negados;
-    const aprovadosInativos = filteredClientes.filter(
-      (c) => Number(c["Qtd de Compras"]) === 0 && c.Situação !== "Negada"
-    ).length;
-    const primeiraCompra = filteredClientes.filter(
-      (c) => Number(c["Qtd de Compras"]) >= 1
+    const ativados = filteredClientes.filter(
+      (c) => Number(c["Qtd de Compras"]) >= 1 && c.Situação !== "Negada"
     ).length;
     const recorrentes = filteredClientes.filter(
       (c) => Number(c["Qtd de Compras"]) > 1
@@ -171,32 +168,39 @@ export function ClientesFunnel({
         dropoffRate: 0,
       },
       {
-        name: "Negados",
-        value: negados,
-        percentage: total > 0 ? (negados / total) * 100 : 0,
-        dropoffRate: 0,
+        name: "Aprovados",
+        value: aprovados,
+        percentage: total > 0 ? (aprovados / total) * 100 : 0,
+        dropoffRate: total > 0 ? ((negados) / total) * 100 : 0,
       },
       {
-        name: "Aprovados Inativos",
-        value: aprovadosInativos,
-        percentage: total > 0 ? (aprovadosInativos / total) * 100 : 0,
-        dropoffRate: aprovados > 0 ? ((aprovados - aprovadosInativos - primeiraCompra) / aprovados) * 100 : 0,
-      },
-      {
-        name: "Primeira Compra",
-        value: primeiraCompra,
-        percentage: total > 0 ? (primeiraCompra / total) * 100 : 0,
-        dropoffRate: aprovados > 0 ? ((aprovados - primeiraCompra) / aprovados) * 100 : 0,
+        name: "Ativados",
+        value: ativados,
+        percentage: total > 0 ? (ativados / total) * 100 : 0,
+        dropoffRate: aprovados > 0 ? ((aprovados - ativados) / aprovados) * 100 : 0,
       },
       {
         name: "Recorrentes",
         value: recorrentes,
         percentage: total > 0 ? (recorrentes / total) * 100 : 0,
-        dropoffRate: primeiraCompra > 0 ? ((primeiraCompra - recorrentes) / primeiraCompra) * 100 : 0,
+        dropoffRate: ativados > 0 ? ((ativados - recorrentes) / ativados) * 100 : 0,
       },
     ];
 
     return steps;
+  }, [filteredClientes]);
+
+  // Negados metric
+  const negadosMetric = useMemo(() => {
+    if (filteredClientes.length === 0) {
+      return { count: 0, percentage: 0 };
+    }
+    const total = filteredClientes.length;
+    const negados = filteredClientes.filter((c) => c.Situação === "Negada").length;
+    return {
+      count: negados,
+      percentage: total > 0 ? (negados / total) * 100 : 0,
+    };
   }, [filteredClientes]);
 
   // Summary metrics
@@ -314,7 +318,7 @@ export function ClientesFunnel({
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-5">
         <Card className="border-[#004d26] bg-[#002a14]">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-[#7a9e8a]">
@@ -326,6 +330,23 @@ export function ClientesFunnel({
             <div className="text-2xl font-bold text-white">
               {summaryMetrics.total.toLocaleString("pt-BR")}
             </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-[#004d26] bg-[#002a14]">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-[#7a9e8a]">
+              Negados
+            </CardTitle>
+            <Users className="h-4 w-4 text-red-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-500">
+              {negadosMetric.count.toLocaleString("pt-BR")}
+            </div>
+            <p className="mt-1 text-xs text-[#7a9e8a]">
+              {negadosMetric.percentage.toFixed(1)}% do total
+            </p>
           </CardContent>
         </Card>
 
