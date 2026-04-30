@@ -64,28 +64,29 @@ export function SegmentacaoTab() {
 
   // PERFORMANCE FIX: Use ONLY cached analytics - NO recalculation
   // All data is pre-computed once after upload and stored in context
-  const segments = cachedAnalytics.segments;
-  const metrics = cachedAnalytics.metrics;
-  const thresholds = cachedAnalytics.thresholds;
-  const distribution = cachedAnalytics.distribution;
-  const groupComparison = cachedAnalytics.groupComparison;
-  const ageDistribution = cachedAnalytics.ageDistribution;
-  const genderDistribution = cachedAnalytics.genderDistribution;
-  const retailerDistribution = cachedAnalytics.retailerDistribution;
-  const aggregated = cachedAnalytics.aggregated;
+  const segments = cachedAnalytics?.segments ?? [];
+  const metrics = cachedAnalytics?.metrics ?? null;
+  const thresholds = cachedAnalytics?.thresholds ?? null;
+  const distribution = cachedAnalytics?.distribution ?? [];
+  const groupComparison = cachedAnalytics?.groupComparison ?? [];
+  const ageDistribution = cachedAnalytics?.ageDistribution ?? [];
+  const genderDistribution = cachedAnalytics?.genderDistribution ?? [];
+  const retailerDistribution = cachedAnalytics?.retailerDistribution ?? [];
+  const aggregated = cachedAnalytics?.aggregated ?? null;
 
   // Extract values from cached metrics (no recalculation)
-  const totalAprovados = metrics?.total.aprovados ?? 0;
-  const totalNegados = metrics?.total.negados ?? 0;
-  const totalAtivados = metrics?.total.ativados ?? 0;
-  const appAdoptionPct = metrics?.adoption?.app ?? 0;
-  const avgScore = thresholds?.avgScore ?? 0;
-  const avgLimite = thresholds?.avgLimite ?? 0;
-  const avgCompras = thresholds?.avgCompras ?? 0;
-  const percentageComAumento = 0; // Would need to be added to metrics if required
+  // Provide safe defaults for all properties to prevent undefined errors
+  const totalAprovados = cachedAnalytics?.metrics?.total?.aprovados ?? 0;
+  const totalNegados = cachedAnalytics?.metrics?.total?.negados ?? 0;
+  const totalAtivados = cachedAnalytics?.metrics?.total?.ativados ?? 0;
+  const appAdoptionPct = cachedAnalytics?.metrics?.adoption?.app ?? 0;
+  const avgScore = cachedAnalytics?.thresholds?.avgScore ?? 0;
+  const avgLimite = cachedAnalytics?.thresholds?.avgLimite ?? 0;
+  const avgCompras = cachedAnalytics?.thresholds?.avgCompras ?? 0;
+  const percentageComAumento = 0;
   
   // Score distribution from aggregated data
-  const scoreDistribution = aggregated?.scoreDistribution ?? { low: 0, medium: 0, high: 0 };
+  const scoreDistribution = cachedAnalytics?.aggregated?.scoreDistribution ?? { low: 0, medium: 0, high: 0 };
 
   // === RENDER ===
   return (
