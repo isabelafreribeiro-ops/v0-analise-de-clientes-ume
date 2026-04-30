@@ -1,47 +1,24 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { TrendingUp, AlertCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useData } from "@/lib/data-context";
-import {
-  segmentarClientes,
-  calculateSegmentMetrics,
-  calculateThresholds,
-  calculatePurchaseDistribution,
-  calculatePurchaseGroupComparison,
-  calculateAgeDistribution,
-  calculateGenderDistribution,
-  calculateRetailerDistribution,
-  calculateAggregatedMetrics,
-  formatBRNumber,
-  normalizeSituacao,
-  parseNumber,
-  parseBoolean,
-  getColumnValue,
-  calculateAverage,
-  calculatePercentage,
-  type SegmentMetrics,
-  type AggregatedMetrics,
-} from "@/lib/segmentation";
-import type { ClienteRow } from "@/lib/types";
 
 const SEGMENT_COLORS: Record<string, { bg: string; accent: string; text: string }> = {
-  "high-value": { bg: "#F0F4F3", accent: "#00C853", text: "#001a0f" },
-  "potencial": { bg: "#FFF3E0", accent: "#FF9800", text: "#3E2723" },
-  "aprovados-nao-ativados": { bg: "#E3F2FD", accent: "#2196F3", text: "#0D47A1" },
-  "recorrentes": { bg: "#F3E5F5", accent: "#9C27B0", text: "#4A148C" },
-  "negados": { bg: "#FFEBEE", accent: "#F44336", text: "#B71C1C" },
+  highValue: { bg: "#F0F4F3", accent: "#00C853", text: "#001a0f" },
+  potencial: { bg: "#FFF3E0", accent: "#FF9800", text: "#3E2723" },
+  aprovadosNaoAtivados: { bg: "#E3F2FD", accent: "#2196F3", text: "#0D47A1" },
+  recorrentes: { bg: "#F3E5F5", accent: "#9C27B0", text: "#4A148C" },
+  negados: { bg: "#FFEBEE", accent: "#F44336", text: "#B71C1C" },
 };
 
-function formatNumber(value: number | null): string {
+function formatNumber(value: number | null | undefined): string {
   if (value === null || value === undefined || isNaN(value)) return "—";
   if (value >= 1000000) return (value / 1000000).toFixed(1) + "M";
   if (value >= 1000) return (value / 1000).toFixed(1) + "k";
   return new Intl.NumberFormat("pt-BR").format(Math.round(value));
 }
 
-function formatCurrency(value: number | null): string {
+function formatCurrency(value: number | null | undefined): string {
   if (value === null || value === undefined || isNaN(value)) return "—";
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
@@ -51,15 +28,23 @@ function formatCurrency(value: number | null): string {
   }).format(value);
 }
 
-function formatPercentage(value: number | null): string {
-  if (value === null || value === undefined || isNaN(value)) return "—";
+function formatPercentage(value: number | null | undefined): string {
+  if (value === null || value === undefined || isNaN(value)) return "0%";
   return value.toFixed(1) + "%";
 }
 
 export function SegmentacaoTab() {
-  const { clientesData } = useData();
+  const { aggregationResult, isLoading } = useData();
 
-  if (!clientesData || clientesData.length === 0) {
+  if (isLoading) {
+    return (
+      <div className="rounded-lg border border-[#E2E8F0] bg-[#F7FAF8] p-6 text-center">
+        <p className="text-sm text-[#64748b]">Processando base de clientes...</p>
+      </div>
+    );
+  }
+
+  if (!aggregationResult) {
     return (
       <div className="rounded-lg border border-[#E2E8F0] bg-[#F7FAF8] p-6 text-center">
         <p className="text-sm text-[#64748b]">Envie a Base de Clientes para visualizar a análise de segmentação.</p>
@@ -67,92 +52,71 @@ export function SegmentacaoTab() {
     );
   }
 
-  // Pre-aggregated metrics for performance
-  const aggregated = useMemo(() => calculateAggregatedMetrics(clientesData), [clientesData]);
+  const r = aggregationResult;
 
-  // Memoized distributions and metrics
-  const segments = useMemo(() => segmentarClientes(clientesData), [clientesData]);
-  const metrics = useMemo(() => calculateSegmentMetrics(segments, clientesData.length), [segments, clientesData.length]);
-  const thresholds = useMemo(() => calculateThresholds(clientesData), [clientesData]);
-  const distribution = useMemo(() => calculatePurchaseDistribution(clientesData), [clientesData]);
-  const groupComparison = useMemo(() => calculatePurchaseGroupComparison(clientesData), [clientesData]);
-  const ageDistribution = useMemo(() => calculateAgeDistribution(clientesData), [clientesData]);
-  const genderDistribution = useMemo(() => calculateGenderDistribution(clientesData), [clientesData]);
-  const retailerDistribution = useMemo(() => calculateRetailerDistribution(clientesData), [clientesData]);
+  // Segments for cards - using aggregated data only
+  const segmentsList = [
+    {
+      id: "highValue",
+      name: "High Value",
+      count: r.segments.highValue,
+      colors: SEGMENT_COLORS.highValue,
+    },
+    {
+      id: "potencial",
+      name: "Potencial",
+      count: r.segments.potencial,
+      colors: SEGMENT_COLORS.potencial,
+    },
+    {
+      id: "aprovadosNaoAtivados",
+      name: "Aprovados Não Ativados",
+      count: r.segments.aprovadosNaoAtivados,
+      colors: SEGMENT_COLORS.aprovadosNaoAtivados,
+    },
+    {
+      id: "recorrentes",
+      name: "Recorrentes",
+      count: r.segments.recorrentes,
+      colors: SEGMENT_COLORS.recorrentes,
+    },
+    {
+      id: "negados",
+      name: "Negados",
+      count: r.segments.negados,
+      colors: SEGMENT_COLORS.negados,
+    },
+  ];
 
-  // Memoized key metrics
-  const keyMetrics = useMemo(() => {
-    const totalNegados = segments.find((s) => s.id === "negados")?.customers.length || 0;
-    const totalAprovados = clientesData.length - totalNegados;
-    const totalAprovedNaoAtivados = segments.find((s) => s.id === "aprovados-nao-ativados")?.customers.length || 0;
-    const totalAtivados = clientesData.filter((c) => {
-      const compras = parseNumber(getColumnValue(c, ["qtd de compras", "compras"])) || 0;
-      const situacao = normalizeSituacao(getColumnValue(c, ["situacao", "status"]));
-      return compras > 0 && situacao !== "negada";
-    }).length;
-
-    const comApp = clientesData.filter((c) => parseBoolean(getColumnValue(c, ["tem app", "app"]))).length;
-    const appAdoptionPct = (comApp / clientesData.length) * 100;
-
-    return { totalNegados, totalAprovados, totalAprovedNaoAtivados, totalAtivados, comApp, appAdoptionPct };
-  }, [segments, clientesData]);
-
-  const { totalNegados, totalAprovados, totalAprovedNaoAtivados, totalAtivados, comApp, appAdoptionPct } = keyMetrics;
-
-  const scoreDistribution = useMemo(() => {
-    const scores = clientesData.map((c) => parseNumber(getColumnValue(c, ["score de crédito", "score"]))).filter((s) => s !== null) as number[];
-    return {
-      low: scores.filter((s) => s < 400).length,
-      medium: scores.filter((s) => s >= 400 && s < 700).length,
-      high: scores.filter((s) => s >= 700).length,
-    };
-  }, [clientesData]);
-
-  const avgScore = useMemo(() => {
-    return calculateAverage(clientesData.map((c) => parseNumber(getColumnValue(c, ["score de crédito", "score"]))));
-  }, [clientesData]);
-
-  const avgLimite = useMemo(() => {
-    return calculateAverage(clientesData.map((c) => parseNumber(getColumnValue(c, ["limite total", "limite"]))));
-  }, [clientesData]);
-
-  const avgCompras = useMemo(() => {
-    return calculateAverage(clientesData.map((c) => parseNumber(getColumnValue(c, ["qtd de compras", "compras"]))));
-  }, [clientesData]);
-
-  const percentageComAumento = useMemo(() => {
-    const count = clientesData.filter((c) => parseBoolean(getColumnValue(c, ["aumento limite", "limite aumentado"]))).length;
-    return calculatePercentage(count, clientesData.length);
-  }, [clientesData]);
-
-  // === RENDER ===
   return (
     <div className="space-y-6">
-      {/* Title */}
+      {/* HEADER */}
       <div>
-        <h2 className="text-xl font-bold text-[#1a1a1a]">Segmentação de Clientes</h2>
-        <p className="text-sm text-[#64748b] mt-1">Análise consultiva da base de clientes Ume para identificar oportunidades estratégicas.</p>
+        <h1 className="text-3xl font-bold text-[#1a1a1a]">Segmentação de Clientes</h1>
+        <p className="text-sm text-[#64748b] mt-2">
+          Análise consolidada da base com {formatNumber(r.totalClientes)} clientes.
+        </p>
       </div>
 
-      {/* 1. INSIGHTS EXECUTIVOS */}
-      <div className="grid gap-3 grid-cols-1 md:grid-cols-3">
+      {/* 1. RESUMO EXECUTIVO - 3 CARDS */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card className="border-[#E2E8F0] bg-gradient-to-br from-[#F7FAF8] to-white">
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-semibold text-[#64748b] uppercase">Ativação</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-[#1a1a1a]">{formatPercentage(totalAprovados > 0 ? (totalAtivados / totalAprovados) * 100 : 0)}</div>
-            <p className="text-xs text-[#94a3b8] mt-1">de aprovados ativados • Gargalo de conversão</p>
+            <div className="text-2xl font-bold text-[#1a1a1a]">{formatPercentage(r.percentageAtivados)}</div>
+            <p className="text-xs text-[#94a3b8] mt-1">{formatNumber(r.totalAtivados)} de {formatNumber(r.totalAprovados)} aprovados</p>
           </CardContent>
         </Card>
 
         <Card className="border-[#E2E8F0] bg-gradient-to-br from-[#F7FAF8] to-white">
           <CardHeader className="pb-2">
-            <CardTitle className="text-xs font-semibold text-[#64748b] uppercase">App Adoption</CardTitle>
+            <CardTitle className="text-xs font-semibold text-[#64748b] uppercase">% com App</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-[#1a1a1a]">{formatPercentage(appAdoptionPct)}</div>
-            <p className="text-xs text-[#94a3b8] mt-1">com aplicativo • Canal digital</p>
+            <div className="text-2xl font-bold text-[#1a1a1a]">{formatPercentage(r.percentageComApp)}</div>
+            <p className="text-xs text-[#94a3b8] mt-1">Adoção digital</p>
           </CardContent>
         </Card>
 
@@ -161,473 +125,307 @@ export function SegmentacaoTab() {
             <CardTitle className="text-xs font-semibold text-[#64748b] uppercase">Score Médio</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-[#1a1a1a]">{formatNumber(avgScore)}</div>
-            <p className="text-xs text-[#94a3b8] mt-1">base aprovada • Perfil de risco</p>
+            <div className="text-2xl font-bold text-[#1a1a1a]">{formatNumber(r.avgScore)}</div>
+            <p className="text-xs text-[#94a3b8] mt-1">Perfil de risco</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* 2. QUEM É O CLIENTE UME */}
-      <Card className="border-[#E2E8F0]">
-        <CardHeader>
-          <CardTitle>Quem é o Cliente Ume?</CardTitle>
-          <p className="text-xs text-[#64748b] mt-2">Perfil demográfico, comportamental e de crédito da base.</p>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-            {/* Demographics */}
-            <div>
-              <p className="text-xs font-semibold text-[#64748b] mb-3 uppercase">👤 Demografia</p>
-              <div className="space-y-2 text-xs">
-                {ageDistribution.map((g) => (
-                  <div key={g.group} className="flex justify-between">
-                    <span className="text-[#64748b]">{g.group}</span>
-                    <span className="font-medium text-[#1a1a1a]">{g.count} ({g.percentage.toFixed(0)}%)</span>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-3 pt-3 border-t border-[#E2E8F0]">
-                {genderDistribution.map((g) => (
-                  <div key={g.gender} className="flex justify-between text-xs">
-                    <span className="text-[#64748b]">{g.gender}</span>
-                    <span className="font-medium text-[#1a1a1a]">{g.percentage.toFixed(0)}%</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+      {/* 2. QUEM É O CLIENTE UME - 4 CARDS */}
+      <div className="space-y-4">
+        <h2 className="text-xl font-bold text-[#1a1a1a]">Quem é o Cliente Ume</h2>
 
-            {/* Credit */}
-            <div>
-              <p className="text-xs font-semibold text-[#64748b] mb-3 uppercase">💳 Crédito</p>
-              <div className="space-y-2 text-xs mb-3">
-                <div>
-                  <span className="text-[#64748b] block mb-1">Score</span>
-                  <div className="flex justify-between font-medium text-[#1a1a1a]">
-                    <span>Baixo: {scoreDistribution.low}</span>
-                    <span>Médio: {scoreDistribution.medium}</span>
-                    <span>Alto: {scoreDistribution.high}</span>
-                  </div>
-                </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Status */}
+          <Card className="border-[#E2E8F0]">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold text-[#1a1a1a]">Status</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div>
+                <p className="text-xs text-[#64748b] mb-1">Aprovados</p>
+                <p className="text-lg font-bold text-[#00C853]">{formatPercentage((r.totalAprovados / r.totalClientes) * 100)}</p>
+                <p className="text-xs text-[#94a3b8]">{formatNumber(r.totalAprovados)}</p>
               </div>
-              <div className="text-xs">
-                <span className="text-[#64748b]">Limite Médio</span>
-                <div className="font-medium text-[#1a1a1a]">{formatCurrency(avgLimite)}</div>
+              <div>
+                <p className="text-xs text-[#64748b] mb-1">Negados</p>
+                <p className="text-lg font-bold text-[#F44336]">{formatPercentage((r.totalNegados / r.totalClientes) * 100)}</p>
+                <p className="text-xs text-[#94a3b8]">{formatNumber(r.totalNegados)}</p>
               </div>
-              <div className="mt-2 pt-2 border-t border-[#E2E8F0] text-xs">
-                <span className="text-[#64748b]">Com aumento de limite</span>
-                <div className="font-medium text-[#1a1a1a]">
-                  {formatPercentage(percentageComAumento)}
-                </div>
-              </div>
-            </div>
+            </CardContent>
+          </Card>
 
-            {/* Channel & Behavior */}
-            <div>
-              <p className="text-xs font-semibold text-[#64748b] mb-3 uppercase">📱 Canal & Comportamento</p>
-              <div className="space-y-3 text-xs">
-                <div>
-                  <span className="text-[#64748b] block mb-1">Com App</span>
-                  <span className="font-medium text-[#1a1a1a] block">{formatPercentage(appAdoptionPct)}</span>
-                </div>
-                <div>
-                  <span className="text-[#64748b] block mb-1">Compras Médias</span>
-                  <span className="font-medium text-[#1a1a1a] block">{formatNumber(avgCompras)}</span>
-                </div>
-                <div>
-                  <span className="text-[#64748b] block mb-1">Varejos</span>
-                  <div className="space-y-1">
-                    {retailerDistribution.map((r) => (
-                      <div key={r.group} className="flex justify-between">
-                        <span className="text-[#94a3b8]">{r.group}</span>
-                        <span className="font-medium text-[#1a1a1a]">{r.percentage.toFixed(0)}%</span>
-                      </div>
-                    ))}
+          {/* Score */}
+          <Card className="border-[#E2E8F0]">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold text-[#1a1a1a]">Score</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div>
+                <p className="text-xs text-[#64748b] mb-1">Médio</p>
+                <p className="text-lg font-bold text-[#1a1a1a]">{formatNumber(r.avgScore)}</p>
+              </div>
+              <div className="pt-2 border-t border-[#E2E8F0]">
+                <p className="text-xs text-[#64748b] mb-2">Distribuição</p>
+                <div className="text-xs space-y-1">
+                  <div className="flex justify-between">
+                    <span>Alto:</span>
+                    <span className="font-medium">{formatNumber(r.scoreDistribution.alto)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Médio:</span>
+                    <span className="font-medium">{formatNumber(r.scoreDistribution.medio)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Baixo:</span>
+                    <span className="font-medium">{formatNumber(r.scoreDistribution.baixo)}</span>
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
 
-          {/* Persona */}
-          <div className="mt-6 p-4 bg-[#F7FAF8] rounded border border-[#E2E8F0]">
-            <p className="text-xs font-semibold text-[#64748b] uppercase mb-2">🎯 Cliente Predominante</p>
-            <p className="text-sm text-[#1a1a1a]">
-              {ageDistribution.length > 0 ? ageDistribution[0].group : "Cliente"} com {Math.round(avgScore || 0)} de score,{" "}
-              {formatPercentage(appAdoptionPct)} de adoção de app e comportamento de {distribution.length > 0 ? distribution[0].range : "baixo volume"}.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 3. DIAGNÓSTICO DA BASE */}
-      <Card className="border-[#E2E8F0]">
-        <CardHeader>
-          <CardTitle>Diagnóstico da Base</CardTitle>
-          <p className="text-xs text-[#64748b] mt-2">Análise dos principais desafios e oportunidades da base.</p>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-            {/* Activation */}
-            <div className="p-4 bg-[#E3F2FD] rounded border border-[#2196F3]/20">
-              <p className="text-xs font-semibold text-[#0D47A1] uppercase mb-2">📊 Ativação</p>
-              <div className="text-lg font-bold text-[#1a1a1a]">{formatPercentage(totalAprovados > 0 ? (totalAprovados - totalAprovedNaoAtivados) / totalAprovados * 100 : 0)}</div>
-              <p className="text-xs text-[#64748b] mt-1">Taxa de ativação</p>
-              <p className="text-xs text-[#94a3b8] mt-2">
-                {totalAprovedNaoAtivados} aprovados aguardando primeira compra — maior gargalo de conversão.
-              </p>
-            </div>
-
-            {/* Engagement */}
-            <div className="p-4 bg-[#FFF3E0] rounded border border-[#FF9800]/20">
-              <p className="text-xs font-semibold text-[#3E2723] uppercase mb-2">🛍️ Engajamento</p>
-              <div className="text-lg font-bold text-[#1a1a1a]">{distribution.find((d) => d.range === "0 compras")?.percentage.toFixed(0) || "0"}%</div>
-              <p className="text-xs text-[#64748b] mt-1">Sem compras</p>
-              <p className="text-xs text-[#94a3b8] mt-2">Base altamente concentrada em baixa frequência — necessário ativar e engajar.</p>
-            </div>
-
-            {/* Credit & Risk */}
-            <div className="p-4 bg-[#F3E5F5] rounded border border-[#9C27B0]/20">
-              <p className="text-xs font-semibold text-[#4A148C] uppercase mb-2">💳 Crédito & Risco</p>
-              <div className="text-lg font-bold text-[#1a1a1a]">{scoreDistribution.low}</div>
-              <p className="text-xs text-[#64748b] mt-1">Clientes com score baixo</p>
-              <p className="text-xs text-[#94a3b8] mt-2">Perfil de risco mais alto impacta ativação e limite — necessário credit enhancement.</p>
-            </div>
-
-            {/* Status */}
-            <div className="p-4 bg-[#FFEBEE] rounded border border-[#F44336]/20">
-              <p className="text-xs font-semibold text-[#B71C1C] uppercase mb-2">🚫 Status</p>
-              <div className="text-lg font-bold text-[#1a1a1a]">{totalNegados}</div>
-              <p className="text-xs text-[#64748b] mt-1">Clientes negados</p>
-              <p className="text-xs text-[#94a3b8] mt-2">Volume expressivo fora da base ativa — revisar política de crédito para oportunidades.</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 4. DISTRIBUIÇÃO DE COMPRAS */}
-      <Card className="border-[#E2E8F0]">
-        <CardHeader>
-          <CardTitle>Distribuição de Compras</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {distribution.map((d) => (
-              <div key={d.range} className="flex items-center gap-3">
-                <div className="w-24 text-xs font-medium text-[#64748b]">{d.range}</div>
-                <div className="flex-1 bg-[#E2E8F0] rounded h-2">
-                  <div className="bg-[#00C853] h-2 rounded" style={{ width: `${Math.min(d.percentage, 100)}%` }} />
-                </div>
-                <div className="w-16 text-xs text-right font-medium text-[#1a1a1a]">
-                  {d.count} ({d.percentage.toFixed(0)}%)
-                </div>
+          {/* Crédito */}
+          <Card className="border-[#E2E8F0]">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold text-[#1a1a1a]">Crédito</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div>
+                <p className="text-xs text-[#64748b] mb-1">Limite Médio</p>
+                <p className="text-lg font-bold text-[#1a1a1a]">{formatCurrency(r.avgLimite)}</p>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              <div className="pt-2 border-t border-[#E2E8F0]">
+                <p className="text-xs text-[#64748b] mb-1">Com Aumento</p>
+                <p className="text-base font-bold text-[#1a1a1a]">{formatPercentage(r.percentageComAumentoLimite)}</p>
+              </div>
+            </CardContent>
+          </Card>
 
-      {/* 5. COMPARAÇÃO POR GRUPO */}
-      {groupComparison.length > 0 && (
-        <Card className="border-[#E2E8F0]">
-          <CardHeader>
-            <CardTitle>Comparação por Grupo de Compras</CardTitle>
-            <p className="text-xs text-[#64748b] mt-2">Clientes com maior frequência apresentam melhor perfil de risco e adoção de canal.</p>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b border-[#E2E8F0]">
-                    <th className="text-left py-2 px-2 font-semibold text-[#64748b]">Grupo</th>
-                    <th className="text-right py-2 px-2 font-semibold text-[#64748b]">Count</th>
-                    <th className="text-right py-2 px-2 font-semibold text-[#64748b]">Score Médio</th>
-                    <th className="text-right py-2 px-2 font-semibold text-[#64748b]">Limite Médio</th>
-                    <th className="text-right py-2 px-2 font-semibold text-[#64748b]">% Com App</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {groupComparison.map((g) => (
-                    <tr key={g.group} className="border-b border-[#E2E8F0] hover:bg-[#F7FAF8]">
-                      <td className="py-2 px-2 text-[#64748b] font-medium">{g.group}</td>
-                      <td className="py-2 px-2 text-right text-[#64748b]">{g.count}</td>
-                      <td className="py-2 px-2 text-right text-[#64748b]">{formatNumber(g.avgScore)}</td>
-                      <td className="py-2 px-2 text-right text-[#64748b]">{formatCurrency(g.avgLimite)}</td>
-                      <td className="py-2 px-2 text-right text-[#64748b]">{formatPercentage(g.percentageComApp)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          {/* Comportamento */}
+          <Card className="border-[#E2E8F0]">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold text-[#1a1a1a]">Comportamento</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div>
+                <p className="text-xs text-[#64748b] mb-1">Compras Médias</p>
+                <p className="text-lg font-bold text-[#1a1a1a]">{formatNumber(r.avgCompras)}</p>
+              </div>
+              <div className="pt-2 border-t border-[#E2E8F0]">
+                <p className="text-xs text-[#64748b] mb-1">Com App</p>
+                <p className="text-base font-bold text-[#1a1a1a]">{formatPercentage(r.percentageComApp)}</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* 3. DISTRIBUIÇÃO DE COMPRAS - 4 CARDS */}
+      <div className="space-y-4">
+        <h2 className="text-xl font-bold text-[#1a1a1a]">Distribuição de Compras</h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="border-[#E2E8F0]">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-semibold text-[#64748b]">0 Compras</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-[#1a1a1a]">{formatPercentage((r.purchaseDistribution.zero / r.totalClientes) * 100)}</div>
+              <p className="text-xs text-[#94a3b8] mt-1">{formatNumber(r.purchaseDistribution.zero)} clientes</p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-[#E2E8F0]">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-semibold text-[#64748b]">1 Compra</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-[#1a1a1a]">{formatPercentage((r.purchaseDistribution.um / r.totalClientes) * 100)}</div>
+              <p className="text-xs text-[#94a3b8] mt-1">{formatNumber(r.purchaseDistribution.um)} clientes</p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-[#E2E8F0]">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-semibold text-[#64748b]">2 Compras</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-[#1a1a1a]">{formatPercentage((r.purchaseDistribution.dois / r.totalClientes) * 100)}</div>
+              <p className="text-xs text-[#94a3b8] mt-1">{formatNumber(r.purchaseDistribution.dois)} clientes</p>
+            </CardContent>
+          </Card>
+
+          <Card className="border-[#E2E8F0]">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-xs font-semibold text-[#64748b]">3+ Compras</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-[#1a1a1a]">{formatPercentage((r.purchaseDistribution.tresOuMais / r.totalClientes) * 100)}</div>
+              <p className="text-xs text-[#94a3b8] mt-1">{formatNumber(r.purchaseDistribution.tresOuMais)} clientes</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* 4. SEGMENTAÇÃO DE CLIENTES - 5 CARDS COLORIDOS */}
+      <div className="space-y-4">
+        <h2 className="text-xl font-bold text-[#1a1a1a]">Segmentação de Clientes</h2>
+
+        <Card className="border-[#E2E8F0] bg-blue-50/50">
+          <CardContent className="p-4">
+            <p className="text-xs text-[#1E40AF] font-semibold mb-2">Critérios de Classificação</p>
+            <div className="space-y-2 text-xs text-[#64748b]">
+              <p>• <span className="font-medium text-[#1a1a1a]">Negados</span> → Situação = Negada</p>
+              <p>• <span className="font-medium text-[#1a1a1a]">Aprovados Não Ativados</span> → Compras = 0</p>
+              <p>• <span className="font-medium text-[#1a1a1a]">Potencial</span> → Compras = 1</p>
+              <p>• <span className="font-medium text-[#1a1a1a]">Recorrentes</span> → Compras = 2</p>
+              <p>• <span className="font-medium text-[#1a1a1a]">High Value</span> → Compras ≥ 3</p>
             </div>
           </CardContent>
         </Card>
-      )}
 
-      {/* 6. SEGMENTAÇÃO */}
-      <Card className="border-[#E2E8F0]">
-        <CardHeader>
-          <CardTitle>Segmentação de Clientes</CardTitle>
-          <p className="text-xs text-[#64748b] mt-2">Análise comportamental segmentada. Cada segmento possui características e oportunidades distintas.</p>
-        </CardHeader>
-        <CardContent>
-          <div className="mb-4 p-3 bg-[#F7FAF8] rounded border border-[#E2E8F0]">
-            <p className="text-xs font-semibold text-[#64748b] mb-2">Critérios de Segmentação:</p>
-            <ul className="text-xs text-[#64748b] space-y-1 list-disc list-inside">
-              <li><span className="font-medium text-[#1a1a1a]">Aprovados Não Ativados:</span> aprovado + 0 compras</li>
-              <li><span className="font-medium text-[#1a1a1a]">Potencial:</span> 1 compra + bom perfil de crédito</li>
-              <li><span className="font-medium text-[#1a1a1a]">Recorrentes:</span> 2+ compras</li>
-              <li><span className="font-medium text-[#1a1a1a]">High Value:</span> 3+ compras + alto limite</li>
-              <li><span className="font-medium text-[#1a1a1a]">Negados:</span> não aprovados na base</li>
-            </ul>
-          </div>
-
-          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-5">
-            {segments.map((segment) => {
-              const metric = metrics.find((m) => m.segmentId === segment.id);
-              const colors = SEGMENT_COLORS[segment.id] || { bg: "#F7FAF8", accent: "#00C853", text: "#1a1a1a" };
-
-              return (
-                <div
-                  key={segment.id}
-                  className="p-4 rounded border-2"
-                  style={{
-                    backgroundColor: colors.bg,
-                    borderColor: colors.accent,
-                  }}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+          {segmentsList.map((segment) => (
+            <Card
+              key={segment.id}
+              className="border-2"
+              style={{
+                borderColor: segment.colors.accent,
+                backgroundColor: segment.colors.bg,
+              }}
+            >
+              <CardHeader className="pb-2">
+                <CardTitle
+                  className="text-xs font-bold uppercase"
+                  style={{ color: segment.colors.accent }}
                 >
-                  <p className="text-xs font-semibold uppercase" style={{ color: colors.accent }}>
-                    {segment.name}
-                  </p>
-                  <p className="text-lg font-bold text-[#1a1a1a] mt-2">{segment.customers.length}</p>
-                  <p className="text-xs text-[#64748b] mt-1">{metric?.percentageOfBase.toFixed(1)}% da base</p>
-
-                  {metric && (
-                    <div className="mt-3 pt-3 border-t" style={{ borderColor: colors.accent + "40" }}>
-                      <div className="text-xs space-y-1 text-left">
-                        <div className="flex justify-between">
-                          <span className="text-[#64748b]">Compras:</span>
-                          <span className="font-medium text-[#1a1a1a]">{formatNumber(metric.avgCompras)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-[#64748b]">Score:</span>
-                          <span className="font-medium text-[#1a1a1a]">{formatNumber(metric.avgScore)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-[#64748b]">Limite:</span>
-                          <span className="font-medium text-[#1a1a1a]">{formatCurrency(metric.avgLimite)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-[#64748b]">App:</span>
-                          <span className="font-medium text-[#1a1a1a]">{formatPercentage(metric.percentageComApp)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 7. ANÁLISE DE RISCO */}
-      <Card className="border-[#E2E8F0]">
-        <CardHeader>
-          <CardTitle>Análise de Risco</CardTitle>
-          <p className="text-xs text-[#64748b] mt-2">Correlação entre perfil de risco, comportamento de compras e características do cliente.</p>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
-            {/* Risk Profile */}
-            <div>
-              <p className="text-xs font-semibold text-[#64748b] mb-3 uppercase">⚠️ Distribuição de Score</p>
-              <div className="space-y-2">
+                  {segment.name}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-xs">
                 <div>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-[#64748b]">Baixo (&lt;400)</span>
-                    <span className="font-medium text-[#1a1a1a]">{scoreDistribution.low} clientes</span>
-                  </div>
-                  <div className="bg-[#E2E8F0] rounded h-2">
-                    <div className="bg-[#F44336] h-2 rounded" style={{ width: `${Math.min((scoreDistribution.low / clientesData.length) * 100, 100)}%` }} />
-                  </div>
+                  <p className="text-[#64748b] mb-1">Clientes</p>
+                  <p className="text-lg font-bold" style={{ color: segment.colors.accent }}>
+                    {formatNumber(segment.count)}
+                  </p>
                 </div>
                 <div>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-[#64748b]">Médio (400-700)</span>
-                    <span className="font-medium text-[#1a1a1a]">{scoreDistribution.medium} clientes</span>
-                  </div>
-                  <div className="bg-[#E2E8F0] rounded h-2">
-                    <div className="bg-[#FF9800] h-2 rounded" style={{ width: `${Math.min((scoreDistribution.medium / clientesData.length) * 100, 100)}%` }} />
-                  </div>
+                  <p className="text-[#64748b] mb-1">% da Base</p>
+                  <p className="font-medium" style={{ color: segment.colors.text }}>
+                    {formatPercentage((segment.count / r.totalClientes) * 100)}
+                  </p>
+                </div>
+                <div className="pt-2 border-t" style={{ borderColor: segment.colors.accent + "40" }}>
+                  <p className="text-[#64748b] mb-1">Score Médio</p>
+                  <p className="font-medium" style={{ color: segment.colors.text }}>
+                    {formatNumber(r.segmentAverages[segment.id as keyof typeof r.segmentAverages]?.avgScore || 0)}
+                  </p>
                 </div>
                 <div>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span className="text-[#64748b]">Alto (≥700)</span>
-                    <span className="font-medium text-[#1a1a1a]">{scoreDistribution.high} clientes</span>
-                  </div>
-                  <div className="bg-[#E2E8F0] rounded h-2">
-                    <div className="bg-[#00C853] h-2 rounded" style={{ width: `${Math.min((scoreDistribution.high / clientesData.length) * 100, 100)}%` }} />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Purchase & Limit Correlation */}
-            <div>
-              <p className="text-xs font-semibold text-[#64748b] mb-3 uppercase">📊 Insights de Risco</p>
-              <div className="space-y-2 text-xs">
-                <div className="p-2 bg-blue-50 rounded border border-blue-200">
-                  <span className="font-medium text-[#0D47A1]">Score vs Compras:</span>
-                  <p className="text-[#64748b] mt-1">
-                    {metrics && metrics.length > 0 
-                      ? `Clientes com score alto têm média de ${formatNumber(metrics.find((m) => m.avgScore >= 700)?.avgCompras || 0)} compras.`
-                      : "Nenhum dado disponível para análise."
-                    }
+                  <p className="text-[#64748b] mb-1">Compras</p>
+                  <p className="font-medium" style={{ color: segment.colors.text }}>
+                    {formatNumber(r.segmentAverages[segment.id as keyof typeof r.segmentAverages]?.avgCompras || 0)}
                   </p>
                 </div>
-                <div className="p-2 bg-orange-50 rounded border border-orange-200">
-                  <span className="font-medium text-[#E65100]">Limite vs App:</span>
-                  <p className="text-[#64748b] mt-1">
-                    {formatPercentage(appAdoptionPct)} da base usa app — correlação forte com maior confiança.
+                <div>
+                  <p className="text-[#64748b] mb-1">Limite Médio</p>
+                  <p className="text-sm font-medium" style={{ color: segment.colors.text }}>
+                    {formatCurrency(r.segmentAverages[segment.id as keyof typeof r.segmentAverages]?.avgLimite || 0)}
                   </p>
                 </div>
-                <div className="p-2 bg-green-50 rounded border border-green-200">
-                  <span className="font-medium text-[#1B5E20]">Recorrência:</span>
-                  <p className="text-[#64748b] mt-1">
-                    {metrics && metrics.length > 0
-                      ? `${metrics.find((m) => m.segmentId === "recorrentes")?.totalClientes || 0} clientes recorrentes representam a menor inadimplência esperada.`
-                      : "Nenhum cliente recorrente identificado."
-                    }
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
 
-      {/* 8. OPORTUNIDADES ESTRATÉGICAS */}
-      <Card className="border-[#E2E8F0]">
-        <CardHeader>
-          <CardTitle>Oportunidades Estratégicas</CardTitle>
-          <p className="text-xs text-[#64748b] mt-2">Recomendações de ação para cada segmento.</p>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-            {/* Aprovados Não Ativados */}
-            {segments.find((s) => s.id === "aprovados-nao-ativados") && (
-              <div className="p-4 bg-blue-50 rounded border border-blue-200">
-                <div className="flex items-start gap-2 mb-2">
-                  <div className="text-xl">🔵</div>
-                  <div>
-                    <p className="text-sm font-semibold text-[#0D47A1]">Aprovados Não Ativados</p>
-                    <p className="text-xs text-[#64748b] mt-1">
-                      {totalAprovedNaoAtivados} clientes • {formatPercentage((totalAprovedNaoAtivados / clientesData.length) * 100)} da base
-                    </p>
-                  </div>
-                </div>
-                <p className="text-xs text-[#1a1a1a] font-medium mb-2">Insight:</p>
-                <p className="text-xs text-[#64748b] mb-3">Maior oportunidade de crescimento — CAC já pago, apenas necessário ativar.</p>
-                <p className="text-xs text-[#1a1a1a] font-medium mb-2">Ações:</p>
-                <ul className="text-xs text-[#64748b] space-y-1 list-disc list-inside">
-                  <li>Campanhas de reengajamento via WhatsApp/SMS</li>
-                  <li>Abordagem em ponto de venda</li>
-                  <li>Oferta de desconto primeira compra</li>
+      {/* 5. OPORTUNIDADES ESTRATÉGICAS */}
+      <div className="space-y-4">
+        <h2 className="text-xl font-bold text-[#1a1a1a]">Oportunidades Estratégicas</h2>
+
+        <div className="space-y-3">
+          <Card className="border-[#E2E8F0]">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-bold text-[#D97706]">Aprovados Não Ativados</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <div>
+                <p className="font-semibold text-[#1a1a1a]">Insight</p>
+                <p className="text-[#64748b] text-xs">Maior oportunidade de crescimento (CAC já pago)</p>
+              </div>
+              <div>
+                <p className="font-semibold text-[#1a1a1a]">Ações</p>
+                <ul className="text-[#64748b] list-disc list-inside space-y-1 ml-2 text-xs">
+                  <li>WhatsApp/SMS com incentivo</li>
+                  <li>Desconto na primeira compra</li>
+                  <li>Reativação de limite</li>
                 </ul>
               </div>
-            )}
+            </CardContent>
+          </Card>
 
-            {/* Potencial */}
-            {segments.find((s) => s.id === "potencial") && (
-              <div className="p-4 bg-orange-50 rounded border border-orange-200">
-                <div className="flex items-start gap-2 mb-2">
-                  <div className="text-xl">🟠</div>
-                  <div>
-                    <p className="text-sm font-semibold text-[#3E2723]">Potencial</p>
-                    <p className="text-xs text-[#64748b] mt-1">
-                      {segments.find((s) => s.id === "potencial")?.customers.length} clientes • Bom perfil, baixa recorrência
-                    </p>
-                  </div>
-                </div>
-                <p className="text-xs text-[#1a1a1a] font-medium mb-2">Insight:</p>
-                <p className="text-xs text-[#64748b] mb-3">Alta probabilidade de conversão em recorrentes — melhor ROI em campanha.</p>
-                <p className="text-xs text-[#1a1a1a] font-medium mb-2">Ações:</p>
-                <ul className="text-xs text-[#64748b] space-y-1 list-disc list-inside">
-                  <li>Incentivo segunda compra (cashback, frete)</li>
-                  <li>Personalização de oferta por perfil</li>
-                  <li>Acompanhamento pós-primeira compra</li>
+          <Card className="border-[#E2E8F0]">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-bold text-[#2563EB]">Potencial</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <div>
+                <p className="font-semibold text-[#1a1a1a]">Insight</p>
+                <p className="text-[#64748b] text-xs">Alta chance de virar recorrente</p>
+              </div>
+              <div>
+                <p className="font-semibold text-[#1a1a1a]">Ações</p>
+                <ul className="text-[#64748b] list-disc list-inside space-y-1 ml-2 text-xs">
+                  <li>Incentivo segunda compra</li>
+                  <li>Sugestões de produtos</li>
+                  <li>Aumentos de limite gradual</li>
                 </ul>
               </div>
-            )}
+            </CardContent>
+          </Card>
 
-            {/* Recorrentes */}
-            {segments.find((s) => s.id === "recorrentes") && (
-              <div className="p-4 bg-purple-50 rounded border border-purple-200">
-                <div className="flex items-start gap-2 mb-2">
-                  <div className="text-xl">🟣</div>
-                  <div>
-                    <p className="text-sm font-semibold text-[#4A148C]">Recorrentes</p>
-                    <p className="text-xs text-[#64748b] mt-1">
-                      {segments.find((s) => s.id === "recorrentes")?.customers.length} clientes • Engajados, maior valor
-                    </p>
-                  </div>
-                </div>
-                <p className="text-xs text-[#1a1a1a] font-medium mb-2">Insight:</p>
-                <p className="text-xs text-[#64748b] mb-3">Maior rentabilidade potencial — foco em retention e limite aumentado.</p>
-                <p className="text-xs text-[#1a1a1a] font-medium mb-2">Ações:</p>
-                <ul className="text-xs text-[#64748b] space-y-1 list-disc list-inside">
-                  <li>Aumento de limite proativo</li>
-                  <li>Programa de fidelização e rewards</li>
-                  <li>Cross-sell e upsell</li>
+          <Card className="border-[#E2E8F0]">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-bold text-[#16A34A]">Recorrentes</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <div>
+                <p className="font-semibold text-[#1a1a1a]">Insight</p>
+                <p className="text-[#64748b] text-xs">Base ativa com potencial de expansão</p>
+              </div>
+              <div>
+                <p className="font-semibold text-[#1a1a1a]">Ações</p>
+                <ul className="text-[#64748b] list-disc list-inside space-y-1 ml-2 text-xs">
+                  <li>Fidelização e rewards</li>
+                  <li>Cross-sell estratégico</li>
+                  <li>Aumentos de limite</li>
                 </ul>
               </div>
-            )}
+            </CardContent>
+          </Card>
 
-            {/* High Value */}
-            {segments.find((s) => s.id === "high-value") && (
-              <div className="p-4 bg-green-50 rounded border border-green-200">
-                <div className="flex items-start gap-2 mb-2">
-                  <div className="text-xl">🟢</div>
-                  <div>
-                    <p className="text-sm font-semibold text-[#001a0f]">High Value</p>
-                    <p className="text-xs text-[#64748b] mt-1">
-                      {segments.find((s) => s.id === "high-value")?.customers.length} clientes • Máximo engajamento
-                    </p>
-                  </div>
-                </div>
-                <p className="text-xs text-[#1a1a1a] font-medium mb-2">Insight:</p>
-                <p className="text-xs text-[#64748b] mb-3">Core de rentabilidade da base — essential para consolidar relacionamento.</p>
-                <p className="text-xs text-[#1a1a1a] font-medium mb-2">Ações:</p>
-                <ul className="text-xs text-[#64748b] space-y-1 list-disc list-inside">
-                  <li>Conta dedicada e suporte premium</li>
-                  <li>Limite aumentado automático</li>
-                  <li>Produtos exclusivos e eventos VIP</li>
+          <Card className="border-[#E2E8F0]">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-bold text-[#9333EA]">High Value</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 text-sm">
+              <div>
+                <p className="font-semibold text-[#1a1a1a]">Insight</p>
+                <p className="text-[#64748b] text-xs">Clientes de maior valor</p>
+              </div>
+              <div>
+                <p className="font-semibold text-[#1a1a1a]">Ações</p>
+                <ul className="text-[#64748b] list-disc list-inside space-y-1 ml-2 text-xs">
+                  <li>Aumento de limite premium</li>
+                  <li>Benefícios exclusivos</li>
+                  <li>Atendimento VIP</li>
                 </ul>
               </div>
-            )}
-
-            {/* Negados */}
-            {totalNegados > 0 && (
-              <div className="p-4 bg-red-50 rounded border border-red-200">
-                <div className="flex items-start gap-2 mb-2">
-                  <div className="text-xl">🔴</div>
-                  <div>
-                    <p className="text-sm font-semibold text-[#B71C1C]">Negados</p>
-                    <p className="text-xs text-[#64748b] mt-1">{totalNegados} solicitações • Fora da base ativa</p>
-                  </div>
-                </div>
-                <p className="text-xs text-[#1a1a1a] font-medium mb-2">Insight:</p>
-                <p className="text-xs text-[#64748b] mb-3">Volume expressivo — revisar política para identificar falsos negativos.</p>
-                <p className="text-xs text-[#1a1a1a] font-medium mb-2">Ações:</p>
-                <ul className="text-xs text-[#64748b] space-y-1 list-disc list-inside">
-                  <li>Análise de falsos negativos</li>
-                  <li>Programa de segunda chance</li>
-                  <li>Ajuste de critérios de aprovação</li>
-                </ul>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
