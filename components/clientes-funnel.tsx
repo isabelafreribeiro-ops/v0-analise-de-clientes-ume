@@ -235,43 +235,45 @@ export function ClientesFunnel({
   return (
     <div className="space-y-6">
       {/* Title and Filters */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
         <div>
-          <h2 className="text-xl font-bold text-white">Aquisição de Clientes</h2>
-          <p className="text-sm text-[#7a9e8a]">
+          <h2 className="text-xl font-bold text-[#1a1a1a]">Aquisição de Clientes</h2>
+          <p className="text-sm text-[#64748b]">
             Análise do funil de aquisição e conversão de clientes Ume
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Calendar className="h-3.5 w-3.5 text-[#7a9e8a]" />
-          <span className="text-xs text-[#7a9e8a]">De:</span>
+        
+        {/* Filter Toolbar */}
+        <div className="mt-4 flex flex-wrap items-center gap-3 border-b border-[#E2E8F0] pb-3">
+          <Calendar className="h-3.5 w-3.5 text-[#64748b]" />
+          <span className="text-xs font-medium text-[#64748b]">De:</span>
           <Select value={periodFrom} onValueChange={onPeriodFromChange}>
-            <SelectTrigger className="h-7 w-[110px] border-[#004d26] bg-[#003d1f] px-2 text-xs text-white">
+            <SelectTrigger className="h-8 w-32 border-[#E2E8F0] bg-white text-xs text-[#1a1a1a]">
               <span className="truncate">{getSelectedLabel(periodFrom)}</span>
             </SelectTrigger>
-            <SelectContent className="border-[#004d26] bg-[#002a14]">
-              <SelectItem value="all" className="text-xs text-white hover:bg-[#003d1f] focus:bg-[#003d1f] focus:text-white">
+            <SelectContent className="border-[#E2E8F0] bg-white">
+              <SelectItem value="all" className="text-xs text-[#1a1a1a]">
                 Todos
               </SelectItem>
               {periods.map((period) => (
-                <SelectItem key={period.value} value={period.value} className="text-xs text-white hover:bg-[#003d1f] focus:bg-[#003d1f] focus:text-white">
+                <SelectItem key={period.value} value={period.value} className="text-xs text-[#1a1a1a]">
                   {period.label}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
           
-          <span className="text-xs text-[#7a9e8a]">Até:</span>
+          <span className="text-xs font-medium text-[#64748b]">Até:</span>
           <Select value={periodTo} onValueChange={onPeriodToChange}>
-            <SelectTrigger className="h-7 w-[110px] border-[#004d26] bg-[#003d1f] px-2 text-xs text-white">
+            <SelectTrigger className="h-8 w-32 border-[#E2E8F0] bg-white text-xs text-[#1a1a1a]">
               <span className="truncate">{getSelectedLabel(periodTo)}</span>
             </SelectTrigger>
-            <SelectContent className="border-[#004d26] bg-[#002a14]">
-              <SelectItem value="all" className="text-xs text-white hover:bg-[#003d1f] focus:bg-[#003d1f] focus:text-white">
+            <SelectContent className="border-[#E2E8F0] bg-white">
+              <SelectItem value="all" className="text-xs text-[#1a1a1a]">
                 Todos
               </SelectItem>
               {periods.map((period) => (
-                <SelectItem key={period.value} value={period.value} className="text-xs text-white hover:bg-[#003d1f] focus:bg-[#003d1f] focus:text-white">
+                <SelectItem key={period.value} value={period.value} className="text-xs text-[#1a1a1a]">
                   {period.label}
                 </SelectItem>
               ))}
@@ -283,15 +285,15 @@ export function ClientesFunnel({
               variant="ghost"
               size="sm"
               onClick={clearFilters}
-              className="h-7 px-2 text-[#7a9e8a] hover:bg-[#003d1f] hover:text-white"
+              className="h-8 px-2 text-[#64748b] hover:bg-[#F0F4F3] hover:text-[#1a1a1a]"
             >
               <X className="h-3 w-3" />
             </Button>
           )}
 
-          <span className="text-xs text-[#7a9e8a]">Varejos:</span>
+          <span className="text-xs font-medium text-[#64748b]">Varejos:</span>
           <Select value={varejoFilter} onValueChange={onVarejoFilterChange}>
-            <SelectTrigger className="h-7 w-[140px] border-[#004d26] bg-[#003d1f] px-2 text-xs text-white">
+            <SelectTrigger className="h-8 w-40 border-[#E2E8F0] bg-white text-xs text-[#1a1a1a]">
               <span className="truncate">
                 {varejoFilter === "todos" && "Todos"}
                 {varejoFilter === "1" && "1 varejo"}
@@ -299,17 +301,17 @@ export function ClientesFunnel({
                 {varejoFilter === "3+" && "3+ varejos"}
               </span>
             </SelectTrigger>
-            <SelectContent className="border-[#004d26] bg-[#002a14]">
-              <SelectItem value="todos" className="text-xs text-white hover:bg-[#003d1f] focus:bg-[#003d1f] focus:text-white">
+            <SelectContent className="border-[#E2E8F0] bg-white">
+              <SelectItem value="todos" className="text-xs text-[#1a1a1a]">
                 Todos
               </SelectItem>
-              <SelectItem value="1" className="text-xs text-white hover:bg-[#003d1f] focus:bg-[#003d1f] focus:text-white">
+              <SelectItem value="1" className="text-xs text-[#1a1a1a]">
                 1 varejo
               </SelectItem>
-              <SelectItem value="2" className="text-xs text-white hover:bg-[#003d1f] focus:bg-[#003d1f] focus:text-white">
+              <SelectItem value="2" className="text-xs text-[#1a1a1a]">
                 2 varejos
               </SelectItem>
-              <SelectItem value="3+" className="text-xs text-white hover:bg-[#003d1f] focus:bg-[#003d1f] focus:text-white">
+              <SelectItem value="3+" className="text-xs text-[#1a1a1a]">
                 3+ varejos
               </SelectItem>
             </SelectContent>
@@ -319,23 +321,23 @@ export function ClientesFunnel({
 
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-5">
-        <Card className="border-[#004d26] bg-[#002a14]">
+        <Card className="border-[#E2E8F0] bg-white">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-[#7a9e8a]">
+            <CardTitle className="text-sm font-medium text-[#64748b]">
               Total Solicitações
             </CardTitle>
-            <Users className="h-4 w-4 text-[#7a9e8a]" />
+            <Users className="h-4 w-4 text-[#64748b]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">
+            <div className="text-2xl font-bold text-[#1a1a1a]">
               {summaryMetrics.total.toLocaleString("pt-BR")}
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-[#004d26] bg-[#002a14]">
+        <Card className="border-[#E2E8F0] bg-white">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-[#7a9e8a]">
+            <CardTitle className="text-sm font-medium text-[#64748b]">
               Negados
             </CardTitle>
             <Users className="h-4 w-4 text-red-500" />
@@ -344,15 +346,15 @@ export function ClientesFunnel({
             <div className="text-2xl font-bold text-red-500">
               {negadosMetric.count.toLocaleString("pt-BR")}
             </div>
-            <p className="mt-1 text-xs text-[#7a9e8a]">
+            <p className="mt-1 text-xs text-[#64748b]">
               {negadosMetric.percentage.toFixed(1)}% do total
             </p>
           </CardContent>
         </Card>
 
-        <Card className="border-[#004d26] bg-[#002a14]">
+        <Card className="border-[#E2E8F0] bg-white">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-[#7a9e8a]">
+            <CardTitle className="text-sm font-medium text-[#64748b]">
               Aprovados
             </CardTitle>
             <UserCheck className="h-4 w-4 text-[#00C853]" />
@@ -364,23 +366,23 @@ export function ClientesFunnel({
           </CardContent>
         </Card>
 
-        <Card className="border-[#004d26] bg-[#002a14]">
+        <Card className="border-[#E2E8F0] bg-white">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-[#7a9e8a]">
+            <CardTitle className="text-sm font-medium text-[#64748b]">
               Clientes Ativos
             </CardTitle>
             <ShoppingBag className="h-4 w-4 text-[#00C853]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-white">
+            <div className="text-2xl font-bold text-[#1a1a1a]">
               {summaryMetrics.ativos.toLocaleString("pt-BR")}
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-[#004d26] bg-[#002a14]">
+        <Card className="border-[#E2E8F0] bg-white">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-[#7a9e8a]">
+            <CardTitle className="text-sm font-medium text-[#64748b]">
               Taxa de Conversão
             </CardTitle>
             <TrendingUp className="h-4 w-4 text-[#00C853]" />
@@ -394,26 +396,36 @@ export function ClientesFunnel({
       </div>
 
       {/* Funnel Chart */}
-      <Card className="border-[#004d26] bg-[#002a14]">
+      <Card className="border-[#E2E8F0] bg-white">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-white">
+          <CardTitle className="flex items-center gap-2 text-[#1a1a1a]">
             <Users className="h-5 w-5 text-[#00C853]" />
             Funil de Aquisição de Clientes
           </CardTitle>
-          <CardDescription className="text-[#7a9e8a]">
+          <CardDescription className="text-[#64748b]">
             Visualização do funil completo de aquisição de clientes
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-6">
           {hasData ? (
-            <FunnelChart data={funnelData} />
+            <>
+              <FunnelChart data={funnelData} />
+              
+              {/* Metric Descriptions */}
+              <div className="grid gap-3 pt-4 border-t border-[#E2E8F0] text-xs text-[#64748b]">
+                <div><span className="font-medium text-[#1a1a1a]">Total Solicitações:</span> todos que solicitaram crédito Ume</div>
+                <div><span className="font-medium text-[#1a1a1a]">Aprovados:</span> tiveram crédito aprovado e limite definido</div>
+                <div><span className="font-medium text-[#1a1a1a]">Ativados:</span> realizaram a primeira compra</div>
+                <div><span className="font-medium text-[#1a1a1a]">Recorrentes:</span> realizaram mais de uma compra</div>
+              </div>
+            </>
           ) : (
             <div className="flex h-64 flex-col items-center justify-center text-center">
-              <Users className="mb-4 h-12 w-12 text-[#7a9e8a]/50" />
-              <p className="text-lg font-medium text-[#7a9e8a]">
+              <Users className="mb-4 h-12 w-12 text-[#cbd5e1]" />
+              <p className="text-lg font-medium text-[#64748b]">
                 Nenhum dado carregado
               </p>
-              <p className="text-sm text-[#7a9e8a]/70">
+              <p className="text-sm text-[#94a3b8]">
                 Faça upload da Base de Clientes para visualizar o funil
               </p>
             </div>

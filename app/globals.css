@@ -3,49 +3,49 @@
 
 @custom-variant dark (&:is(.dark *));
 
-/* Ume Brand Colors - Dark Theme */
+/* Ume Brand Colors - Light Theme */
 :root {
   /* Core Ume palette */
-  --ume-bg: #001a0f;
+  --ume-bg: #F7FAF8;
   --ume-primary: #00C853;
-  --ume-card: #002a14;
-  --ume-text: #FFFFFF;
-  --ume-text-secondary: #7a9e8a;
+  --ume-card: #FFFFFF;
+  --ume-text: #1a1a1a;
+  --ume-text-secondary: #64748b;
   --ume-accent: #00ff6a;
   
   /* Design tokens mapped to Ume colors */
-  --background: #001a0f;
-  --foreground: #FFFFFF;
-  --card: #002a14;
-  --card-foreground: #FFFFFF;
-  --popover: #002a14;
-  --popover-foreground: #FFFFFF;
+  --background: #F7FAF8;
+  --foreground: #1a1a1a;
+  --card: #FFFFFF;
+  --card-foreground: #1a1a1a;
+  --popover: #FFFFFF;
+  --popover-foreground: #1a1a1a;
   --primary: #00C853;
-  --primary-foreground: #001a0f;
-  --secondary: #003d1f;
-  --secondary-foreground: #FFFFFF;
-  --muted: #003d1f;
-  --muted-foreground: #7a9e8a;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F0F4F3;
+  --secondary-foreground: #1a1a1a;
+  --muted: #F0F4F3;
+  --muted-foreground: #64748b;
   --accent: #00ff6a;
-  --accent-foreground: #001a0f;
+  --accent-foreground: #1a1a1a;
   --destructive: #ff4444;
   --destructive-foreground: #FFFFFF;
-  --border: #004d26;
-  --input: #003d1f;
+  --border: #E2E8F0;
+  --input: #F0F4F3;
   --ring: #00C853;
   --chart-1: #00C853;
   --chart-2: #00ff6a;
-  --chart-3: #00a344;
-  --chart-4: #7a9e8a;
-  --chart-5: #004d26;
+  --chart-3: #009e3f;
+  --chart-4: #64748b;
+  --chart-5: #cbd5e1;
   --radius: 0.75rem;
-  --sidebar: #001a0f;
-  --sidebar-foreground: #FFFFFF;
+  --sidebar: #F7FAF8;
+  --sidebar-foreground: #1a1a1a;
   --sidebar-primary: #00C853;
-  --sidebar-primary-foreground: #001a0f;
-  --sidebar-accent: #003d1f;
-  --sidebar-accent-foreground: #FFFFFF;
-  --sidebar-border: #004d26;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #F0F4F3;
+  --sidebar-accent-foreground: #1a1a1a;
+  --sidebar-border: #E2E8F0;
   --sidebar-ring: #00C853;
 }
 
