@@ -8,6 +8,7 @@ import { CSVUploader } from "@/components/csv-uploader";
 import { VarejoFunnel } from "@/components/varejo-funnel";
 import { ClientesFunnel } from "@/components/clientes-funnel";
 import { SegmentacaoTab } from "@/components/segmentacao-tab";
+import { JornadaTab } from "@/components/jornada-tab";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("aquisicao");
@@ -77,14 +78,9 @@ export default function Home() {
 
           {/* Jornada Tab */}
           {activeTab === "jornada" && (
-            <div className="flex h-96 flex-col items-center justify-center text-center">
-              <p className="text-lg font-medium text-[#64748b]">
-                Jornada do Cliente em desenvolvimento
-              </p>
-              <p className="text-sm text-[#94a3b8]">
-                Esta seção será adicionada em breve
-              </p>
-            </div>
+            <section>
+              <JornadaTab />
+            </section>
           )}
 
           {/* Rentabilidade Tab */}
