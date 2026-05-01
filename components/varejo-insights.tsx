@@ -162,10 +162,10 @@ export function VarejoInsights({ data }: VarejoInsightsProps) {
         <CardContent className="space-y-2">
           <div className="text-2xl font-bold text-[#EF4444]">{insights.caudaFraca}</div>
           <p className="text-xs text-[#64748b]">
-            varejos com originação &lt; R$ 5k
+            varejos com originação &lt; R$ 5k/mês
           </p>
           <p className="text-xs text-[#64748b] mt-2">
-            Considerando custo operacional de R$ 60k/ano por varejo, esses parceiros podem estar destruindo valor. Em média, esses {insights.caudaFraca} varejos geram apenas {insights.semConversoes} conversões/mês cada.
+            Bem abaixo do breakeven operacional — varejo precisa originar ~R$ 12k/mês só para cobrir o custo de R$ 60k/ano. Esses {insights.caudaFraca} parceiros custam ~R$ 540k/ano e geram receita marginal. Candidatos diretos a desinvestimento ou renegociação.
           </p>
         </CardContent>
       </Card>
