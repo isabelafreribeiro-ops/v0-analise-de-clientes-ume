@@ -101,33 +101,9 @@ export function RentabilidadeTab() {
       <div>
         <h2 className="text-xl font-bold text-[#1a1a1a]">Rentabilidade por Cliente</h2>
         <p className="text-sm text-[#64748b] mt-1">
-          P&L unitário individualizado por cliente (Tabela Price). Identificação dos geradores e
-          destruidores de valor.
+          P&L unitário automatizado — geradores e destruidores de valor.
         </p>
       </div>
-
-      {/* PERGUNTA-ÂNCORA */}
-      <Card className="border-[#E2E8F0] bg-gradient-to-r from-[#F0F9F4] via-white to-[#F7FAF8]">
-        <CardContent className="py-6">
-          <div className="flex items-start gap-3">
-            <span className="text-2xl">❓</span>
-            <div className="flex-1">
-              <p className="text-xs font-semibold text-[#64748b] uppercase tracking-wide mb-1">
-                Pergunta-âncora
-              </p>
-              <p className="text-base font-semibold text-[#1a1a1a] leading-relaxed">
-                Qual a rentabilidade real por cliente Ume? Onde está concentrado o valor e onde está
-                sendo destruído?
-              </p>
-              <p className="text-xs text-[#64748b] mt-2">
-                Para responder: aplicamos um P&L unitário (receita MDR + juros − CAC − mensageria −
-                inadimplência) calculado com Tabela Price individualizada por cliente. Custo
-                operacional dos varejos tratado em P&L separado.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* KPIs — 4 CARDS */}
       <div className="grid gap-4 grid-cols-2 md:grid-cols-4">

@@ -269,14 +269,14 @@ export function ClientesFunnel({ }: ClientesFunnelProps) {
 
       {/* Maior Perda Identificada */}
       {hasData && funnelData.length > 1 && (
-        <Card className="border-l-4 border-[#EF4444] bg-[#FEF2F2]">
+        <Card className="border-l-4 border-[#F59E0B] bg-gradient-to-r from-[#FFFBEB] to-white">
           <CardHeader>
-            <CardTitle className="text-[#991B1B] flex items-center gap-2">
+            <CardTitle className="text-[#D97706] flex items-center gap-2">
               <span className="text-2xl">⚠️</span>
               Maior Perda Identificada
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             {(() => {
               let maiorPerda = { label: "", diff: 0, pct: 0, de: "", para: "", deDiff: 0, paraDiff: 0 };
               
@@ -298,7 +298,7 @@ export function ClientesFunnel({ }: ClientesFunnelProps) {
               }
 
               return (
-                <div className="space-y-3">
+                <div className="space-y-4">
                   <div>
                     <p className="text-sm text-[#64748b] mb-1">Etapa crítica:</p>
                     <p className="text-lg font-bold text-[#1a1a1a]">{maiorPerda.label}</p>
@@ -316,10 +316,21 @@ export function ClientesFunnel({ }: ClientesFunnelProps) {
                       <p className="text-2xl font-bold text-[#1a1a1a]">{maiorPerda.paraDiff.toLocaleString("pt-BR")}</p>
                     </div>
                   </div>
-                  <div className="bg-white/50 rounded p-3 border border-[#EF4444]/20">
-                    <p className="text-sm font-bold text-[#EF4444]">
+                  <div className="bg-[#F59E0B]/10 rounded p-3 border border-[#F59E0B]/30">
+                    <p className="text-sm font-bold text-[#D97706]">
                       {maiorPerda.diff.toLocaleString("pt-BR")} clientes perdidos ({maiorPerda.pct.toFixed(1)}% de atrito)
                     </p>
+                  </div>
+                  
+                  <div className="border-t border-[#F59E0B]/20 pt-3 space-y-2">
+                    <div>
+                      <p className="text-xs font-semibold text-[#D97706] mb-1">💡 Hipótese:</p>
+                      <p className="text-sm text-[#64748b]">Concentração de perdas nesta etapa indica oportunidade de otimização — revisar critérios e fluxo.</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-[#D97706] mb-1">🎯 Ação sugerida:</p>
+                      <p className="text-sm text-[#64748b]">Analisar motivos da perda nesta etapa e testar intervenções pontuais.</p>
+                    </div>
                   </div>
                 </div>
               );

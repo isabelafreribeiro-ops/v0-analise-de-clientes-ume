@@ -394,30 +394,9 @@ export function SegmentacaoTab() {
       <div>
         <h2 className="text-xl font-bold text-[#1a1a1a]">Segmentação de Clientes</h2>
         <p className="text-sm text-[#64748b] mt-1">
-          Construção do raciocínio analítico que justifica a estratégia de segmentação Ume.
+          Análise de segmentação da base — perfil, comportamento e oportunidades por grupo.
         </p>
       </div>
-
-      <Card className="border-[#E2E8F0] bg-gradient-to-r from-[#F0F9F4] via-white to-[#F7FAF8]">
-        <CardContent className="py-6">
-          <div className="flex items-start gap-3">
-            <span className="text-2xl">❓</span>
-            <div className="flex-1">
-              <p className="text-xs font-semibold text-[#64748b] uppercase tracking-wide mb-1">
-                Pergunta-âncora
-              </p>
-              <p className="text-base font-semibold text-[#1a1a1a] leading-relaxed">
-                Quem é o cliente Ume e como devemos segmentá-lo de forma acionável?
-              </p>
-              <p className="text-xs text-[#64748b] mt-2">
-                Para responder: caracterizamos o perfil, identificamos correlações comportamentais e
-                derivamos uma segmentação que conecta com a estratégia de jornada (Q3) e modelagem
-                financeira (Q4).
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* SEÇÃO 1: QUEM É O CLIENTE UME */}
       <Card className="border-[#E2E8F0]">

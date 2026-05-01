@@ -11,13 +11,11 @@ import { SegmentacaoTab } from "@/components/segmentacao-tab";
 import { JornadaTab } from "@/components/jornada-tab";
 import { RentabilidadeTab } from "@/components/rentabilidade-tab";
 import { GlobalMetricsDisplay } from "@/components/global-metrics-display";
-import { Card, CardContent } from "@/components/ui/card";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("aquisicao");
   const [selectedVarejo, setSelectedVarejo] = useState("todos");
   const [selectedSegmento, setSelectedSegmento] = useState("todos");
-  const [selectedMes, setSelectedMes] = useState("todos");
   const [periodFrom, setPeriodFrom] = useState("all");
   const [periodTo, setPeriodTo] = useState("all");
   const [varejoFilter, setVarejoFilter] = useState("todos");
@@ -32,33 +30,21 @@ export default function Home() {
           {/* Aquisição Tab */}
           {activeTab === "aquisicao" && (
             <>
-              {/* Anchor Question */}
-              <section className="mb-8">
-                <Card className="border-[#E2E8F0] bg-gradient-to-r from-[#F0F9F4] via-white to-[#F7FAF8]">
-                  <CardContent className="py-6">
-                    <div className="flex items-start gap-3">
-                      <span className="text-2xl">❓</span>
-                      <div className="flex-1">
-                        <p className="text-xs font-semibold text-[#64748b] uppercase tracking-wide mb-1">
-                          Pergunta-âncora
-                        </p>
-                        <p className="text-base font-semibold text-[#1a1a1a] leading-relaxed">
-                          Como funciona o funil de aquisição da Ume e onde estão os maiores gargalos de conversão?
-                        </p>
-                        <p className="text-xs text-[#64748b] mt-2">
-                          Para responder: mapeamos o funil completo (solicitação → aprovação → ativação → recorrência), identificamos as taxas de conversão entre cada etapa e destacamos o maior ponto de perda na jornada.
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </section>
-
               {/* Upload Section */}
               <section className="mb-12">
                 <h2 className="mb-2 text-xl font-bold text-[#1a1a1a]">
-                  Upload de Dados
+                  Aquisição de Clientes
                 </h2>
+                <p className="mb-4 text-sm text-[#64748b]">
+                  Visão completa do funil de aquisição de clientes Ume — da solicitação à recorrência.
+                </p>
+              </section>
+
+              {/* Upload Data */}
+              <section className="mb-12">
+                <h3 className="mb-2 text-lg font-semibold text-[#1a1a1a]">
+                  Upload de Dados
+                </h3>
                 <p className="mb-4 text-sm text-[#64748b]">
                   Carregue as bases de dados CSV para análise dos funis
                 </p>
@@ -68,10 +54,10 @@ export default function Home() {
               {/* Global Metrics */}
               <section className="mb-12">
                 <h2 className="mb-2 text-xl font-bold text-[#1a1a1a]">
-                  Métricas Globais (Base Completa)
+                  Indicadores-Chave da Base
                 </h2>
                 <p className="mb-4 text-sm text-[#64748b]">
-                  Indicadores calculados sobre os dados completos - nunca amostrados
+                  Snapshot agregado da base de clientes.
                 </p>
                 <GlobalMetricsDisplay />
               </section>
@@ -79,12 +65,10 @@ export default function Home() {
               {/* Funnel 1: Aquisição de Varejos */}
               <section className="mb-12">
                 <VarejoFunnel 
-                  selectedVarejo={selectedVarejo}
-                  onVarejoChange={setSelectedVarejo}
                   selectedSegmento={selectedSegmento}
                   onSegmentoChange={setSelectedSegmento}
-                  selectedMes={selectedMes}
-                  onMesChange={setSelectedMes}
+                  selectedVarejo={selectedVarejo}
+                  onVarejoChange={setSelectedVarejo}
                 />
               </section>
 

@@ -154,18 +154,39 @@ export function CSVUploader() {
     const isActive = isDragging === type;
 
     return (
-      <Card
-        className={`transition-all duration-200 border-[#E2E8F0] bg-white ${
-          isActive ? "border-[#00C853] ring-2 ring-[#00C853]/20" : ""
-        } ${state.uploaded ? "border-[#00C853]/50" : ""} ${state.loading ? "border-blue-400/50" : ""}`}
-      >
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg text-[#1a1a1a]">
-            <FileSpreadsheet className="h-5 w-5 text-[#00C853]" />
-            {title}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+      <>
+        {state.uploaded ? (
+          // Compact uploaded state - no Card wrapper
+          <div className="flex items-center gap-3 rounded-lg bg-[#00C853]/10 border border-[#00C853]/30 px-4 py-2 text-sm h-[50px]">
+            <CheckCircle2 className="h-4 w-4 text-[#00C853] flex-shrink-0" />
+            <FileSpreadsheet className="h-4 w-4 text-[#00C853] flex-shrink-0" />
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              <span className="font-medium text-[#1a1a1a]">📄 Base de {type === "clientes" ? "Clientes" : "Varejo"}</span>
+              <span className="text-[#64748b]">✓</span>
+              <span className="text-[#64748b] whitespace-nowrap">{(state as any).count.toLocaleString("pt-BR")} registros</span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => clearUpload(type)}
+              className="ml-auto h-6 px-2 text-[#00C853] hover:bg-[#00C853]/20 text-xs font-medium flex-shrink-0"
+            >
+              Trocar arquivo
+            </Button>
+          </div>
+        ) : (
+          <Card
+            className={`transition-all duration-200 border-[#E2E8F0] bg-white ${
+              isActive ? "border-[#00C853] ring-2 ring-[#00C853]/20" : ""
+            } ${state.loading ? "border-blue-400/50" : ""}`}
+          >
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg text-[#1a1a1a]">
+                <FileSpreadsheet className="h-5 w-5 text-[#00C853]" />
+                {title}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
           {state.error ? (
             <div className="rounded-lg bg-red-50 border border-red-200 p-4">
               <p className="text-sm font-medium text-red-600">{state.error}</p>
@@ -194,25 +215,6 @@ export function CSVUploader() {
                 />
               </div>
             </div>
-          ) : state.uploaded ? (
-            <div className="flex items-center gap-3 rounded-lg bg-[#00C853]/10 border border-[#00C853]/30 px-4 py-3 text-sm">
-              <CheckCircle2 className="h-4 w-4 text-[#00C853] flex-shrink-0" />
-              <div className="flex items-center gap-2 flex-1 min-w-0">
-                <span className="font-medium text-[#1a1a1a] truncate">Base de {type === "clientes" ? "Clientes" : "Varejo"}</span>
-                <span className="text-[#64748b]">•</span>
-                <span className="text-[#64748b] truncate">{state.fileName}</span>
-                <span className="text-[#64748b]">•</span>
-                <span className="text-[#64748b] whitespace-nowrap">{(state as any).count.toLocaleString("pt-BR")} registros</span>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => clearUpload(type)}
-                className="ml-auto h-7 px-2 text-[#00C853] hover:bg-[#00C853]/20 text-xs font-medium"
-              >
-                Trocar
-              </Button>
-            </div>
           ) : (
             <div
               onDrop={(e) => handleDrop(e, type)}
@@ -238,8 +240,10 @@ export function CSVUploader() {
               </label>
             </div>
           )}
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        )}
+      </>
     );
   };
 

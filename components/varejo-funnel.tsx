@@ -20,84 +20,56 @@ interface VarejoFunnelProps {
   onVarejoChange: (value: string) => void;
   selectedSegmento: string;
   onSegmentoChange: (value: string) => void;
-  selectedMes: string;
-  onMesChange: (value: string) => void;
 }
 
 export function VarejoFunnel({ 
   selectedVarejo, 
   onVarejoChange,
   selectedSegmento,
-  onSegmentoChange,
-  selectedMes,
-  onMesChange
+  onSegmentoChange
 }: VarejoFunnelProps) {
   const { varejoData } = useData();
 
   // Get unique values with robust column matching
-  const { varejos, segmentos, meses, mesMap } = useMemo(() => {
+  const { varejos, segmentos } = useMemo(() => {
     // Guard: return empty if no retail data
     if (!varejoData || varejoData.length === 0) {
       return {
         varejos: [],
         segmentos: [],
-        meses: [],
-        mesMap: new Map(),
       };
     }
 
     const varejoSet = new Set<string>();
     const segmentoSet = new Set<string>();
-    const mesArray: string[] = [];
 
     varejoData.forEach((v: any) => {
       // Robust column name matching
       const varejo = v.Varejo || v["Varejo"] || v.Loja || v["Nome da Loja"];
       const segmento = v.Segmento || v["Segmento"];
-      const mes = v["Mês de Entrada"] || v["Mês"] || v.Mes;
 
       if (varejo) varejoSet.add(String(varejo).trim());
       if (segmento) segmentoSet.add(String(segmento).trim());
-      if (mes) {
-        mesArray.push(String(mes).trim());
-      }
-    });
-
-    // Parse and sort months
-    const sortedMonths = getSortedMonths(mesArray);
-    const displayMeses = sortedMonths.map((m) => m.display);
-    
-    // Create map from display format back to original for filtering
-    const mMap = new Map<string, string>();
-    sortedMonths.forEach((monthObj) => {
-      // Use the parsed display format as the key, with original as fallback
-      if (!mMap.has(monthObj.display)) {
-        mMap.set(monthObj.display, monthObj.original);
-      }
     });
 
     return {
       varejos: Array.from(varejoSet).sort(),
       segmentos: Array.from(segmentoSet).sort(),
-      meses: displayMeses,
-      mesMap: mMap,
     };
   }, [varejoData]);
 
-  // Filter data by all selected filters
+  // Filter data by selected filters (no month filter)
   const filteredVarejo = useMemo(() => {
     return varejoData.filter((v: any) => {
       const varejo = String(v.Varejo || "").trim();
       const segmento = String(v.Segmento || "").trim();
-      const mes = String(v["Mês de Entrada"] || "").trim();
 
       const varejoMatch = selectedVarejo === "todos" || varejo === selectedVarejo;
       const segmentoMatch = selectedSegmento === "todos" || segmento === selectedSegmento;
-      const mesMatch = selectedMes === "todos" || mes === selectedMes;
 
-      return varejoMatch && segmentoMatch && mesMatch;
+      return varejoMatch && segmentoMatch;
     });
-  }, [varejoData, selectedVarejo, selectedSegmento, selectedMes]);
+  }, [varejoData, selectedVarejo, selectedSegmento]);
 
   // Calculate funnel data
   const funnelData = useMemo((): FunnelStep[] => {
@@ -218,25 +190,6 @@ export function VarejoFunnel({
             {segmentos.map((segmento) => (
               <SelectItem key={segmento} value={segmento} className="text-xs text-[#1a1a1a]">
                 {segmento}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <span className="text-xs font-medium text-[#64748b]">Mês:</span>
-        <Select value={selectedMes} onValueChange={onMesChange}>
-          <SelectTrigger className="h-8 w-40 border-[#E2E8F0] bg-white text-xs text-[#1a1a1a]">
-            <span className="truncate">
-              {selectedMes === "todos" ? "Todos os Meses" : selectedMes}
-            </span>
-          </SelectTrigger>
-          <SelectContent className="border-[#E2E8F0] bg-white">
-            <SelectItem value="todos" className="text-xs text-[#1a1a1a]">
-              Todos os Meses
-            </SelectItem>
-            {meses.map((mes) => (
-              <SelectItem key={mes} value={mes} className="text-xs text-[#1a1a1a]">
-                {mes}
               </SelectItem>
             ))}
           </SelectContent>
