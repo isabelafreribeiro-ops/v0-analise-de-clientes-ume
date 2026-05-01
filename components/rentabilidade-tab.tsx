@@ -45,7 +45,7 @@ function formatBRL(value: number, decimals: number = 1): string {
   } else if (abs >= 10_000) {
     formatted = `R$ ${new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(abs / 1_000)} mil`;
   } else {
-    formatted = `R$ ${Math.round(abs)}`;
+    formatted = `R$ ${new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(Math.round(abs))}`;
   }
   return value < 0 ? `-${formatted}` : formatted;
 }
