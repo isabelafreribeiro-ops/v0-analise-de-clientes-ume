@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { TrendingUp, Users, UserCheck, ShoppingBag, X } from "lucide-react";
+import { TrendingUp, Users, UserCheck, ShoppingBag, X, Info } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useData } from "@/lib/data-context";
 import { FunnelChart } from "./funnel-chart";
@@ -38,13 +38,95 @@ function getSortKey(period: string): number {
 export function ClientesFunnel({ }: ClientesFunnelProps) {
   const { clientesData } = useData();
 
+  // AJUSTE 4: Add period filter state
+  const [filterPeriodFrom, setFilterPeriodFrom] = useState("todos");
+  const [filterPeriodTo, setFilterPeriodTo] = useState("todos");
+  
   // MUDANÇA 3: Add score and age filter state
   const [filterScore, setFilterScore] = useState("todos");
   const [filterAge, setFilterAge] = useState("todos");
 
-  // Filter clientes based on score and age
+  // AJUSTE 4: Extract available periods from "Data de Entrada na Ume"
+  const availablePeriods = useMemo((): PeriodOption[] => {
+    if (!clientesData || clientesData.length === 0) return [];
+    
+    const periodSet = new Set<string>();
+    
+    clientesData.forEach((c) => {
+      const dataEntrada = c["Data de Entrada na Ume"] || c["Data de Entrada"] || "";
+      if (dataEntrada) {
+        // Parse date format (could be DD/MM/YYYY or YYYY-MM-DD)
+        let month: number, year: number;
+        if (dataEntrada.includes("/")) {
+          const parts = dataEntrada.split("/");
+          if (parts.length >= 3) {
+            month = parseInt(parts[1], 10);
+            year = parseInt(parts[2], 10);
+          } else {
+            return;
+          }
+        } else if (dataEntrada.includes("-")) {
+          const parts = dataEntrada.split("-");
+          year = parseInt(parts[0], 10);
+          month = parseInt(parts[1], 10);
+        } else {
+          return;
+        }
+        
+        if (month >= 1 && month <= 12 && year >= 2020 && year <= 2030) {
+          periodSet.add(`${month}/${year}`);
+        }
+      }
+    });
+    
+    // Sort periods chronologically
+    return Array.from(periodSet)
+      .map((p) => {
+        const [month, year] = p.split("/").map(Number);
+        return {
+          value: p,
+          label: `${MONTH_NAMES[month - 1]}/${year}`,
+          sortKey: year * 100 + month
+        };
+      })
+      .sort((a, b) => a.sortKey - b.sortKey);
+  }, [clientesData]);
+
+  // Filter clientes based on period, score and age
   const filteredClientes = useMemo(() => {
+    // Calculate period bounds for filtering
+    const fromSortKey = filterPeriodFrom !== "todos" ? getSortKey(filterPeriodFrom) : 0;
+    const toSortKey = filterPeriodTo !== "todos" ? getSortKey(filterPeriodTo) : 999999;
+
     return clientesData.filter((c) => {
+      // AJUSTE 4: Apply period filter
+      if (filterPeriodFrom !== "todos" || filterPeriodTo !== "todos") {
+        const dataEntrada = c["Data de Entrada na Ume"] || c["Data de Entrada"] || "";
+        if (dataEntrada) {
+          let month: number, year: number;
+          if (dataEntrada.includes("/")) {
+            const parts = dataEntrada.split("/");
+            if (parts.length >= 3) {
+              month = parseInt(parts[1], 10);
+              year = parseInt(parts[2], 10);
+            } else {
+              return false;
+            }
+          } else if (dataEntrada.includes("-")) {
+            const parts = dataEntrada.split("-");
+            year = parseInt(parts[0], 10);
+            month = parseInt(parts[1], 10);
+          } else {
+            return false;
+          }
+          
+          const clientSortKey = year * 100 + month;
+          if (clientSortKey < fromSortKey || clientSortKey > toSortKey) {
+            return false;
+          }
+        }
+      }
+
       // Apply score filter
       if (filterScore !== "todos") {
         const score = Number(c.Score) || 0;
@@ -64,7 +146,7 @@ export function ClientesFunnel({ }: ClientesFunnelProps) {
 
       return true;
     });
-  }, [clientesData, filterScore, filterAge]);
+  }, [clientesData, filterPeriodFrom, filterPeriodTo, filterScore, filterAge]);
 
   // Calculate funnel data (4 steps: Solicitações → Aprovados → Ativados → Recorrentes)
   const funnelData = useMemo((): FunnelStep[] => {
@@ -154,9 +236,6 @@ export function ClientesFunnel({ }: ClientesFunnelProps) {
       return compras >= 3 && score >= 700;
     }).length;
     const qualidadeRecorrentes = recorrentes > 0 ? (umePlus / recorrentes) * 100 : 0;
-    
-    // Debug log for validation
-    console.log("[v0] Qualidade Recorrentes —", { umePlus, recorrentes, percent: qualidadeRecorrentes });
 
     return { total, aprovados, ativos, taxaConversao, recorrentes, umePlus, qualidadeRecorrentes };
   }, [filteredClientes]);
@@ -177,6 +256,41 @@ export function ClientesFunnel({ }: ClientesFunnelProps) {
         {/* Filter Toolbar */}
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <span className="text-xs font-medium text-[#64748b]">Filtrar por:</span>
+          
+          {/* AJUSTE 4: Period filters */}
+          <Select value={filterPeriodFrom} onValueChange={setFilterPeriodFrom}>
+            <SelectTrigger className="h-8 w-32 border-[#E2E8F0] bg-white text-xs text-[#1a1a1a]">
+              <span className="truncate">
+                {filterPeriodFrom === "todos" ? "Mês início" : availablePeriods.find(p => p.value === filterPeriodFrom)?.label || filterPeriodFrom}
+              </span>
+            </SelectTrigger>
+            <SelectContent className="border-[#E2E8F0] bg-white max-h-60">
+              <SelectItem value="todos" className="text-xs">Todos</SelectItem>
+              {availablePeriods.map((period) => (
+                <SelectItem key={period.value} value={period.value} className="text-xs">
+                  {period.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={filterPeriodTo} onValueChange={setFilterPeriodTo}>
+            <SelectTrigger className="h-8 w-32 border-[#E2E8F0] bg-white text-xs text-[#1a1a1a]">
+              <span className="truncate">
+                {filterPeriodTo === "todos" ? "Mês fim" : availablePeriods.find(p => p.value === filterPeriodTo)?.label || filterPeriodTo}
+              </span>
+            </SelectTrigger>
+            <SelectContent className="border-[#E2E8F0] bg-white max-h-60">
+              <SelectItem value="todos" className="text-xs">Todos</SelectItem>
+              {availablePeriods
+                .filter(p => filterPeriodFrom === "todos" || p.sortKey >= getSortKey(filterPeriodFrom))
+                .map((period) => (
+                  <SelectItem key={period.value} value={period.value} className="text-xs">
+                    {period.label}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
           
           <Select value={filterScore} onValueChange={setFilterScore}>
             <SelectTrigger className="h-8 w-40 border-[#E2E8F0] bg-white text-xs text-[#1a1a1a]">
@@ -214,11 +328,13 @@ export function ClientesFunnel({ }: ClientesFunnelProps) {
             </SelectContent>
           </Select>
 
-          {(filterScore !== "todos" || filterAge !== "todos") && (
+          {(filterPeriodFrom !== "todos" || filterPeriodTo !== "todos" || filterScore !== "todos" || filterAge !== "todos") && (
             <Button
               variant="ghost"
               size="sm"
               onClick={() => {
+                setFilterPeriodFrom("todos");
+                setFilterPeriodTo("todos");
                 setFilterScore("todos");
                 setFilterAge("todos");
               }}
@@ -233,7 +349,17 @@ export function ClientesFunnel({ }: ClientesFunnelProps) {
         {/* Snapshot info */}
         <div className="mt-4 text-xs text-[#64748b]">
           Análise sobre {filteredClientes.length.toLocaleString("pt-BR")} clientes
-          {(filterScore !== "todos" || filterAge !== "todos") && ` (filtrados de ${clientesData.length.toLocaleString("pt-BR")})`}
+          {(filterPeriodFrom !== "todos" || filterPeriodTo !== "todos" || filterScore !== "todos" || filterAge !== "todos") && ` (filtrados de ${clientesData.length.toLocaleString("pt-BR")})`}
+        </div>
+        
+        {/* AJUSTE 5: Informational note about varejo filter limitation */}
+        <div className="mt-3 flex items-start gap-2 rounded-md bg-[#F1F5F9] px-3 py-2 text-xs text-[#475569]">
+          <Info className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 text-[#3B82F6]" />
+          <span>
+            Filtro por varejo aplicável apenas à seção "Aquisição de Varejos" abaixo. 
+            A Base de Clientes não vincula clientes a varejos específicos (apenas quantidade de varejos visitados) — 
+            cruzamento por varejo individual exigiria base transacional adicional.
+          </span>
         </div>
       </div>
 
