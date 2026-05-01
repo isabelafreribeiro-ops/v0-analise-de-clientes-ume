@@ -513,7 +513,7 @@ export function SegmentacaoTab() {
               titulo="O app é o maior diferenciador comportamental"
               shockValue={`${formatPercentage(insight1.pctSem)} → ${formatPercentage(insight1.pctCom)}`}
               shockLabel={`Salto de ${insight1.multiplier.toFixed(0)}x na adoção do app entre quem nunca comprou e quem comprou pelo menos uma vez.`}
-              implicacao="Ter o app não é correlação fraca — é praticamente um proxy de ativação. Sub-segmentar por status de app deve informar a estratégia de aquisição (Q3)."
+              implicacao="Ter o app é praticamente um proxy de ativação. O status de app diferencia comportamento dentro da base aprovada."
             />
 
             <InsightCard
@@ -524,7 +524,7 @@ export function SegmentacaoTab() {
               titulo="Score é destino — base bipolar, não normal"
               shockValue={`${formatPercentage(insight2.pctLow, 0)} | ${formatPercentage(insight2.pctMid, 0)} | ${formatPercentage(insight2.pctHigh, 0)}`}
               shockLabel={`Distribuição score: baixo (<400) | médio (400-700) | alto (≥700). A maioria absoluta é negada por score, e a "classe média" quase não existe.`}
-              implicacao='Não há cliente médio — a base é polarizada. Estratégia uniforme falha. Sub-segmentação por score dentro dos aprovados é obrigatória (Q3).'
+              implicacao="Não há cliente médio — a base é polarizada entre baixo e alto score. O score diferencia comportamento dentro dos aprovados."
             />
 
             <InsightCard
@@ -535,7 +535,7 @@ export function SegmentacaoTab() {
               titulo="Concentração extrema das transações"
               shockValue={`${formatPercentage(insight3.pctClientesRec, 1)} → ${formatPercentage(insight3.pctTransacoesRec, 0)}`}
               shockLabel={`${formatNumber(insight3.qtdRecorrentes)} clientes (${formatPercentage(insight3.pctClientesRec, 1)} da base) geram ${formatNumber(insight3.transacoesRecorrentes)} transações (${formatPercentage(insight3.pctTransacoesRec, 0)} do total).`}
-              implicacao="Operação de cauda longa concentrada. A estratégia de retenção dos compradores recorrentes vale mais por cliente que ativação dos demais."
+              implicacao="Operação de cauda longa concentrada. O valor por cliente é significativamente maior entre os recorrentes que entre os demais."
             />
 
             <InsightCard
@@ -546,7 +546,7 @@ export function SegmentacaoTab() {
               titulo="Score alto não garante uso do produto"
               shockValue={`${formatNumber(insight4.inativos)} inativos`}
               shockLabel={`Dos ${formatNumber(insight4.totalScoreAlto)} clientes com score ≥700 aprovados, apenas ${formatPercentage(insight4.pctAtivacao, 0)} efetivamente compraram. ${formatNumber(insight4.inativos)} são "alta qualidade" parados.`}
-              implicacao="Existe um pool de aprovados premium não-ativados. Score alto não é problema — falta de ativação é. Esses clientes merecem jornada prioritária."
+              implicacao="Existe um pool de aprovados premium não-ativados. Score alto não garante ativação — o gargalo está fora do crédito."
             />
           </div>
         </CardContent>
@@ -606,10 +606,10 @@ export function SegmentacaoTab() {
                 Os 4 insights apontam para 2 eixos principais de diferenciação:{" "}
                 <span className="font-semibold">status no funil</span> (negado / aprovado / ativo /
                 recorrente) e <span className="font-semibold">qualidade de risco</span> (score).
-                Combinando os dois, derivamos{" "}
-                <span className="font-semibold">7 segmentos acionáveis</span> com cobertura de 100% da
+                A combinação dos dois eixos resulta em{" "}
+                <span className="font-semibold">7 segmentos</span> com cobertura de 100% da
                 base — cada um com perfil distinto de comportamento, risco e oportunidade. Cada
-                segmento se conecta a uma jornada de CRM (Q3) e a um perfil de rentabilidade (Q4).
+                segmento se conecta a uma jornada própria (ver aba Jornada) e a um perfil financeiro próprio (ver aba Rentabilidade).
               </p>
             </div>
           </div>
@@ -719,7 +719,7 @@ export function SegmentacaoTab() {
                   label="Médio (400-700)"
                   count={scoreDistribution.medium}
                   total={clientesData.length}
-                  color="#FF9800"
+                  color="#94A3B8"
                 />
                 <ScoreBar
                   label="Alto (≥700)"
@@ -733,24 +733,24 @@ export function SegmentacaoTab() {
             <div>
               <p className="text-xs font-semibold text-[#64748b] mb-3 uppercase">📊 Insights de Risco</p>
               <div className="space-y-2 text-xs">
-                <div className="p-2 bg-blue-50 rounded border border-blue-200">
-                  <span className="font-medium text-[#0D47A1]">Score vs Compras:</span>
+                <div className="p-2 rounded border-l-4" style={{ backgroundColor: "#F1F5F9", borderLeftColor: "#94A3B8" }}>
+                  <span className="font-medium text-[#334155]">Score vs Compras:</span>
                   <p className="text-[#64748b] mt-1">
                     Ume Plus tem score médio {formatNumber(getSeg("ume-plus")?.avgScore || 0)} e{" "}
                     {formatNumber(getSeg("ume-plus")?.avgCompras || 0)} compras médias.
                   </p>
                 </div>
-                <div className="p-2 bg-green-50 rounded border border-green-200">
-                  <span className="font-medium text-[#1B5E20]">Recorrência:</span>
+                <div className="p-2 rounded border-l-4" style={{ backgroundColor: "#F0FDF4", borderLeftColor: "#22C55E" }}>
+                  <span className="font-medium text-[#166534]">Recorrência:</span>
                   <p className="text-[#64748b] mt-1">
                     {formatNumber(
                       (getSeg("recorrentes")?.count || 0) + (getSeg("ume-plus")?.count || 0)
                     )}{" "}
-                    clientes ativos recorrentes — base com menor inadimplência esperada.
+                    clientes ativos recorrentes — base com menor inadimplência observada.
                   </p>
                 </div>
-                <div className="p-2 bg-pink-50 rounded border border-pink-200">
-                  <span className="font-medium text-[#880E4F]">Inadimplência:</span>
+                <div className="p-2 rounded border-l-4" style={{ backgroundColor: "#FEF2F2", borderLeftColor: "#EF4444" }}>
+                  <span className="font-medium text-[#991B1B]">Inadimplência:</span>
                   <p className="text-[#64748b] mt-1">
                     {formatNumber(getSeg("inadimplentes")?.count || 0)} clientes inadimplentes —{" "}
                     {formatPercentage(((getSeg("inadimplentes")?.count || 0) / clientesData.length) * 100)} da
@@ -768,8 +768,8 @@ export function SegmentacaoTab() {
         <CardHeader>
           <CardTitle>7. Oportunidades Estratégicas por Segmento</CardTitle>
           <p className="text-xs text-[#64748b] mt-2">
-            Insight estratégico e ações recomendadas para cada segmento. Detalhamento das jornadas
-            específicas na aba Jornada (Q3); modelagem financeira na aba Rentabilidade (Q4).
+            Característica do segmento e ações sugeridas. Detalhamento das jornadas
+            específicas na aba Jornada; modelagem financeira na aba Rentabilidade.
           </p>
         </CardHeader>
         <CardContent>
@@ -778,7 +778,7 @@ export function SegmentacaoTab() {
               segmentId="aprovados-nao-ativados"
               count={getSeg("aprovados-nao-ativados")?.count || 0}
               total={clientesData.length}
-              insight="Maior oportunidade de crescimento — CAC já pago, basta ativar. Cada conversão recupera o investimento de aquisição e abre potencial de receita futura."
+              caracteristica="Maior oportunidade de crescimento da base — CAC já pago, basta ativar. Cada conversão recupera o investimento de aquisição e abre potencial de receita futura."
               acoes={[
                 "Reengajamento via SMS + WhatsApp (Push não funciona: 0,6% têm app)",
                 "Abordagem em ponto de venda no varejo parceiro",
@@ -790,7 +790,7 @@ export function SegmentacaoTab() {
               segmentId="potencial"
               count={getSeg("potencial")?.count || 0}
               total={clientesData.length}
-              insight="Janela crítica de hábito — 30 dias após 1ª compra define se vira recorrente. Maior ROI marginal em campanha por unidade de esforço."
+              caracteristica="Janela crítica de hábito — os 30 dias após a 1ª compra costumam definir se o cliente vira recorrente. Maior ROI marginal por unidade de esforço de campanha."
               acoes={[
                 "Incentivo de segunda compra dentro de 30 dias",
                 "Personalização por score (educação se baixo, oferta se alto)",
@@ -802,7 +802,7 @@ export function SegmentacaoTab() {
               segmentId="recorrentes"
               count={getSeg("recorrentes")?.count || 0}
               total={clientesData.length}
-              insight="Maior contribuição de transações da base — foco em retenção e expansão de ticket. Proteger é prioridade."
+              caracteristica="Maior contribuição de transações da base — segmento focado em retenção e expansão de ticket. Proteção tem prioridade alta."
               acoes={[
                 "Aumento de limite proativo por bom histórico",
                 "Cross-loja e diversificação de varejos",
@@ -814,7 +814,7 @@ export function SegmentacaoTab() {
               segmentId="ume-plus"
               count={getSeg("ume-plus")?.count || 0}
               total={clientesData.length}
-              insight="Core de valor da base — clientes premium ativos. Foco absoluto em retenção e advocacia."
+              caracteristica="Núcleo de valor da base — clientes premium ativos. Foco em retenção e advocacy."
               acoes={[
                 "Limite aumentado automático (sem ação do cliente)",
                 "Taxa de juros reduzida vs. média da base",
@@ -826,7 +826,7 @@ export function SegmentacaoTab() {
               segmentId="negados-recuperaveis"
               count={getSeg("negados-recuperaveis")?.count || 0}
               total={clientesData.length}
-              insight="Maior segmento da base — score 300-400 pode subir. Educação financeira como ponte para reaplicação."
+              caracteristica="Maior segmento da base — score 300-400 com potencial de subir. Educação financeira como ponte para reaplicação."
               acoes={[
                 "Apenas SMS (custo controlado, sem WhatsApp)",
                 "Conteúdo educativo: como subir score em 60-90 dias",
@@ -838,7 +838,7 @@ export function SegmentacaoTab() {
               segmentId="negados-alto-risco"
               count={getSeg("negados-alto-risco")?.count || 0}
               total={clientesData.length}
-              insight="Score <300 — baixa probabilidade de aprovação no curto prazo. Contenção de custo é a estratégia."
+              caracteristica="Score <300 — baixa probabilidade de aprovação no curto prazo. Contenção de custo de comunicação é a abordagem dominante."
               acoes={[
                 "1 único SMS de comunicação (custo mínimo)",
                 "Sem follow-up de reengajamento",
@@ -850,7 +850,7 @@ export function SegmentacaoTab() {
               segmentId="inadimplentes"
               count={getSeg("inadimplentes")?.count || 0}
               total={clientesData.length}
-              insight="Recuperação parcial via negociação tem ROI alto se feita rapidamente."
+              caracteristica="Recuperação parcial via negociação tem ROI alto se feita rapidamente."
               acoes={[
                 "Jornada de cobrança: WhatsApp humanizado + SMS formal",
                 "Oferta de parcelamento da dívida com desconto",
@@ -962,11 +962,11 @@ interface SegmentOpportunityCardProps {
   segmentId: SegmentId;
   count: number;
   total: number;
-  insight: string;
+  caracteristica: string;
   acoes: string[];
 }
 
-function SegmentOpportunityCard({ segmentId, count, total, insight, acoes }: SegmentOpportunityCardProps) {
+function SegmentOpportunityCard({ segmentId, count, total, caracteristica, acoes }: SegmentOpportunityCardProps) {
   const cfg = SEGMENT_CONFIG[segmentId];
   const pct = total > 0 ? (count / total) * 100 : 0;
 
@@ -987,9 +987,9 @@ function SegmentOpportunityCard({ segmentId, count, total, insight, acoes }: Seg
         </div>
       </div>
 
-      <p className="text-xs text-[#1a1a1a] font-medium mb-1">Insight:</p>
-      <p className="text-xs text-[#64748b] mb-3">{insight}</p>
-      <p className="text-xs text-[#1a1a1a] font-medium mb-1">Ações:</p>
+      <p className="text-xs text-[#1a1a1a] font-medium mb-1">Característica do segmento:</p>
+      <p className="text-xs text-[#64748b] mb-3">{caracteristica}</p>
+      <p className="text-xs text-[#1a1a1a] font-medium mb-1">Ações sugeridas:</p>
       <ul className="text-xs text-[#64748b] space-y-1 list-disc list-inside">
         {acoes.map((a, i) => (
           <li key={i}>{a}</li>
