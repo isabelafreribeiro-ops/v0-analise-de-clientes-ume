@@ -1,10 +1,12 @@
 "use client";
 
-import { useMemo } from "react";
-import { TrendingUp, Users, UserCheck, ShoppingBag } from "lucide-react";
+import { useMemo, useState } from "react";
+import { TrendingUp, Users, UserCheck, ShoppingBag, X } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useData } from "@/lib/data-context";
 import { FunnelChart } from "./funnel-chart";
+import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import type { FunnelStep } from "@/lib/types";
 
 const MONTH_NAMES = [
@@ -35,18 +37,33 @@ function getSortKey(period: string): number {
 export function ClientesFunnel({ }: ClientesFunnelProps) {
   const { clientesData } = useData();
 
-  // Get unique periods from data
-  const periods = useMemo((): PeriodOption[] => {
-    return [];
-  }, []);
+  // MUDANÇA 3: Add score and age filter state
+  const [filterScore, setFilterScore] = useState("todos");
+  const [filterAge, setFilterAge] = useState("todos");
 
-  const getSelectedLabel = (value: string) => {
-    if (value === "all") return "Todos";
-    return value;
-  };
+  // Filter clientes based on score and age
+  const filteredClientes = useMemo(() => {
+    return clientesData.filter((c) => {
+      // Apply score filter
+      if (filterScore !== "todos") {
+        const score = Number(c.Score) || 0;
+        if (filterScore === "baixo" && score >= 400) return false;
+        if (filterScore === "medio" && (score < 400 || score >= 700)) return false;
+        if (filterScore === "alto" && score < 700) return false;
+      }
 
-  // Use all clients - no filtering
-  const filteredClientes = clientesData;
+      // Apply age filter
+      if (filterAge !== "todos") {
+        const idade = Number(c.Idade) || 0;
+        if (filterAge === "menor25" && idade >= 25) return false;
+        if (filterAge === "25a35" && (idade < 25 || idade > 35)) return false;
+        if (filterAge === "35a50" && (idade < 35 || idade > 50)) return false;
+        if (filterAge === "maior50" && idade <= 50) return false;
+      }
+
+      return true;
+    });
+  }, [clientesData, filterScore, filterAge]);
 
   // Calculate funnel data (4 steps: Solicitações → Aprovados → Ativados → Recorrentes)
   const funnelData = useMemo((): FunnelStep[] => {
@@ -113,6 +130,9 @@ export function ClientesFunnel({ }: ClientesFunnelProps) {
         aprovados: 0,
         ativos: 0,
         taxaConversao: 0,
+        recorrentes: 0,
+        umePlus: 0,
+        qualidadeRecorrentes: 0,
       };
     }
 
@@ -121,8 +141,17 @@ export function ClientesFunnel({ }: ClientesFunnelProps) {
     const aprovados = total - negados;
     const ativos = filteredClientes.filter((c) => Number(c["Qtd de Compras"]) >= 1).length;
     const taxaConversao = aprovados > 0 ? (ativos / aprovados) * 100 : 0;
+    
+    // MUDANÇA 1: Calculate "Qualidade dos Recorrentes"
+    const recorrentes = filteredClientes.filter((c) => Number(c["Qtd de Compras"]) >= 2).length;
+    const umePlus = filteredClientes.filter((c) => {
+      const compras = Number(c["Qtd de Compras"]);
+      const score = Number(c.Score);
+      return compras >= 3 && score >= 700;
+    }).length;
+    const qualidadeRecorrentes = recorrentes > 0 ? (umePlus / recorrentes) * 100 : 0;
 
-    return { total, aprovados, ativos, taxaConversao };
+    return { total, aprovados, ativos, taxaConversao, recorrentes, umePlus, qualidadeRecorrentes };
   }, [filteredClientes]);
 
   const hasData = clientesData.length > 0;
@@ -139,13 +168,70 @@ export function ClientesFunnel({ }: ClientesFunnelProps) {
         </div>
         
         {/* Filter Toolbar */}
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <span className="text-xs font-medium text-[#64748b]">Filtrar por:</span>
+          
+          <Select value={filterScore} onValueChange={setFilterScore}>
+            <SelectTrigger className="h-8 w-40 border-[#E2E8F0] bg-white text-xs text-[#1a1a1a]">
+              <span className="truncate">
+                {filterScore === "todos" ? "Todos os scores" : 
+                 filterScore === "baixo" ? "Baixo (<400)" :
+                 filterScore === "medio" ? "Médio (400-700)" :
+                 "Alto (≥700)"}
+              </span>
+            </SelectTrigger>
+            <SelectContent className="border-[#E2E8F0] bg-white">
+              <SelectItem value="todos" className="text-xs">Todos os scores</SelectItem>
+              <SelectItem value="baixo" className="text-xs">Baixo (&lt;400)</SelectItem>
+              <SelectItem value="medio" className="text-xs">Médio (400-700)</SelectItem>
+              <SelectItem value="alto" className="text-xs">Alto (≥700)</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={filterAge} onValueChange={setFilterAge}>
+            <SelectTrigger className="h-8 w-40 border-[#E2E8F0] bg-white text-xs text-[#1a1a1a]">
+              <span className="truncate">
+                {filterAge === "todos" ? "Todas as idades" :
+                 filterAge === "menor25" ? "Menos de 25 anos" :
+                 filterAge === "25a35" ? "25-35 anos" :
+                 filterAge === "35a50" ? "35-50 anos" :
+                 "50+ anos"}
+              </span>
+            </SelectTrigger>
+            <SelectContent className="border-[#E2E8F0] bg-white">
+              <SelectItem value="todos" className="text-xs">Todas as idades</SelectItem>
+              <SelectItem value="menor25" className="text-xs">Menos de 25 anos</SelectItem>
+              <SelectItem value="25a35" className="text-xs">25-35 anos</SelectItem>
+              <SelectItem value="35a50" className="text-xs">35-50 anos</SelectItem>
+              <SelectItem value="maior50" className="text-xs">50+ anos</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {(filterScore !== "todos" || filterAge !== "todos") && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setFilterScore("todos");
+                setFilterAge("todos");
+              }}
+              className="h-8 px-2 text-xs text-[#64748b] hover:text-[#1a1a1a]"
+            >
+              <X className="mr-1 h-3 w-3" />
+              Limpar filtros
+            </Button>
+          )}
+        </div>
+        
+        {/* Snapshot info */}
         <div className="mt-4 text-xs text-[#64748b]">
-          Análise sobre snapshot completo da base — {clientesData.length.toLocaleString("pt-BR")} clientes
+          Análise sobre {filteredClientes.length.toLocaleString("pt-BR")} clientes
+          {(filterScore !== "todos" || filterAge !== "todos") && ` (filtrados de ${clientesData.length.toLocaleString("pt-BR")})`}
         </div>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-6">
         <Card className="border-[#E2E8F0] bg-white">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-[#64748b]">
@@ -223,6 +309,23 @@ export function ClientesFunnel({ }: ClientesFunnelProps) {
             <div className="text-2xl font-bold text-[#00C853]">
               {new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(summaryMetrics.taxaConversao)}%
             </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-[#E2E8F0] bg-white">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-[#64748b]">
+              Qualidade dos Recorrentes
+            </CardTitle>
+            <UserCheck className="h-4 w-4 text-[#00C853]" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-[#00C853]">
+              {new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(summaryMetrics.qualidadeRecorrentes)}%
+            </div>
+            <p className="mt-1 text-xs text-[#64748b]">
+              {summaryMetrics.umePlus.toLocaleString("pt-BR")} dos {summaryMetrics.recorrentes.toLocaleString("pt-BR")} recorrentes
+            </p>
           </CardContent>
         </Card>
       </div>

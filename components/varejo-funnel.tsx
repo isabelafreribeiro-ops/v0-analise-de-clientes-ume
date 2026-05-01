@@ -12,6 +12,8 @@ import {
 import { useData } from "@/lib/data-context";
 import { FunnelChart } from "./funnel-chart";
 import { InsightCallout } from "./insight-callout";
+import { VarejoInsights } from "./varejo-insights";
+import { VarejoTopBottom } from "./varejo-top-bottom";
 import { parseBRNumber, getSortedMonths } from "@/lib/parse-utils";
 import type { FunnelStep, VarejoRow } from "@/lib/types";
 
@@ -117,6 +119,7 @@ export function VarejoFunnel({
         varejosAtivos: 0,
         varejosComConversoes: 0,
         originacaoTotal: 0,
+        totalLojas: 0,
       };
     }
 
@@ -132,8 +135,13 @@ export function VarejoFunnel({
     const originacaoTotal = filteredVarejo.reduce((sum: number, v: any) => {
       return sum + parseBRNumber(v["Originação Total"]);
     }, 0);
+    
+    // MUDANÇA 2: Calculate total lojas
+    const totalLojas = filteredVarejo.reduce((sum: number, v: any) => {
+      return sum + (Number(v["Lojas"]) || 0);
+    }, 0);
 
-    return { totalVarejos, varejosAtivos, varejosComConversoes, originacaoTotal };
+    return { totalVarejos, varejosAtivos, varejosComConversoes, originacaoTotal, totalLojas };
   }, [filteredVarejo]);
 
   return (
@@ -197,7 +205,7 @@ export function VarejoFunnel({
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-5">
         <Card className="border-[#E2E8F0] bg-white">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-[#64748b]">
@@ -243,6 +251,23 @@ export function VarejoFunnel({
             </div>
             <p className="mt-1 text-xs text-[#64748b]">
               {summaryMetrics.totalVarejos > 0 ? new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format((summaryMetrics.varejosComConversoes / summaryMetrics.totalVarejos) * 100) : 0}% do total
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card className="border-[#E2E8F0] bg-white">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-[#64748b]">
+              Total de Lojas
+            </CardTitle>
+            <Store className="h-4 w-4 text-[#64748b]" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-[#1a1a1a]">
+              {summaryMetrics.totalLojas.toLocaleString("pt-BR")}
+            </div>
+            <p className="mt-1 text-xs text-[#64748b]">
+              em {summaryMetrics.totalVarejos.toLocaleString("pt-BR")} varejos parceiros
             </p>
           </CardContent>
         </Card>
@@ -303,6 +328,21 @@ export function VarejoFunnel({
 
       {/* Insight - only show if we have varejo data */}
       {varejoData.length > 0 && <InsightCallout data={funnelData} title="varejos" />}
+
+      {/* MUDANÇA 5 & 6: Varejo Insights (4 cards) - replaces empty state */}
+      {varejoData.length > 0 && (
+        <>
+          <div className="mt-8 pt-6 border-t border-[#E2E8F0]">
+            <h3 className="mb-4 text-lg font-semibold text-[#1a1a1a]">Insights da Rede</h3>
+            <VarejoInsights data={filteredVarejo} />
+          </div>
+
+          {/* MUDANÇA 4 & 6: Top 5 / Bottom 5 Varejos */}
+          <div className="mt-8">
+            <VarejoTopBottom data={filteredVarejo} />
+          </div>
+        </>
+      )}
         </>
       )}
     </div>
