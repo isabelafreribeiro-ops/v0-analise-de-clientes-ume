@@ -61,7 +61,7 @@ export const SEGMENT_META: Record<SegmentId, {
   "recorrentes": { label: "Recorrentes", icon: "🔁", accent: "#66BB6A", bg: "#F1F8E9", text: "#2E7D32" },
   "potencial": { label: "Potencial", icon: "🌱", accent: "#9CCC65", bg: "#F9FBE7", text: "#558B2F" },
   "aprovados-nao-ativados": { label: "Aprovados Não Ativados", icon: "💤", accent: "#94A3B8", bg: "#F1F5F9", text: "#334155" },
-  "negados-recuperaveis": { label: "Negados Recuperáveis", icon: "📋", accent: "#64748B", bg: "#F8FAFC", text: "#1E293B" },
+  "negados-recuperaveis": { label: "Negados Próximos do Corte", icon: "📋", accent: "#64748B", bg: "#F8FAFC", text: "#1E293B" },
   "negados-alto-risco": { label: "Negados Alto Risco", icon: "🚫", accent: "#475569", bg: "#F1F5F9", text: "#0F172A" },
   "inadimplentes": { label: "Inadimplentes", icon: "⚠️", accent: "#EF4444", bg: "#FEF2F2", text: "#991B1B" },
 };
