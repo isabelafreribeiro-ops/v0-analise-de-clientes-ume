@@ -56,8 +56,8 @@ const SEGMENT_CONFIG = {
     accent: "#64748B",
     text: "#1E293B",
     icon: "📋",
-    label: "Negados Recuperáveis",
-    criterio: "Negada + score ≥300",
+    label: "Negados Próximos do Corte",
+    criterio: "Negada + score 300-449",
   },
   "negados-alto-risco": {
     bg: "#F1F5F9",
@@ -639,6 +639,32 @@ export function SegmentacaoTab() {
                 </li>
               ))}
             </ul>
+          </div>
+
+          <div className="mb-4 p-6 rounded border-l-4 bg-[#F8FAFC]" style={{ borderLeftColor: "#3B82F6" }}>
+            <p className="text-sm font-bold text-[#1a1a1a] mb-3">📐 Por que esses cortes específicos?</p>
+            <div className="text-xs text-[#64748b] space-y-2">
+              <p>
+                Os 3 thresholds que definem os segmentos foram calibrados diretamente nos dados:
+              </p>
+              <ul className="space-y-2 ml-2">
+                <li>
+                  <span className="font-semibold text-[#1a1a1a]">• Score 300 (limite inferior dos negados):</span>
+                  {" "}Abaixo desta marca, a probabilidade de aprovação na Ume é praticamente nula. É o piso técnico da política atual. Negados com score abaixo de 300 são separados como "Alto Risco" porque não respondem a ajustes marginais de política.
+                </li>
+                <li>
+                  <span className="font-semibold text-[#1a1a1a]">• Score 700 (limite superior — núcleo de valor):</span>
+                  {" "}A faixa "Alto" (≥700) concentra 14,7% da base e coincide com o segmento de maior recorrência. O score médio de Ume Plus é 851 — bem acima do corte. Define o pool de clientes premium.
+                </li>
+                <li>
+                  <span className="font-semibold text-[#1a1a1a]">• 3+ compras (Ume Plus):</span>
+                  {" "}A partir de 3 compras, o cliente diversifica em média 8 varejos diferentes (vs. 1 varejo no segmento Potencial). É o ponto onde o uso vira hábito e o cliente passa a se comportar como "carteira", não como compra pontual.
+                </li>
+              </ul>
+              <p className="mt-2">
+                <span className="font-semibold text-[#1a1a1a]">Idade e sexo não diferenciam segmentos</span> — a base é uniforme nessas dimensões (variação de ~1 ano entre os extremos, ~50% feminino em todos). Os 2 eixos escolhidos (status no funil × score) capturam toda a variância comportamental relevante.
+              </p>
+            </div>
           </div>
 
           <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
