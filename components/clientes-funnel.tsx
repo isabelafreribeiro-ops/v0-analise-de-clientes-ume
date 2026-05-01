@@ -257,40 +257,50 @@ export function ClientesFunnel({ }: ClientesFunnelProps) {
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <span className="text-xs font-medium text-[#64748b]">Filtrar por:</span>
           
-          {/* AJUSTE 4: Period filters */}
-          <Select value={filterPeriodFrom} onValueChange={setFilterPeriodFrom}>
-            <SelectTrigger className="h-8 w-32 border-[#E2E8F0] bg-white text-xs text-[#1a1a1a]">
-              <span className="truncate">
-                {filterPeriodFrom === "todos" ? "Mês início" : availablePeriods.find(p => p.value === filterPeriodFrom)?.label || filterPeriodFrom}
-              </span>
-            </SelectTrigger>
-            <SelectContent className="border-[#E2E8F0] bg-white max-h-60">
-              <SelectItem value="todos" className="text-xs">Todos</SelectItem>
-              {availablePeriods.map((period) => (
-                <SelectItem key={period.value} value={period.value} className="text-xs">
-                  {period.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={filterPeriodTo} onValueChange={setFilterPeriodTo}>
-            <SelectTrigger className="h-8 w-32 border-[#E2E8F0] bg-white text-xs text-[#1a1a1a]">
-              <span className="truncate">
-                {filterPeriodTo === "todos" ? "Mês fim" : availablePeriods.find(p => p.value === filterPeriodTo)?.label || filterPeriodTo}
-              </span>
-            </SelectTrigger>
-            <SelectContent className="border-[#E2E8F0] bg-white max-h-60">
-              <SelectItem value="todos" className="text-xs">Todos</SelectItem>
-              {availablePeriods
-                .filter(p => filterPeriodFrom === "todos" || p.sortKey >= getSortKey(filterPeriodFrom))
-                .map((period) => (
+          {/* AJUSTE 2: Period filters with labels */}
+          <div className="flex flex-col gap-1">
+            <span className="text-[10px] font-medium text-[#3B82F6]">Período (início)</span>
+            <Select value={filterPeriodFrom} onValueChange={setFilterPeriodFrom}>
+              <SelectTrigger className="h-8 w-32 border-[#3B82F6] bg-white text-xs font-medium text-[#1a1a1a]">
+                <span className="truncate">
+                  {filterPeriodFrom === "todos" 
+                    ? (availablePeriods.length > 0 ? availablePeriods[0]?.label : "Jan/2024")
+                    : availablePeriods.find(p => p.value === filterPeriodFrom)?.label || filterPeriodFrom}
+                </span>
+              </SelectTrigger>
+              <SelectContent className="border-[#E2E8F0] bg-white max-h-60">
+                <SelectItem value="todos" className="text-xs">Início da base</SelectItem>
+                {availablePeriods.map((period) => (
                   <SelectItem key={period.value} value={period.value} className="text-xs">
                     {period.label}
                   </SelectItem>
                 ))}
-            </SelectContent>
-          </Select>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <span className="text-[10px] font-medium text-[#3B82F6]">Período (fim)</span>
+            <Select value={filterPeriodTo} onValueChange={setFilterPeriodTo}>
+              <SelectTrigger className="h-8 w-32 border-[#3B82F6] bg-white text-xs font-medium text-[#1a1a1a]">
+                <span className="truncate">
+                  {filterPeriodTo === "todos" 
+                    ? (availablePeriods.length > 0 ? availablePeriods[availablePeriods.length - 1]?.label : "Abr/2026")
+                    : availablePeriods.find(p => p.value === filterPeriodTo)?.label || filterPeriodTo}
+                </span>
+              </SelectTrigger>
+              <SelectContent className="border-[#E2E8F0] bg-white max-h-60">
+                <SelectItem value="todos" className="text-xs">Fim da base</SelectItem>
+                {availablePeriods
+                  .filter(p => filterPeriodFrom === "todos" || p.sortKey >= getSortKey(filterPeriodFrom))
+                  .map((period) => (
+                    <SelectItem key={period.value} value={period.value} className="text-xs">
+                      {period.label}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
           
           <Select value={filterScore} onValueChange={setFilterScore}>
             <SelectTrigger className="h-8 w-40 border-[#E2E8F0] bg-white text-xs text-[#1a1a1a]">
@@ -559,7 +569,7 @@ export function ClientesFunnel({ }: ClientesFunnelProps) {
                     </div>
                     <div>
                       <p className="text-xs font-semibold text-[#D97706] mb-1">🎯 Ação sugerida:</p>
-                      <p className="text-sm text-[#64748b]">Reforçar comunicação pós-aprovação (jornada de ativação Q3), treinar promotores no PDV para abordagem ativa, considerar limite mínimo mais flexível para primeira compra.</p>
+                      <p className="text-sm text-[#64748b]">Reforçar comunicação pós-aprovação (ver aba Jornada), treinar promotores no PDV para abordagem ativa, considerar limite mínimo mais flexível para primeira compra.</p>
                     </div>
                   </div>
                 </div>

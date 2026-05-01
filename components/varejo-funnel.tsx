@@ -293,7 +293,7 @@ export function VarejoFunnel({
         <div className="space-y-4">
           {/* Summary callout */}
           <p className="text-sm text-[#475569]">
-            {((summaryMetrics.varejosAtivos / summaryMetrics.totalVarejos) * 100).toFixed(1)}% dos {summaryMetrics.totalVarejos} varejos parceiros estão ativos. A rede tem alta cobertura — o desafio é concentração, não ativação.
+            {summaryMetrics.totalVarejos > 0 ? ((summaryMetrics.varejosComConversoes / summaryMetrics.totalVarejos) * 100).toFixed(1) : 0}% dos {summaryMetrics.totalVarejos} varejos parceiros estão convertendo ({summaryMetrics.varejosComConversoes} de {summaryMetrics.totalVarejos}). A rede tem alta cobertura — o desafio é concentração, não ativação: 28% dos varejos geram 80% da originação.
           </p>
           
           {/* Metric Descriptions */}
