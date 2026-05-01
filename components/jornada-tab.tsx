@@ -13,14 +13,14 @@ import {
 } from "@/lib/segmentation";
 import type { ClienteRow } from "@/lib/types";
 
-const SEGMENT_CONFIG: Record<string, { bg: string; accent: string; text: string; name: string; coverage: number }> = {
-  "aprovados-nao-ativados": { bg: "#E3F2FD", accent: "#2196F3", text: "#0D47A1", name: "Aprovados Não Ativados", coverage: 0 },
-  "potencial": { bg: "#FFF3E0", accent: "#FF9800", text: "#3E2723", name: "Potencial (1 compra)", coverage: 0 },
-  "recorrentes": { bg: "#F3E5F5", accent: "#9C27B0", text: "#4A148C", name: "Recorrentes (2+ compras)", coverage: 0 },
-  "ume-plus": { bg: "#F0F4F3", accent: "#00C853", text: "#001a0f", name: "Ume Plus", coverage: 0 },
-  "negados-recuperaveis": { bg: "#FFF9C4", accent: "#FBC02D", text: "#F57F17", name: "Negados Recuperáveis (Score 300-400)", coverage: 0 },
-  "negados-alto-risco": { bg: "#FFEBEE", accent: "#E53935", text: "#B71C1C", name: "Negados Alto Risco (Score <300)", coverage: 0 },
-  "inadimplentes": { bg: "#FCE4EC", accent: "#C2185B", text: "#880E4F", name: "Inadimplentes", coverage: 0 },
+const SEGMENT_CONFIG: Record<string, { bg: string; accent: string; text: string; name: string; coverage: number; icon: string }> = {
+  "ume-plus": { bg: "#E8F5E9", accent: "#00C853", text: "#1B5E20", icon: "💎", name: "Ume Plus", coverage: 0 },
+  "recorrentes": { bg: "#F1F8E9", accent: "#66BB6A", text: "#2E7D32", icon: "🔁", name: "Recorrentes (2+ compras)", coverage: 0 },
+  "potencial": { bg: "#F9FBE7", accent: "#9CCC65", text: "#558B2F", icon: "🌱", name: "Potencial (1 compra)", coverage: 0 },
+  "aprovados-nao-ativados": { bg: "#F1F5F9", accent: "#94A3B8", text: "#334155", icon: "💤", name: "Aprovados Não Ativados", coverage: 0 },
+  "negados-recuperaveis": { bg: "#F8FAFC", accent: "#64748B", text: "#1E293B", icon: "📋", name: "Negados Recuperáveis (Score 300-400)", coverage: 0 },
+  "negados-alto-risco": { bg: "#F1F5F9", accent: "#475569", text: "#0F172A", icon: "🚫", name: "Negados Alto Risco (Score <300)", coverage: 0 },
+  "inadimplentes": { bg: "#FEF2F2", accent: "#EF4444", text: "#991B1B", icon: "⚠️", name: "Inadimplentes", coverage: 0 },
 };
 
 const CHANNEL_ICONS = {

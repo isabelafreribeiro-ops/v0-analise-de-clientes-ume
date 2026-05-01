@@ -9,6 +9,7 @@ const DataContext = createContext<DataContextType | undefined>(undefined);
 export function DataProvider({ children }: { children: ReactNode }) {
   const [clientesData, setClientesData] = useState<ClienteRow[]>([]);
   const [varejoData, setVarejoData] = useState<VarejoRow[]>([]);
+  const [rentabilidadeData, setRentabilidadeData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [globalMetrics, setGlobalMetrics] = useState<GlobalMetrics | null>(null);
 
@@ -29,8 +30,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
       value={{
         clientesData,
         varejoData,
+        rentabilidadeData,
         setClientesData: handleSetClientesData,
         setVarejoData: handleSetVarejoData,
+        setRentabilidadeData,
         isLoading,
         globalMetrics,
         setGlobalMetrics,

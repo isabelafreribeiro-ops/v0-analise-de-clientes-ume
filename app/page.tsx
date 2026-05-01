@@ -9,6 +9,7 @@ import { VarejoFunnel } from "@/components/varejo-funnel";
 import { ClientesFunnel } from "@/components/clientes-funnel";
 import { SegmentacaoTab } from "@/components/segmentacao-tab";
 import { JornadaTab } from "@/components/jornada-tab";
+import { RentabilidadeTab } from "@/components/rentabilidade-tab";
 import { GlobalMetricsDisplay } from "@/components/global-metrics-display";
 
 export default function Home() {
@@ -97,14 +98,9 @@ export default function Home() {
 
           {/* Rentabilidade Tab */}
           {activeTab === "rentabilidade" && (
-            <div className="flex h-96 flex-col items-center justify-center text-center">
-              <p className="text-lg font-medium text-[#64748b]">
-                Análise de Rentabilidade em desenvolvimento
-              </p>
-              <p className="text-sm text-[#94a3b8]">
-                Esta seção será adicionada em breve
-              </p>
-            </div>
+            <section>
+              <RentabilidadeTab />
+            </section>
           )}
 
           {/* Crédito Tab */}

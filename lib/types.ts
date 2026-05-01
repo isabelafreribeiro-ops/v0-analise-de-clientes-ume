@@ -40,8 +40,10 @@ export interface FunnelStep {
 export interface DataContextType {
   clientesData: ClienteRow[];
   varejoData: VarejoRow[];
+  rentabilidadeData: any | null;
   setClientesData: (data: ClienteRow[]) => void;
   setVarejoData: (data: VarejoRow[]) => void;
+  setRentabilidadeData: (data: any) => void;
   isLoading: boolean;
   globalMetrics: GlobalMetrics | null;
   setGlobalMetrics: (metrics: GlobalMetrics) => void;

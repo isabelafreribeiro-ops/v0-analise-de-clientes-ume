@@ -12,17 +12,19 @@ import type { ClienteRow, VarejoRow } from "@/lib/types";
 interface UploadState {
   clientes: { uploaded: boolean; fileName: string | null; count: number; loading: boolean; progress: number; error?: string };
   varejo: { uploaded: boolean; fileName: string | null; count: number; loading: boolean; progress: number; error?: string };
+  rentabilidade: { uploaded: boolean; fileName: string | null; loading: boolean; progress: number; error?: string };
 }
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB max file size
 
 export function CSVUploader() {
-  const { setClientesData, setVarejoData, setGlobalMetrics } = useData();
+  const { setClientesData, setVarejoData, setGlobalMetrics, setRentabilidadeData } = useData();
   const [uploadState, setUploadState] = useState<UploadState>({
     clientes: { uploaded: false, fileName: null, count: 0, loading: false, progress: 0, error: undefined },
     varejo: { uploaded: false, fileName: null, count: 0, loading: false, progress: 0, error: undefined },
+    rentabilidade: { uploaded: false, fileName: null, loading: false, progress: 0, error: undefined },
   });
-  const [isDragging, setIsDragging] = useState<"clientes" | "varejo" | null>(null);
+  const [isDragging, setIsDragging] = useState<"clientes" | "varejo" | "rentabilidade" | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Cleanup effect removed - no longer needed since we're not using workers
@@ -31,7 +33,7 @@ export function CSVUploader() {
   }, []);
 
   const handleFileUpload = useCallback(
-    async (file: File, type: "clientes" | "varejo") => {
+    async (file: File, type: "clientes" | "varejo" | "rentabilidade") => {
       // Verificar tamanho do arquivo
       if (file.size > MAX_FILE_SIZE) {
         const sizeMB = (MAX_FILE_SIZE / (1024 * 1024)).toFixed(0);
@@ -50,42 +52,53 @@ export function CSVUploader() {
       }));
 
       try {
-        // Read file as text
-        const fileContent = await file.text();
-
-        // Parse CSV asynchronously (non-blocking) with progress tracking
-        const { data, count } = await parseCSVAsync(
-          fileContent,
-          type,
-          (processed, total) => {
-            const progress = Math.min(100, Math.round((processed / total) * 100));
-            setUploadState((prev) => ({
-              ...prev,
-              [type]: { ...prev[type], progress },
-            }));
-          }
-        );
-
-        // Update state with parsed data
-        if (type === "clientes") {
-          setClientesData(data as ClienteRow[]);
-          
-          // Compute global metrics from full dataset for dashboard cards
-          const metrics = calculateGlobalMetrics(data as ClienteRow[]);
-          setGlobalMetrics(metrics);
-          
+        if (type === "rentabilidade") {
+          // Handle JSON file for rentabilidade
+          const fileContent = await file.text();
+          const rentabilidadeJSON = JSON.parse(fileContent);
+          setRentabilidadeData(rentabilidadeJSON);
           setUploadState((prev) => ({
             ...prev,
-            clientes: { uploaded: true, fileName: file.name, count, loading: false, progress: 100, error: undefined },
+            rentabilidade: { uploaded: true, fileName: file.name, loading: false, progress: 100, error: undefined },
           }));
         } else {
-          setVarejoData(data as VarejoRow[]);
-          setUploadState((prev) => ({
-            ...prev,
-            varejo: { uploaded: true, fileName: file.name, count, loading: false, progress: 100, error: undefined },
-          }));
+          // Read file as text for CSV
+          const fileContent = await file.text();
+
+          // Parse CSV asynchronously (non-blocking) with progress tracking
+          const { data, count } = await parseCSVAsync(
+            fileContent,
+            type,
+            (processed, total) => {
+              const progress = Math.min(100, Math.round((processed / total) * 100));
+              setUploadState((prev) => ({
+                ...prev,
+                [type]: { ...prev[type], progress },
+              }));
+            }
+          );
+
+          // Update state with parsed data
+          if (type === "clientes") {
+            setClientesData(data as ClienteRow[]);
+            
+            // Compute global metrics from full dataset for dashboard cards
+            const metrics = calculateGlobalMetrics(data as ClienteRow[]);
+            setGlobalMetrics(metrics);
+            
+            setUploadState((prev) => ({
+              ...prev,
+              clientes: { uploaded: true, fileName: file.name, count, loading: false, progress: 100, error: undefined },
+            }));
+          } else {
+            setVarejoData(data as VarejoRow[]);
+            setUploadState((prev) => ({
+              ...prev,
+              varejo: { uploaded: true, fileName: file.name, count, loading: false, progress: 100, error: undefined },
+            }));
+          }
         }
-      } catch (error) {
+      } catch (error: any) {
         const errorMsg = error instanceof Error ? error.message : "Erro ao processar arquivo";
         console.error("[v0] Error uploading CSV:", error);
         setUploadState((prev) => ({
@@ -94,22 +107,26 @@ export function CSVUploader() {
         }));
       }
     },
-    [setClientesData, setVarejoData]
+    [setClientesData, setVarejoData, setRentabilidadeData]
   );
 
   const handleDrop = useCallback(
-    (e: React.DragEvent, type: "clientes" | "varejo") => {
+    (e: React.DragEvent, type: "clientes" | "varejo" | "rentabilidade") => {
       e.preventDefault();
       setIsDragging(null);
       const file = e.dataTransfer.files[0];
-      if (file && file.name.endsWith(".csv")) {
-        handleFileUpload(file, type);
+      if (file) {
+        if (type === "rentabilidade" && file.name.endsWith(".json")) {
+          handleFileUpload(file, type);
+        } else if (type !== "rentabilidade" && file.name.endsWith(".csv")) {
+          handleFileUpload(file, type);
+        }
       }
     },
     [handleFileUpload]
   );
 
-  const handleDragOver = (e: React.DragEvent, type: "clientes" | "varejo") => {
+  const handleDragOver = (e: React.DragEvent, type: "clientes" | "varejo" | "rentabilidade") => {
     e.preventDefault();
     setIsDragging(type);
   };
@@ -118,25 +135,31 @@ export function CSVUploader() {
     setIsDragging(null);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>, type: "clientes" | "varejo") => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>, type: "clientes" | "varejo" | "rentabilidade") => {
     const file = e.target.files?.[0];
     if (file) {
       handleFileUpload(file, type);
     }
   };
 
-  const clearUpload = (type: "clientes" | "varejo") => {
+  const clearUpload = (type: "clientes" | "varejo" | "rentabilidade") => {
     if (type === "clientes") {
       setClientesData([]);
       setUploadState((prev) => ({
         ...prev,
         clientes: { uploaded: false, fileName: null, count: 0, loading: false, progress: 0, error: undefined },
       }));
-    } else {
+    } else if (type === "varejo") {
       setVarejoData([]);
       setUploadState((prev) => ({
         ...prev,
         varejo: { uploaded: false, fileName: null, count: 0, loading: false, progress: 0, error: undefined },
+      }));
+    } else {
+      setRentabilidadeData(null);
+      setUploadState((prev) => ({
+        ...prev,
+        rentabilidade: { uploaded: false, fileName: null, loading: false, progress: 0, error: undefined },
       }));
     }
   };
@@ -146,7 +169,7 @@ export function CSVUploader() {
     title,
     description,
   }: {
-    type: "clientes" | "varejo";
+    type: "clientes" | "varejo" | "rentabilidade";
     title: string;
     description: string;
   }) => {
@@ -201,7 +224,9 @@ export function CSVUploader() {
                 <div>
                   <p className="font-medium text-[#1a1a1a]">{state.fileName}</p>
                   <p className="text-sm text-[#64748b]">
-                    {state.count.toLocaleString("pt-BR")} registros carregados
+                    {type === "rentabilidade" 
+                      ? "Carregado com sucesso" 
+                      : `${(state as any).count.toLocaleString("pt-BR")} registros carregados`}
                   </p>
                 </div>
               </div>
@@ -245,7 +270,7 @@ export function CSVUploader() {
   };
 
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="grid gap-4 md:grid-cols-3">
       <UploadCard
         type="clientes"
         title="Base de Clientes"
@@ -255,6 +280,11 @@ export function CSVUploader() {
         type="varejo"
         title="Base de Varejo"
         description="Upload da base de varejo"
+      />
+      <UploadCard
+        type="rentabilidade"
+        title="Dados de Rentabilidade (Q4)"
+        description="Upload do JSON rentabilidade_v2_agregado.json"
       />
     </div>
   );
