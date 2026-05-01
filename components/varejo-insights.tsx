@@ -19,12 +19,10 @@ export function VarejoInsights({ data }: VarejoInsightsProps) {
   const insights = useMemo(() => {
     if (!data || data.length === 0) {
       return {
-        concentracaoPercent: 0,
-        topSegmentosPercent: 0,
-        topSegmentos: [],
+        concentracao: 0,
+        topCategories: "N/A",
         recorrentesPercent: 0,
-        caudaFraca: 0,
-        semConversoes: 0,
+        cauda: 0,
       };
     }
 
