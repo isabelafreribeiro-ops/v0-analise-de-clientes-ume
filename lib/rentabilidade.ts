@@ -151,8 +151,12 @@ export function calculateRentabilidade(cliente: ClienteRow): RentabilidadeBreakd
   // Perda inadimplência (80% do saldo em aberto)
   let perdaInad = 0;
   if (sit === "inadimplente") {
-    const saldoAberto = Math.max(limiteTotal - limiteDisp, 0);
-    perdaInad = saldoAberto * (1 - TAXA_RECUPERACAO_INAD);
+    // Conversão defensiva — garante que vem como number puro
+    const lt = Number(limiteTotal) || 0;
+    const ld = Number(limiteDisp) || 0;
+    const saldoAberto = Math.max(lt - ld, 0);
+    // 0.80 literal (em vez de "1 - TAXA_RECUPERACAO_INAD") pra evitar cache stale
+    perdaInad = saldoAberto * 0.80;
   }
 
   const margem = receitaMdr + receitaJuros - cac - custoMsg - perdaInad;
