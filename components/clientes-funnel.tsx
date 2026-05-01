@@ -46,50 +46,62 @@ export function ClientesFunnel({ }: ClientesFunnelProps) {
   const [filterScore, setFilterScore] = useState("todos");
   const [filterAge, setFilterAge] = useState("todos");
 
-  // AJUSTE 4: Extract available periods from "Data de Entrada na Ume"
-  const availablePeriods = useMemo((): PeriodOption[] => {
-    if (!clientesData || clientesData.length === 0) return [];
-    
+  // Extract available periods from "Data de Entrada na Ume" and
+  // compute the maximum sortKey across BOTH "Data de Entrada na Ume"
+  // and "Data da Última Compra" to cap the Período (fim) selector.
+  const { availablePeriods, maxPeriodSortKey } = useMemo(() => {
+    if (!clientesData || clientesData.length === 0) return { availablePeriods: [], maxPeriodSortKey: 999999 };
+
     const periodSet = new Set<string>();
-    
+    let maxSortKey = 0;
+
+    function parseDateToSortKey(raw: string): number {
+      if (!raw) return 0;
+      let month: number, year: number;
+      if (raw.includes("/")) {
+        const parts = raw.split("/");
+        if (parts.length >= 3) {
+          month = parseInt(parts[1], 10);
+          year = parseInt(parts[2], 10);
+        } else return 0;
+      } else if (raw.includes("-")) {
+        const parts = raw.split("-");
+        year = parseInt(parts[0], 10);
+        month = parseInt(parts[1], 10);
+      } else return 0;
+      if (month >= 1 && month <= 12 && year >= 2020 && year <= 2030) {
+        return year * 100 + month;
+      }
+      return 0;
+    }
+
     clientesData.forEach((c) => {
       const dataEntrada = c["Data de Entrada na Ume"] || c["Data de Entrada"] || "";
-      if (dataEntrada) {
-        // Parse date format (could be DD/MM/YYYY or YYYY-MM-DD)
-        let month: number, year: number;
-        if (dataEntrada.includes("/")) {
-          const parts = dataEntrada.split("/");
-          if (parts.length >= 3) {
-            month = parseInt(parts[1], 10);
-            year = parseInt(parts[2], 10);
-          } else {
-            return;
-          }
-        } else if (dataEntrada.includes("-")) {
-          const parts = dataEntrada.split("-");
-          year = parseInt(parts[0], 10);
-          month = parseInt(parts[1], 10);
-        } else {
-          return;
-        }
-        
-        if (month >= 1 && month <= 12 && year >= 2020 && year <= 2030) {
-          periodSet.add(`${month}/${year}`);
-        }
+      const dataUltimaCompra = c["Data da Última Compra"] || c["Data Ultima Compra"] || "";
+
+      const skEntrada = parseDateToSortKey(dataEntrada);
+      if (skEntrada > 0) {
+        const [month, year] = [skEntrada % 100, Math.floor(skEntrada / 100)];
+        periodSet.add(`${month}/${year}`);
+        if (skEntrada > maxSortKey) maxSortKey = skEntrada;
       }
+
+      const skUltima = parseDateToSortKey(dataUltimaCompra);
+      if (skUltima > maxSortKey) maxSortKey = skUltima;
     });
-    
-    // Sort periods chronologically
-    return Array.from(periodSet)
+
+    const sorted = Array.from(periodSet)
       .map((p) => {
         const [month, year] = p.split("/").map(Number);
         return {
           value: p,
           label: `${MONTH_NAMES[month - 1]}/${year}`,
-          sortKey: year * 100 + month
+          sortKey: year * 100 + month,
         };
       })
       .sort((a, b) => a.sortKey - b.sortKey);
+
+    return { availablePeriods: sorted, maxPeriodSortKey: maxSortKey || 999999 };
   }, [clientesData]);
 
   // Filter clientes based on period, score and age
@@ -292,7 +304,10 @@ export function ClientesFunnel({ }: ClientesFunnelProps) {
               <SelectContent className="border-[#E2E8F0] bg-white max-h-60">
                 <SelectItem value="todos" className="text-xs">Fim da base</SelectItem>
                 {availablePeriods
-                  .filter(p => filterPeriodFrom === "todos" || p.sortKey >= getSortKey(filterPeriodFrom))
+                  .filter(p =>
+                    p.sortKey <= maxPeriodSortKey &&
+                    (filterPeriodFrom === "todos" || p.sortKey >= getSortKey(filterPeriodFrom))
+                  )
                   .map((period) => (
                     <SelectItem key={period.value} value={period.value} className="text-xs">
                       {period.label}
