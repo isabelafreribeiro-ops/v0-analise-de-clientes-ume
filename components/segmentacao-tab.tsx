@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Crown, Repeat2, Sprout, Moon, ClipboardList, Ban, AlertTriangle, Target, Smartphone, BarChart3, Lightbulb } from "lucide-react";
 import { useData } from "@/lib/data-context";
 import {
   calculatePurchaseDistribution,
@@ -23,7 +24,7 @@ const SEGMENT_CONFIG = {
     bg: "#E8F5E9",
     accent: "#00C853",
     text: "#1B5E20",
-    icon: "💎",
+    Icon: Crown,
     label: "Ume Plus",
     criterio: "3+ compras + score ≥700",
   },
@@ -31,7 +32,7 @@ const SEGMENT_CONFIG = {
     bg: "#F1F8E9",
     accent: "#66BB6A",
     text: "#2E7D32",
-    icon: "🔁",
+    Icon: Repeat2,
     label: "Recorrentes",
     criterio: "Aprovado + 2+ compras (sem critério Plus)",
   },
@@ -39,7 +40,7 @@ const SEGMENT_CONFIG = {
     bg: "#F9FBE7",
     accent: "#9CCC65",
     text: "#558B2F",
-    icon: "🌱",
+    Icon: Sprout,
     label: "Potencial",
     criterio: "Aprovado + 1 compra",
   },
@@ -47,7 +48,7 @@ const SEGMENT_CONFIG = {
     bg: "#F1F5F9",
     accent: "#94A3B8",
     text: "#334155",
-    icon: "💤",
+    Icon: Moon,
     label: "Aprovados Não Ativados",
     criterio: "Aprovado + 0 compras",
   },
@@ -55,7 +56,7 @@ const SEGMENT_CONFIG = {
     bg: "#F8FAFC",
     accent: "#64748B",
     text: "#1E293B",
-    icon: "📋",
+    Icon: ClipboardList,
     label: "Negados Próximos do Corte",
     criterio: "Negada + score 300-449",
   },
@@ -63,7 +64,7 @@ const SEGMENT_CONFIG = {
     bg: "#F1F5F9",
     accent: "#475569",
     text: "#0F172A",
-    icon: "🚫",
+    Icon: Ban,
     label: "Negados Alto Risco",
     criterio: "Negada + score <300",
   },
@@ -71,7 +72,7 @@ const SEGMENT_CONFIG = {
     bg: "#FEF2F2",
     accent: "#EF4444",
     text: "#991B1B",
-    icon: "⚠️",
+    Icon: AlertTriangle,
     label: "Inadimplentes",
     criterio: "Situação = Inadimplente",
   },
@@ -437,7 +438,7 @@ export function SegmentacaoTab() {
           </div>
 
           <div className="p-4 bg-[#F7FAF8] rounded border border-[#E2E8F0]">
-            <p className="text-xs font-semibold text-[#64748b] uppercase mb-2">🎯 Cliente Ume Predominante</p>
+            <p className="text-xs font-semibold text-[#64748b] uppercase mb-2 flex items-center gap-1"><Target className="w-3 h-3" /> Cliente Ume Predominante</p>
             <p className="text-sm text-[#1a1a1a] leading-relaxed">
               Faixa de <span className="font-semibold">{topAgeGroup}</span>, score médio{" "}
               <span className="font-semibold">{Math.round(clienteUmeKpis.avgScore || 0)}</span> (perfil
@@ -506,10 +507,10 @@ export function SegmentacaoTab() {
         <CardContent>
           <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
             <InsightCard
-              icon="📱"
+              Icon={Smartphone}
               numero="01"
-              accent="#2196F3"
-              bg="#E3F2FD"
+              accent="#475569"
+              bg="#F8FAFC"
               titulo="O app é o maior diferenciador comportamental"
               shockValue={`${formatPercentage(insight1.pctSem)} → ${formatPercentage(insight1.pctCom)}`}
               shockLabel={`Salto de ${insight1.multiplier.toFixed(0)}x na adoção do app entre quem nunca comprou e quem comprou pelo menos uma vez.`}
@@ -517,10 +518,10 @@ export function SegmentacaoTab() {
             />
 
             <InsightCard
-              icon="📊"
+              Icon={BarChart3}
               numero="02"
-              accent="#FF9800"
-              bg="#FFF3E0"
+              accent="#475569"
+              bg="#F8FAFC"
               titulo="Score é destino — base bipolar, não normal"
               shockValue={`${formatPercentage(insight2.pctLow, 0)} | ${formatPercentage(insight2.pctMid, 0)} | ${formatPercentage(insight2.pctHigh, 0)}`}
               shockLabel={`Distribuição score: baixo (<400) | médio (400-700) | alto (≥700). A maioria absoluta é negada por score, e a "classe média" quase não existe.`}
@@ -528,10 +529,10 @@ export function SegmentacaoTab() {
             />
 
             <InsightCard
-              icon="💎"
+              Icon={Crown}
               numero="03"
-              accent="#00C853"
-              bg="#F0F4F3"
+              accent="#475569"
+              bg="#F8FAFC"
               titulo="Concentração extrema das transações"
               shockValue={`${formatPercentage(insight3.pctClientesRec, 1)} → ${formatPercentage(insight3.pctTransacoesRec, 0)}`}
               shockLabel={`${formatNumber(insight3.qtdRecorrentes)} clientes (${formatPercentage(insight3.pctClientesRec, 1)} da base) geram ${formatNumber(insight3.transacoesRecorrentes)} transações (${formatPercentage(insight3.pctTransacoesRec, 0)} do total).`}
@@ -539,10 +540,10 @@ export function SegmentacaoTab() {
             />
 
             <InsightCard
-              icon="🎯"
+              Icon={Target}
               numero="04"
-              accent="#E53935"
-              bg="#FFEBEE"
+              accent="#EF4444"
+              bg="#FEF2F2"
               titulo="Score alto não garante uso do produto"
               shockValue={`${formatNumber(insight4.inativos)} inativos`}
               shockLabel={`Dos ${formatNumber(insight4.totalScoreAlto)} clientes com score ≥700 aprovados, apenas ${formatPercentage(insight4.pctAtivacao, 0)} efetivamente compraram. ${formatNumber(insight4.inativos)} são "alta qualidade" parados.`}
@@ -597,7 +598,7 @@ export function SegmentacaoTab() {
       <Card className="border-l-4 border-[#00C853] bg-gradient-to-r from-[#F0F4F3] to-white">
         <CardContent className="py-5">
           <div className="flex items-start gap-3">
-            <span className="text-2xl">💡</span>
+            <Lightbulb className="w-6 h-6 shrink-0 text-[#00C853]" />
             <div className="flex-1">
               <p className="text-xs font-semibold text-[#001a0f] uppercase tracking-wide mb-2">
                 Hipótese de Segmentação
@@ -629,15 +630,20 @@ export function SegmentacaoTab() {
           <div className="mb-4 p-3 bg-[#F7FAF8] rounded border border-[#E2E8F0]">
             <p className="text-xs font-semibold text-[#64748b] mb-2">Critérios de Segmentação:</p>
             <ul className="text-xs text-[#64748b] space-y-1 list-disc list-inside">
-              {SEGMENT_ORDER.map((id) => (
-                <li key={id}>
-                  <span className="mr-1">{SEGMENT_CONFIG[id].icon}</span>
-                  <span className="font-medium" style={{ color: SEGMENT_CONFIG[id].accent }}>
-                    {SEGMENT_CONFIG[id].label}:
-                  </span>{" "}
-                  {SEGMENT_CONFIG[id].criterio}
-                </li>
-              ))}
+              {SEGMENT_ORDER.map((id) => {
+                const SegIcon = SEGMENT_CONFIG[id].Icon;
+                return (
+                  <li key={id} className="flex items-start gap-1">
+                    <SegIcon className="w-3 h-3 mt-0.5 shrink-0" style={{ color: SEGMENT_CONFIG[id].accent }} />
+                    <span>
+                      <span className="font-medium" style={{ color: SEGMENT_CONFIG[id].accent }}>
+                        {SEGMENT_CONFIG[id].label}:
+                      </span>{" "}
+                      {SEGMENT_CONFIG[id].criterio}
+                    </span>
+                  </li>
+                );
+              })}
             </ul>
           </div>
 
@@ -733,7 +739,7 @@ export function SegmentacaoTab() {
         <CardContent>
           <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
             <div>
-              <p className="text-xs font-semibold text-[#64748b] mb-3 uppercase">⚠️ Distribuição de Score</p>
+              <p className="text-xs font-semibold text-[#64748b] mb-3 uppercase flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Distribuição de Score</p>
               <div className="space-y-2">
                 <ScoreBar
                   label="Baixo (<400)"
@@ -757,7 +763,7 @@ export function SegmentacaoTab() {
             </div>
 
             <div>
-              <p className="text-xs font-semibold text-[#64748b] mb-3 uppercase">📊 Insights de Risco</p>
+              <p className="text-xs font-semibold text-[#64748b] mb-3 uppercase flex items-center gap-1"><BarChart3 className="w-3 h-3" /> Insights de Risco</p>
               <div className="space-y-2 text-xs">
                 <div className="p-2 rounded border-l-4" style={{ backgroundColor: "#F1F5F9", borderLeftColor: "#94A3B8" }}>
                   <span className="font-medium text-[#334155]">Score vs Compras:</span>
@@ -911,7 +917,7 @@ function KpiCard({ label, value, sub }: KpiCardProps) {
 }
 
 interface InsightCardProps {
-  icon: string;
+  Icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
   numero: string;
   accent: string;
   bg: string;
@@ -921,14 +927,14 @@ interface InsightCardProps {
   implicacao: string;
 }
 
-function InsightCard({ icon, numero, accent, bg, titulo, shockValue, shockLabel, implicacao }: InsightCardProps) {
+function InsightCard({ Icon, numero, accent, bg, titulo, shockValue, shockLabel, implicacao }: InsightCardProps) {
   return (
     <div
       className="p-5 rounded border-l-4 transition hover:shadow-md"
       style={{ backgroundColor: bg, borderLeftColor: accent }}
     >
       <div className="flex items-start gap-3 mb-3">
-        <span className="text-2xl">{icon}</span>
+        <Icon className="w-6 h-6 shrink-0" style={{ color: accent }} />
         <div className="flex-1">
           <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: accent }}>
             Insight {numero}

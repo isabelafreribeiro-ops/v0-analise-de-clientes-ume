@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { TrendingUp, AlertCircle, MessageSquare, Send, Phone, Users, ChevronDown } from "lucide-react";
+import { TrendingUp, AlertCircle, MessageSquare, Send, Phone, Users, ChevronDown, Crown, Repeat2, Sprout, Moon, ClipboardList, Ban, AlertTriangle, Smartphone, DollarSign, Settings } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useData } from "@/lib/data-context";
 import {
@@ -13,14 +14,14 @@ import {
 } from "@/lib/segmentation";
 import type { ClienteRow } from "@/lib/types";
 
-const SEGMENT_CONFIG: Record<string, { bg: string; accent: string; text: string; name: string; coverage: number; icon: string }> = {
-  "ume-plus": { bg: "#E8F5E9", accent: "#00C853", text: "#1B5E20", icon: "💎", name: "Ume Plus", coverage: 0 },
-  "recorrentes": { bg: "#F1F8E9", accent: "#66BB6A", text: "#2E7D32", icon: "🔁", name: "Recorrentes (2+ compras)", coverage: 0 },
-  "potencial": { bg: "#F9FBE7", accent: "#9CCC65", text: "#558B2F", icon: "🌱", name: "Potencial (1 compra)", coverage: 0 },
-  "aprovados-nao-ativados": { bg: "#F1F5F9", accent: "#94A3B8", text: "#334155", icon: "💤", name: "Aprovados Não Ativados", coverage: 0 },
-  "negados-recuperaveis": { bg: "#F8FAFC", accent: "#64748B", text: "#1E293B", icon: "📋", name: "Negados Próximos do Corte (Score 300-449)", coverage: 0 },
-  "negados-alto-risco": { bg: "#F1F5F9", accent: "#475569", text: "#0F172A", icon: "🚫", name: "Negados Alto Risco (Score <300)", coverage: 0 },
-  "inadimplentes": { bg: "#FEF2F2", accent: "#EF4444", text: "#991B1B", icon: "⚠️", name: "Inadimplentes", coverage: 0 },
+const SEGMENT_CONFIG: Record<string, { bg: string; accent: string; text: string; name: string; coverage: number; Icon: LucideIcon }> = {
+  "ume-plus": { bg: "#E8F5E9", accent: "#00C853", text: "#1B5E20", Icon: Crown, name: "Ume Plus", coverage: 0 },
+  "recorrentes": { bg: "#F1F8E9", accent: "#66BB6A", text: "#2E7D32", Icon: Repeat2, name: "Recorrentes (2+ compras)", coverage: 0 },
+  "potencial": { bg: "#F9FBE7", accent: "#9CCC65", text: "#558B2F", Icon: Sprout, name: "Potencial (1 compra)", coverage: 0 },
+  "aprovados-nao-ativados": { bg: "#F1F5F9", accent: "#94A3B8", text: "#334155", Icon: Moon, name: "Aprovados Não Ativados", coverage: 0 },
+  "negados-recuperaveis": { bg: "#F8FAFC", accent: "#64748B", text: "#1E293B", Icon: ClipboardList, name: "Negados Próximos do Corte (Score 300-449)", coverage: 0 },
+  "negados-alto-risco": { bg: "#F1F5F9", accent: "#475569", text: "#0F172A", Icon: Ban, name: "Negados Alto Risco (Score <300)", coverage: 0 },
+  "inadimplentes": { bg: "#FEF2F2", accent: "#EF4444", text: "#991B1B", Icon: AlertTriangle, name: "Inadimplentes", coverage: 0 },
 };
 
 const CHANNEL_ICONS = {
@@ -296,49 +297,49 @@ export function JornadaTab() {
               </thead>
               <tbody>
                 <tr className="border-b border-[#E2E8F0]" style={{ backgroundColor: "#F1F5F9" }}>
-                  <td className="p-2 font-medium text-[#334155]">💤 Aprovados Não Ativados</td>
+                  <td className="p-2 font-medium text-[#334155]"><span className="inline-flex items-center gap-1"><Moon className="w-3 h-3" /> Aprovados Não Ativados</span></td>
                   <td className="text-center p-2 text-[#1a1a1a]">0</td>
                   <td className="text-center p-2 text-[#1a1a1a]">2</td>
                   <td className="text-center p-2 text-[#1a1a1a]">3</td>
                   <td className="text-right p-2 font-semibold text-[#334155]">R$ 0,69</td>
                 </tr>
                 <tr className="border-b border-[#E2E8F0]" style={{ backgroundColor: "#F9FBE7" }}>
-                  <td className="p-2 font-medium text-[#558B2F]">🌱 Potencial</td>
+                  <td className="p-2 font-medium text-[#558B2F]"><span className="inline-flex items-center gap-1"><Sprout className="w-3 h-3" /> Potencial</span></td>
                   <td className="text-center p-2 text-[#1a1a1a]">0</td>
                   <td className="text-center p-2 text-[#1a1a1a]">2</td>
                   <td className="text-center p-2 text-[#1a1a1a]">1</td>
                   <td className="text-right p-2 font-semibold text-[#558B2F]">R$ 0,63</td>
                 </tr>
                 <tr className="border-b border-[#E2E8F0]" style={{ backgroundColor: "#F1F8E9" }}>
-                  <td className="p-2 font-medium text-[#2E7D32]">🔁 Recorrentes</td>
+                  <td className="p-2 font-medium text-[#2E7D32]"><span className="inline-flex items-center gap-1"><Repeat2 className="w-3 h-3" /> Recorrentes</span></td>
                   <td className="text-center p-2 text-[#1a1a1a]">0</td>
                   <td className="text-center p-2 text-[#1a1a1a]">12</td>
                   <td className="text-center p-2 text-[#1a1a1a]">8</td>
                   <td className="text-right p-2 font-semibold text-[#2E7D32]">R$ 4,20</td>
                 </tr>
                 <tr className="border-b border-[#E2E8F0]" style={{ backgroundColor: "#E8F5E9" }}>
-                  <td className="p-2 font-medium text-[#1B5E20]">💎 Ume Plus</td>
+                  <td className="p-2 font-medium text-[#1B5E20]"><span className="inline-flex items-center gap-1"><Crown className="w-3 h-3" /> Ume Plus</span></td>
                   <td className="text-center p-2 text-[#1a1a1a]">0</td>
                   <td className="text-center p-2 text-[#1a1a1a]">24</td>
                   <td className="text-center p-2 text-[#1a1a1a]">12</td>
                   <td className="text-right p-2 font-semibold text-[#1B5E20]">R$ 8,16</td>
                 </tr>
                 <tr className="border-b border-[#E2E8F0]" style={{ backgroundColor: "#F8FAFC" }}>
-                  <td className="p-2 font-medium text-[#1E293B]">📋 Negados Próximos do Corte</td>
+                  <td className="p-2 font-medium text-[#1E293B]"><span className="inline-flex items-center gap-1"><ClipboardList className="w-3 h-3" /> Negados Próximos do Corte</span></td>
                   <td className="text-center p-2 text-[#1a1a1a]">0</td>
                   <td className="text-center p-2 text-[#1a1a1a]">0</td>
                   <td className="text-center p-2 text-[#1a1a1a]">3</td>
                   <td className="text-right p-2 font-semibold text-[#1E293B]">R$ 0,09</td>
                 </tr>
                 <tr className="border-b border-[#E2E8F0]" style={{ backgroundColor: "#F1F5F9" }}>
-                  <td className="p-2 font-medium text-[#0F172A]">🚫 Negados Alto Risco</td>
+                  <td className="p-2 font-medium text-[#0F172A]"><span className="inline-flex items-center gap-1"><Ban className="w-3 h-3" /> Negados Alto Risco</span></td>
                   <td className="text-center p-2 text-[#1a1a1a]">0</td>
                   <td className="text-center p-2 text-[#1a1a1a]">0</td>
                   <td className="text-center p-2 text-[#1a1a1a]">1</td>
                   <td className="text-right p-2 font-semibold text-[#0F172A]">R$ 0,03</td>
                 </tr>
                 <tr style={{ backgroundColor: "#FEF2F2" }}>
-                  <td className="p-2 font-medium text-[#991B1B]">⚠️ Inadimplentes</td>
+                  <td className="p-2 font-medium text-[#991B1B]"><span className="inline-flex items-center gap-1"><AlertTriangle className="w-3 h-3" /> Inadimplentes</span></td>
                   <td className="text-center p-2 text-[#1a1a1a]">0</td>
                   <td className="text-center p-2 text-[#1a1a1a]">2</td>
                   <td className="text-center p-2 text-[#1a1a1a]">2</td>
@@ -353,19 +354,19 @@ export function JornadaTab() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <Card className="border-l-4" style={{ borderLeftColor: "#FF9800", backgroundColor: "#FFF3E0" }}>
             <CardContent className="pt-4">
-              <p className="text-sm font-semibold text-[#F57F17] mb-2">📱 NOTA 1 — Push Removido</p>
+              <p className="text-sm font-semibold text-[#F57F17] mb-2 flex items-center gap-1"><Smartphone className="w-4 h-4" /> NOTA 1 — Push Removido</p>
               <p className="text-xs text-[#3E2723]">Push notifications removidas de Aprovados Não Ativados — apenas 0,6% deles têm o app, tornando o canal inviável neste segmento.</p>
             </CardContent>
           </Card>
           <Card className="border-l-4" style={{ borderLeftColor: "#1976D2", backgroundColor: "#E3F2FD" }}>
             <CardContent className="pt-4">
-              <p className="text-sm font-semibold text-[#0D47A1] mb-2">💸 NOTA 2 — Negados em SMS Only</p>
+              <p className="text-sm font-semibold text-[#0D47A1] mb-2 flex items-center gap-1"><DollarSign className="w-4 h-4" /> NOTA 2 — Negados em SMS Only</p>
               <p className="text-xs text-[#0D47A1]">Negados recebem APENAS SMS para contenção de custo. WhatsApp custaria 10x mais e o ROI marginal é baixo dado o perfil de risco.</p>
             </CardContent>
           </Card>
           <Card className="border-l-4" style={{ borderLeftColor: "#00C853", backgroundColor: "#F0F4F3" }}>
             <CardContent className="pt-4">
-              <p className="text-sm font-semibold text-[#001a0f] mb-2">⚙️ NOTA 3 — Cadência Recorrentes</p>
+              <p className="text-sm font-semibold text-[#001a0f] mb-2 flex items-center gap-1"><Settings className="w-4 h-4" /> NOTA 3 — Cadência Recorrentes</p>
               <p className="text-xs text-[#1a1a1a]">Cadência dos Recorrentes foi reduzida (~24 toques/ano vs. 60+ que seria semanal) para evitar fadiga e opt-out.</p>
             </CardContent>
           </Card>

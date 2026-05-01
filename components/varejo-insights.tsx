@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingDown, AlertCircle, Target, ShoppingBag } from "lucide-react";
+import { TrendingDown, AlertCircle, Target, ShoppingBag, AlertTriangle } from "lucide-react";
 
 interface VarejoInsightsProps {
   data: any[];
@@ -98,7 +98,7 @@ export function VarejoInsights({ data }: VarejoInsightsProps) {
       <Card className="border-l-4 border-[#00C853] bg-[#E8F5E9]">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-semibold text-[#1a1a1a] flex items-center gap-2">
-            <span className="text-lg">🎯</span>
+            <Target className="w-5 h-5 text-[#00C853]" />
             CONCENTRAÇÃO
           </CardTitle>
         </CardHeader>
@@ -117,7 +117,7 @@ export function VarejoInsights({ data }: VarejoInsightsProps) {
       <Card className="border-l-4 border-[#66BB6A] bg-[#F1F8E9]">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-semibold text-[#1a1a1a] flex items-center gap-2">
-            <span className="text-lg">🛍️</span>
+            <ShoppingBag className="w-5 h-5 text-[#66BB6A]" />
             TOP CATEGORIAS
           </CardTitle>
         </CardHeader>
@@ -136,7 +136,7 @@ export function VarejoInsights({ data }: VarejoInsightsProps) {
       <Card className="border-l-4 border-[#94A3B8] bg-[#F1F5F9]">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-semibold text-[#1a1a1a] flex items-center gap-2">
-            <span className="text-lg">🔄</span>
+            <TrendingDown className="w-5 h-5 text-[#475569] rotate-180" />
             TIPO DE TRANSAÇÃO
           </CardTitle>
         </CardHeader>
@@ -155,7 +155,7 @@ export function VarejoInsights({ data }: VarejoInsightsProps) {
       <Card className="border-l-4 border-[#EF4444] bg-[#FEF2F2]">
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-semibold text-[#1a1a1a] flex items-center gap-2">
-            <span className="text-lg">⚠️</span>
+            <AlertTriangle className="w-5 h-5 text-[#EF4444]" />
             CAUDA FRACA
           </CardTitle>
         </CardHeader>

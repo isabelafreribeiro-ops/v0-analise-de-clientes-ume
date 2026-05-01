@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useData } from "@/lib/data-context";
+import { Target, AlertTriangle, Lightbulb } from "lucide-react";
 
 // ============================================================================
 // Q5 CRÉDITO — Política de crédito proposta
@@ -66,7 +67,7 @@ export function CreditoTab() {
       <Card className="border-2 border-[#00C853] bg-[#E8F5E9]">
         <CardContent className="p-6">
           <div className="flex items-start gap-4">
-            <span className="text-4xl">🎯</span>
+            <Target className="w-10 h-10 shrink-0 text-[#00C853]" />
             <div className="flex-1">
               <p className="text-[10px] font-bold uppercase tracking-wider text-[#1B5E20]">
                 Diagnóstico Central
@@ -158,7 +159,7 @@ export function CreditoTab() {
           {/* Traço 5 — DESTAQUE VERMELHO (zona morta) */}
           <div className="rounded border-l-4 border-[#EF4444] bg-[#FEF2F2] p-4">
             <div className="flex items-start gap-3">
-              <span className="text-2xl">🚨</span>
+              <AlertTriangle className="w-6 h-6 shrink-0 text-[#EF4444]" />
               <div className="flex-1">
                 <p className="text-[10px] font-semibold text-[#991B1B] uppercase tracking-wider">Zona morta da política</p>
                 <div className="flex items-baseline gap-3 mt-1">
@@ -281,8 +282,8 @@ export function CreditoTab() {
                   Trade-off
                 </span>
               </div>
-              <h3 className="text-sm font-bold text-[#1a1a1a] mb-3">
-                🎯 Ajuste de taxa por perfil
+              <h3 className="text-sm font-bold text-[#1a1a1a] mb-3 flex items-center gap-1">
+                <Target className="w-4 h-4" /> Ajuste de taxa por perfil
               </h3>
               <div className="space-y-2 text-xs">
                 <div>
@@ -403,7 +404,7 @@ export function CreditoTab() {
                   </td>
                 </tr>
                 <tr className="border-b border-[#E2E8F0] bg-[#F9FBE7]/40">
-                  <td className="py-2 px-2 font-medium">🎯 R3 — Ajuste de taxa</td>
+                  <td className="py-2 px-2 font-medium"><span className="inline-flex items-center gap-1"><Target className="w-3 h-3" /> R3 — Ajuste de taxa</span></td>
                   <td className="py-2 px-2 text-right">7.006</td>
                   <td className="py-2 px-2 text-right text-[#558B2F] font-bold">Retenção+</td>
                   <td className="py-2 px-2 text-center">
@@ -442,10 +443,11 @@ export function CreditoTab() {
             </table>
           </div>
 
-          <div className="mt-4 p-3 bg-[#F1F5F9] border border-[#94A3B8]/20 rounded text-xs text-[#475569]">
-            💡 <strong>Sequência sugerida:</strong> R1 e R4 primeiro (P1) — risco baixo, alta alavancagem,
+          <div className="mt-4 p-3 bg-[#F1F5F9] border border-[#94A3B8]/20 rounded text-xs text-[#475569] flex items-start gap-2">
+            <Lightbulb className="w-4 h-4 shrink-0 mt-0.5 text-[#475569]" />
+            <span><strong>Sequência sugerida:</strong> R1 e R4 primeiro (P1) — risco baixo, alta alavancagem,
             implementação direta no funil de aprovação. R2 e R3 em fase 2 (P2) — exigem instrumentação de
-            cohort tracking pra medir efeito de retenção.
+            cohort tracking pra medir efeito de retenção.</span>
           </div>
         </CardContent>
       </Card>

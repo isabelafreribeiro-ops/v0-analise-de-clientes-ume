@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertTriangle, Trophy, TrendingDown, Lightbulb } from "lucide-react";
 import {
   AreaChart,
   Area,
@@ -212,9 +213,10 @@ export function RentabilidadeTab() {
             </table>
           </div>
 
-          <div className="mt-4 p-3 bg-[#FEF2F2] border border-[#EF4444]/20 rounded text-xs text-[#991B1B]">
-            ⚠️ <strong>Premissa de Inadimplência:</strong> 80% do saldo em aberto é considerado
-            perda. 20% representa recuperação esperada via cobrança (benchmark fintech BR).
+          <div className="mt-4 p-3 bg-[#FEF2F2] border border-[#EF4444]/20 rounded text-xs text-[#991B1B] flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+            <span><strong>Premissa de Inadimplência:</strong> 80% do saldo em aberto é considerado
+            perda. 20% representa recuperação esperada via cobrança (benchmark fintech BR).</span>
           </div>
         </CardContent>
       </Card>
@@ -363,7 +365,7 @@ export function RentabilidadeTab() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Top */}
             <div className="border-l-4 border-[#00C853] bg-[#E8F5E9]/30 rounded p-3">
-              <p className="text-sm font-bold text-[#1B5E20] mb-2">🏆 Top 10 — Geradores de Valor</p>
+              <p className="text-sm font-bold text-[#1B5E20] mb-2 flex items-center gap-1"><Trophy className="w-4 h-4" /> Top 10 — Geradores de Valor</p>
               <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b border-[#00C853]/20">
@@ -393,7 +395,7 @@ export function RentabilidadeTab() {
 
             {/* Bottom */}
             <div className="border-l-4 border-[#EF4444] bg-[#FEF2F2]/30 rounded p-3">
-              <p className="text-sm font-bold text-[#991B1B] mb-2">📉 Bottom 10 — Destruidores de Valor</p>
+              <p className="text-sm font-bold text-[#991B1B] mb-2 flex items-center gap-1"><TrendingDown className="w-4 h-4" /> Bottom 10 — Destruidores de Valor</p>
               <table className="w-full text-xs">
                 <thead>
                   <tr className="border-b border-[#EF4444]/20">
@@ -422,10 +424,11 @@ export function RentabilidadeTab() {
             </div>
           </div>
 
-          <div className="mt-4 p-3 bg-[#F1F5F9] border border-[#94A3B8]/20 rounded text-xs text-[#475569]">
-            💡 <strong>Spread expressivo entre top e bottom</strong> — política de crédito atual
+          <div className="mt-4 p-3 bg-[#F1F5F9] border border-[#94A3B8]/20 rounded text-xs text-[#475569] flex items-start gap-2">
+            <Lightbulb className="w-4 h-4 shrink-0 mt-0.5 text-[#475569]" />
+            <span><strong>Spread expressivo entre top e bottom</strong> — política de crédito atual
             aprova clientes que geram milhares vs clientes que destroem outros milhares. Ajuste de
-            critérios pode liberar caixa expressivo (vide Q5).
+            critérios pode liberar caixa expressivo (vide Q5).</span>
           </div>
         </CardContent>
       </Card>
@@ -558,11 +561,12 @@ export function RentabilidadeTab() {
               </table>
             </div>
 
-            <div className="mt-4 p-3 bg-[#F1F5F9] border border-[#94A3B8]/20 rounded text-xs text-[#475569]">
-              ⚠️ <strong>Limitação:</strong> a base não permite atribuição direta cliente→varejo.
+            <div className="mt-4 p-3 bg-[#F1F5F9] border border-[#94A3B8]/20 rounded text-xs text-[#475569] flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span><strong>Limitação:</strong> a base não permite atribuição direta cliente→varejo.
               Análise estima margem por varejo proporcionalmente ao volume originado, usando o mesmo
               ratio juros/MDR da Ume consolidada. Recomendação Q5: implementar rastreamento
-              cliente→varejo para análise mais precisa.
+              cliente→varejo para análise mais precisa.</span>
             </div>
           </CardContent>
         )}
