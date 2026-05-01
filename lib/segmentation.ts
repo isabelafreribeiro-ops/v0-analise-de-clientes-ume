@@ -73,13 +73,18 @@ export function parseNumber(value: any): number | null {
     // Remove currency symbol
     let cleaned = trimmed.replace(/R\$\s?/g, "");
 
+    // Detectar e remover sinal de porcentagem (taxa "8,16%" → 0.0816)
+    const isPercent = cleaned.includes("%");
+    cleaned = cleaned.replace(/%/g, "").trim();
+
     // Handle Brazilian number format: "1.234,56" → convert to 1234.56
     if (cleaned.includes(",")) {
       cleaned = cleaned.replace(/\./g, "").replace(",", ".");
     }
 
     const parsed = parseFloat(cleaned);
-    return isNaN(parsed) ? null : parsed;
+    if (isNaN(parsed)) return null;
+    return isPercent ? parsed / 100 : parsed;
   }
 
   if (typeof value === "number") {
