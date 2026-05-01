@@ -25,80 +25,108 @@ import {
   Cell,
 } from "recharts";
 
-// Type definitions
-interface AggregatedSegment {
-  scoreRange: string;
-  ageRange: string;
-  count: number;
-  scoreMedia: number;
-  ltvMedia: number;
-  taxaAprovacao: number;
-  taxaRecorrencia: number;
-  ticketMedio: number;
-}
-
-interface PreAggregatedData {
-  scoreDistribution: Array<any>;
-  ageDistribution: Array<any>;
-  valueRiskSegments: Array<any>;
-  personasData: {
-    recurrentePremium: number;
-    compradorEventual: number;
-    ativadorPerdido: number;
-    negadoValor: number;
-  };
-  globalMetrics: {
-    totalClientes: number;
-    scoreMedia: number;
-    ticketMedia: number;
-    ltvMedia: number;
-    pctHighValue: number;
-  };
-}
-
 export function SegmentacaoTab() {
   const { clientesData } = useData();
+
+  // Filter states
   const [filterScore, setFilterScore] = useState("todos");
   const [filterAge, setFilterAge] = useState("todas");
   const [filterStatus, setFilterStatus] = useState("todos");
-  const [isProcessing, setIsProcessing] = useState(true);
 
-  // Utilities
+  // Parse utilities
   const parseNumber = (val: any): number => {
     if (!val) return 0;
     const parsed = Number(val);
     return isNaN(parsed) ? 0 : parsed;
   };
 
-  // PRE-AGGREGATION: Calculate all metrics ONCE from raw data
-  // This runs only when clientesData changes, not on every filter change
-  const preAggregated = useMemo(() => {
-    // Set processing state at start (via setTimeout to batch React updates)
-    if (clientesData && clientesData.length > 0) {
-      setTimeout(() => setIsProcessing(false), 10);
+  // Filter clients
+  const filteredClientes = useMemo(() => {
+    return clientesData.filter((c) => {
+      // Score filter
+      if (filterScore !== "todos") {
+        const score = parseNumber(c.Score);
+        if (filterScore === "0-300" && score > 300) return false;
+        if (filterScore === "301-450" && (score <= 300 || score > 450)) return false;
+        if (filterScore === "451-550" && (score <= 450 || score > 550)) return false;
+        if (filterScore === "551+" && score <= 550) return false;
+      }
+
+      // Age filter
+      if (filterAge !== "todas") {
+        const age = parseNumber(c.Idade);
+        if (filterAge === "18-25" && (age < 18 || age > 25)) return false;
+        if (filterAge === "26-35" && (age < 26 || age > 35)) return false;
+        if (filterAge === "36-50" && (age < 36 || age > 50)) return false;
+        if (filterAge === "50+" && age < 50) return false;
+      }
+
+      // Status filter
+      if (filterStatus !== "todos") {
+        const isAprovado = c.Situação === "Aprovada";
+        const qtdCompras = parseNumber(c["Qtd de Compras"]);
+        const isAtivado = qtdCompras >= 1;
+        const isRecorrente = qtdCompras >= 2;
+
+        if (filterStatus === "Aprovados" && !isAprovado) return false;
+        if (filterStatus === "Ativados" && !isAtivado) return false;
+        if (filterStatus === "Recorrentes" && !isRecorrente) return false;
+      }
+
+      return true;
+    });
+  }, [clientesData, filterScore, filterAge, filterStatus]);
+
+  // Calculate KPI metrics
+  const metrics = useMemo(() => {
+    if (filteredClientes.length === 0) {
+      return {
+        totalClientes: 0,
+        scoreMedia: 0,
+        ticketMedia: 0,
+        ltvMedia: 0,
+        pctHighValue: 0,
+      };
     }
 
-    if (!clientesData || clientesData.length === 0) {
-      return null;
-    }
+    const scoreMedia = filteredClientes.reduce((sum, c) => sum + parseNumber(c.Score), 0) / filteredClientes.length;
+    const tickets = filteredClientes.map((c) => parseNumber(c["Ticket Médio"]));
+    const ticketMedia = tickets.reduce((a, b) => a + b, 0) / filteredClientes.length;
+    const ticketMedian = [...tickets].sort((a, b) => a - b)[Math.floor(tickets.length / 2)];
 
-    const scoreRanges = [
+    // LTV = sum of transactions per client
+    const ltvData = filteredClientes.map((c) => ({
+      qtd: parseNumber(c["Qtd de Compras"]),
+      ticket: parseNumber(c["Ticket Médio"]),
+    }));
+    const ltvMedia = ltvData.reduce((sum, d) => sum + d.qtd * d.ticket, 0) / filteredClientes.length;
+
+    // High Value = recorrentes (2+ compras) com ticket > mediana
+    const highValue = filteredClientes.filter(
+      (c) => parseNumber(c["Qtd de Compras"]) >= 2 && parseNumber(c["Ticket Médio"]) > ticketMedian
+    ).length;
+    const pctHighValue = (highValue / filteredClientes.length) * 100;
+
+    return {
+      totalClientes: filteredClientes.length,
+      scoreMedia,
+      ticketMedia,
+      ltvMedia,
+      pctHighValue,
+    };
+  }, [filteredClientes]);
+
+  // Score distribution
+  const scoreDistribution = useMemo(() => {
+    const ranges = [
       { label: "0-300", min: 0, max: 300 },
       { label: "301-450", min: 301, max: 450 },
       { label: "451-550", min: 451, max: 550 },
       { label: "551+", min: 551, max: 9999 },
     ];
 
-    const ageRanges = [
-      { label: "18-25", min: 18, max: 25 },
-      { label: "26-35", min: 26, max: 35 },
-      { label: "36-50", min: 36, max: 50 },
-      { label: "50+", min: 50, max: 150 },
-    ];
-
-    // Score distribution
-    const scoreDistribution = scoreRanges.map((range) => {
-      const clients = clientesData.filter((c) => {
+    return ranges.map((range) => {
+      const clients = filteredClientes.filter((c) => {
         const score = parseNumber(c.Score);
         return score >= range.min && score <= range.max;
       });
@@ -107,7 +135,9 @@ export function SegmentacaoTab() {
       const aprovados = clients.filter((c) => c.Situação === "Aprovada").length;
       const recorrentes = clients.filter((c) => parseNumber(c["Qtd de Compras"]) >= 2).length;
       const ticketMedio =
-        count > 0 ? clients.reduce((sum, c) => sum + parseNumber(c["Ticket Médio"]), 0) / count : 0;
+        clients.length > 0
+          ? clients.reduce((sum, c) => sum + parseNumber(c["Ticket Médio"]), 0) / clients.length
+          : 0;
 
       return {
         label: range.label,
@@ -117,10 +147,19 @@ export function SegmentacaoTab() {
         ticketMedio,
       };
     });
+  }, [filteredClientes]);
 
-    // Age distribution
-    const ageDistribution = ageRanges.map((range) => {
-      const clients = clientesData.filter((c) => {
+  // Age distribution
+  const ageDistribution = useMemo(() => {
+    const ranges = [
+      { label: "18-25", min: 18, max: 25 },
+      { label: "26-35", min: 26, max: 35 },
+      { label: "36-50", min: 36, max: 50 },
+      { label: "50+", min: 50, max: 150 },
+    ];
+
+    return ranges.map((range) => {
+      const clients = filteredClientes.filter((c) => {
         const age = parseNumber(c.Idade);
         return age >= range.min && age <= range.max;
       });
@@ -129,7 +168,9 @@ export function SegmentacaoTab() {
       const aprovados = clients.filter((c) => c.Situação === "Aprovada").length;
       const recorrentes = clients.filter((c) => parseNumber(c["Qtd de Compras"]) >= 2).length;
       const ticketMedio =
-        count > 0 ? clients.reduce((sum, c) => sum + parseNumber(c["Ticket Médio"]), 0) / count : 0;
+        clients.length > 0
+          ? clients.reduce((sum, c) => sum + parseNumber(c["Ticket Médio"]), 0) / clients.length
+          : 0;
 
       return {
         label: range.label,
@@ -139,12 +180,27 @@ export function SegmentacaoTab() {
         ticketMedio,
       };
     });
+  }, [filteredClientes]);
 
-    // Value-Risk Matrix (AGGREGATED - max 12 bubbles)
-    const valueRiskSegments: any[] = [];
+  // Value-Risk Matrix: Score×Age segments
+  const valueRiskSegments = useMemo(() => {
+    const scoreRanges = [
+      { label: "Baixo", min: 0, max: 300 },
+      { label: "Médio", min: 301, max: 550 },
+      { label: "Alto", min: 551, max: 9999 },
+    ];
+    const ageRanges = [
+      { label: "18-25", min: 18, max: 25 },
+      { label: "26-35", min: 26, max: 35 },
+      { label: "36-50", min: 36, max: 50 },
+      { label: "50+", min: 50, max: 150 },
+    ];
+
+    const segments = [];
+
     for (const scoreRange of scoreRanges) {
       for (const ageRange of ageRanges) {
-        const clients = clientesData.filter((c) => {
+        const clients = filteredClientes.filter((c) => {
           const score = parseNumber(c.Score);
           const age = parseNumber(c.Idade);
           return score >= scoreRange.min && score <= scoreRange.max && age >= ageRange.min && age <= ageRange.max;
@@ -158,24 +214,24 @@ export function SegmentacaoTab() {
           clients.length;
 
         let quadrant = "Destruidores";
-        let color = "#EF4444";
+        let color = "#EF4444"; // red
 
         if (scoreMedia >= 551) {
           if (ltvMedia >= 150) {
             quadrant = "Ouro";
-            color = "#22c55e";
+            color = "#22c55e"; // green
           } else {
             quadrant = "Promissores";
-            color = "#86efac";
+            color = "#86efac"; // light green
           }
         } else if (scoreMedia >= 300) {
           if (ltvMedia >= 150) {
             quadrant = "Risco Calculado";
-            color = "#FFF8E1";
+            color = "#FFF8E1"; // light yellow
           }
         }
 
-        valueRiskSegments.push({
+        segments.push({
           scoreMedia,
           ltvMedia,
           volume: clients.length,
@@ -186,247 +242,90 @@ export function SegmentacaoTab() {
       }
     }
 
-    // Personas
-    const recurrentePremium = clientesData.filter((c) => {
+    return segments;
+  }, [filteredClientes]);
+
+  // Personas
+  const personas = useMemo(() => {
+    const recorrentePremium = filteredClientes.filter((c) => {
       const qtd = parseNumber(c["Qtd de Compras"]);
       const ticket = parseNumber(c["Ticket Médio"]);
-      const ticketMedian = 1000; // approximate
-      return qtd >= 2 && ticket > ticketMedian;
-    }).length;
+      const tickets = filteredClientes.map((x) => parseNumber(x["Ticket Médio"]));
+      const median = [...tickets].sort((a, b) => a - b)[Math.floor(tickets.length / 2)];
+      return qtd >= 2 && ticket > median;
+    });
 
-    const compradorEventual = clientesData.filter((c) => parseNumber(c["Qtd de Compras"]) === 1).length;
+    const compradorEventual = filteredClientes.filter((c) => {
+      const qtd = parseNumber(c["Qtd de Compras"]);
+      return qtd === 1 && c.Situação === "Aprovada";
+    });
 
-    const ativadorPerdido = clientesData.filter((c) => {
-      return c.Situação === "Aprovada" && parseNumber(c["Qtd de Compras"]) === 0;
-    }).length;
+    const ativadorPerdido = filteredClientes.filter((c) => {
+      const qtd = parseNumber(c["Qtd de Compras"]);
+      return qtd === 0 && c.Situação === "Aprovada";
+    });
 
-    const negadoValor = clientesData.filter((c) => {
-      return c.Situação !== "Aprovada" && parseNumber(c.Score) >= 250;
-    }).length;
+    const negadoDeValor = filteredClientes.filter((c) => {
+      const score = parseNumber(c.Score);
+      return c.Situação === "Negada" && score >= 250;
+    });
 
-    // Global metrics
-    const scoreMedia = clientesData.reduce((sum, c) => sum + parseNumber(c.Score), 0) / clientesData.length;
-    const tickets = clientesData.map((c) => parseNumber(c["Ticket Médio"]));
-    const ticketMedia = tickets.reduce((a, b) => a + b, 0) / clientesData.length;
-    const ticketMedian = [...tickets].sort((a, b) => a - b)[Math.floor(tickets.length / 2)];
-    const ltvMedia =
-      clientesData.reduce((sum, c) => sum + parseNumber(c["Qtd de Compras"]) * parseNumber(c["Ticket Médio"]), 0) /
-      clientesData.length;
-    const highValue = clientesData.filter(
-      (c) => parseNumber(c["Qtd de Compras"]) >= 2 && parseNumber(c["Ticket Médio"]) > ticketMedian
-    ).length;
-    const pctHighValue = (highValue / clientesData.length) * 100;
-
-    return {
-      scoreDistribution,
-      ageDistribution,
-      valueRiskSegments,
-      personasData: {
-        recurrentePremium,
-        compradorEventual,
-        ativadorPerdido,
-        negadoValor,
-      },
-      globalMetrics: {
-        totalClientes: clientesData.length,
-        scoreMedia,
-        ticketMedia,
-        ltvMedia,
-        pctHighValue,
-      },
-    };
-  }, [clientesData]); // Only recalculates when data loads
-
-  // Apply filters to pre-aggregated data
-  const metrics = useMemo(() => {
-    if (!preAggregated) {
+    const calcPersona = (clients: any[]) => {
+      if (clients.length === 0) return { pct: 0, ticketMedio: 0, ltv: 0 };
+      const ticketMedio = clients.reduce((sum, c) => sum + parseNumber(c["Ticket Médio"]), 0) / clients.length;
+      const ltv = clients.reduce((sum, c) => sum + parseNumber(c["Qtd de Compras"]) * parseNumber(c["Ticket Médio"]), 0) / clients.length;
       return {
-        totalClientes: 0,
-        scoreMedia: 0,
-        ticketMedia: 0,
-        ltvMedia: 0,
-        pctHighValue: 0,
+        pct: (clients.length / filteredClientes.length) * 100,
+        ticketMedio,
+        ltv,
       };
-    }
-
-    let filtered = [...clientesData];
-
-    // Apply score filter
-    if (filterScore !== "todos") {
-      const ranges: any = {
-        "0-300": { min: 0, max: 300 },
-        "301-450": { min: 301, max: 450 },
-        "451-550": { min: 451, max: 550 },
-        "551+": { min: 551, max: 9999 },
-      };
-      const range = ranges[filterScore];
-      filtered = filtered.filter((c) => {
-        const score = parseNumber(c.Score);
-        return score >= range.min && score <= range.max;
-      });
-    }
-
-    // Apply age filter
-    if (filterAge !== "todas") {
-      const ranges: any = {
-        "18-25": { min: 18, max: 25 },
-        "26-35": { min: 26, max: 35 },
-        "36-50": { min: 36, max: 50 },
-        "50+": { min: 50, max: 150 },
-      };
-      const range = ranges[filterAge];
-      filtered = filtered.filter((c) => {
-        const age = parseNumber(c.Idade);
-        return age >= range.min && age <= range.max;
-      });
-    }
-
-    // Apply status filter
-    if (filterStatus !== "todos") {
-      filtered = filtered.filter((c) => {
-        const isAprovado = c.Situação === "Aprovada";
-        const qtdCompras = parseNumber(c["Qtd de Compras"]);
-        const isAtivado = qtdCompras >= 1;
-        const isRecorrente = qtdCompras >= 2;
-
-        if (filterStatus === "Aprovados") return isAprovado;
-        if (filterStatus === "Ativados") return isAtivado;
-        if (filterStatus === "Recorrentes") return isRecorrente;
-        return true;
-      });
-    }
-
-    if (filtered.length === 0) {
-      return {
-        totalClientes: 0,
-        scoreMedia: 0,
-        ticketMedia: 0,
-        ltvMedia: 0,
-        pctHighValue: 0,
-      };
-    }
-
-    // Quick calculation on filtered set
-    const scoreMedia = filtered.reduce((sum, c) => sum + parseNumber(c.Score), 0) / filtered.length;
-    const tickets = filtered.map((c) => parseNumber(c["Ticket Médio"]));
-    const ticketMedia = tickets.reduce((a, b) => a + b, 0) / filtered.length;
-    const ticketMedian = [...tickets].sort((a, b) => a - b)[Math.floor(tickets.length / 2)];
-    const ltvMedia =
-      filtered.reduce((sum, c) => sum + parseNumber(c["Qtd de Compras"]) * parseNumber(c["Ticket Médio"]), 0) /
-      filtered.length;
-    const highValue = filtered.filter(
-      (c) => parseNumber(c["Qtd de Compras"]) >= 2 && parseNumber(c["Ticket Médio"]) > ticketMedian
-    ).length;
-    const pctHighValue = (highValue / filtered.length) * 100;
-
-    return {
-      totalClientes: filtered.length,
-      scoreMedia,
-      ticketMedia,
-      ltvMedia,
-      pctHighValue,
     };
-  }, [filterScore, filterAge, filterStatus, clientesData]);
-
-  // Derived metrics from pre-aggregated data (very fast)
-  const scoreDistribution = useMemo(() => {
-    if (!preAggregated) return [];
-    return preAggregated.scoreDistribution;
-  }, [preAggregated]);
-
-  const ageDistribution = useMemo(() => {
-    if (!preAggregated) return [];
-    return preAggregated.ageDistribution;
-  }, [preAggregated]);
-
-  const valueRiskSegments = useMemo(() => {
-    if (!preAggregated) return [];
-    return preAggregated.valueRiskSegments;
-  }, [preAggregated]);
-
-  const personas = useMemo(() => {
-    if (!preAggregated) {
-      return [
-        { label: "Recorrente Premium", count: 0, pct: 0, color: "#22c55e" },
-        { label: "Comprador Eventual", count: 0, pct: 0, color: "#60a5fa" },
-        { label: "Ativador Perdido", count: 0, pct: 0, color: "#f59e0b" },
-        { label: "Negado de Valor", count: 0, pct: 0, color: "#ef4444" },
-      ];
-    }
-
-    const data = preAggregated.personasData;
-    const total = clientesData.length;
 
     return [
-      {
-        label: "Recorrente Premium",
-        count: data.recurrentePremium,
-        pct: (data.recurrentePremium / total) * 100,
-        color: "#22c55e",
-      },
-      {
-        label: "Comprador Eventual",
-        count: data.compradorEventual,
-        pct: (data.compradorEventual / total) * 100,
-        color: "#60a5fa",
-      },
-      {
-        label: "Ativador Perdido",
-        count: data.ativadorPerdido,
-        pct: (data.ativadorPerdido / total) * 100,
-        color: "#f59e0b",
-      },
-      {
-        label: "Negado de Valor",
-        count: data.negadoValor,
-        pct: (data.negadoValor / total) * 100,
-        color: "#ef4444",
-      },
+      { name: "Recorrente Premium", ...calcPersona(recorrentePremium), acao: "Trilha VIP, limite elevado" },
+      { name: "Comprador Eventual", ...calcPersona(compradorEventual), acao: "Estimular segunda compra" },
+      { name: "Ativador Perdido", ...calcPersona(ativadorPerdido), acao: "Reativar com oferta" },
+      { name: "Negado de Valor", ...calcPersona(negadoDeValor), acao: "Revisar critério de score" },
     ];
-  }, [preAggregated, clientesData.length]);
+  }, [filteredClientes]);
 
-  if (!preAggregated || isProcessing) {
-    return (
-      <div className="p-8 text-center">
-        <div className="inline-flex flex-col items-center gap-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-[#E2E8F0] border-t-[#22c55e]"></div>
-          <p className="text-sm text-[#64748b]">Processando dados da segmentação...</p>
-        </div>
-      </div>
-    );
-  }
+  // Executive insight
+  const insight = useMemo(() => {
+    const ouro = valueRiskSegments.filter((s) => s.quadrant === "Ouro");
+    const ouroVolume = ouro.reduce((sum, s) => sum + s.volume, 0);
+    const ouroPct = (ouroVolume / filteredClientes.length) * 100;
+
+    const ouroLTV = ouro.reduce((sum, s) => sum + s.ltvMedia * s.volume, 0);
+    const totalLTV = valueRiskSegments.reduce((sum, s) => sum + s.ltvMedia * s.volume, 0);
+    const ouroLTVPct = totalLTV > 0 ? (ouroLTV / totalLTV) * 100 : 0;
+
+    return {
+      ouroPct,
+      ouroLTVPct,
+    };
+  }, [valueRiskSegments, filteredClientes.length]);
 
   return (
-    <div className="space-y-8 p-6">
-      {/* TÍTULO */}
+    <div className="space-y-8">
+      {/* HEADER */}
       <div>
         <h2 className="text-xl font-bold text-[#1a1a1a]">Segmentação de Clientes</h2>
         <p className="text-sm text-[#64748b] mt-1">
-          Análise de segmentação da base — perfil, comportamento e oportunidades por grupo.
+          Quem são os clientes Ume — perfil, valor e risco por segmento.
         </p>
       </div>
 
-      {/* FILTROS */}
-      <div className="flex flex-wrap items-center gap-3 pb-4 border-b border-[#E2E8F0]">
+      {/* FILTERS */}
+      <div className="flex flex-wrap items-center gap-3">
         <span className="text-xs font-medium text-[#64748b]">Filtrar por:</span>
 
         <Select value={filterScore} onValueChange={setFilterScore}>
-          <SelectTrigger className="h-8 w-40 border-[#E2E8F0] bg-white text-xs text-[#1a1a1a]">
-            <span className="truncate">
-              {filterScore === "todos"
-                ? "Todos os scores"
-                : filterScore === "0-300"
-                  ? "0-300"
-                  : filterScore === "301-450"
-                    ? "301-450"
-                    : filterScore === "451-550"
-                      ? "451-550"
-                      : "551+"}
-            </span>
+          <SelectTrigger className="h-8 w-40 border-[#E2E8F0] bg-white text-xs">
+            <span className="truncate">{filterScore === "todos" ? "Todos os Scores" : filterScore}</span>
           </SelectTrigger>
           <SelectContent className="border-[#E2E8F0] bg-white">
             <SelectItem value="todos" className="text-xs">
-              Todos os scores
+              Todos os Scores
             </SelectItem>
             <SelectItem value="0-300" className="text-xs">
               0-300
@@ -444,22 +343,12 @@ export function SegmentacaoTab() {
         </Select>
 
         <Select value={filterAge} onValueChange={setFilterAge}>
-          <SelectTrigger className="h-8 w-40 border-[#E2E8F0] bg-white text-xs text-[#1a1a1a]">
-            <span className="truncate">
-              {filterAge === "todas"
-                ? "Todas as idades"
-                : filterAge === "18-25"
-                  ? "18-25"
-                  : filterAge === "26-35"
-                    ? "26-35"
-                    : filterAge === "36-50"
-                      ? "36-50"
-                      : "50+"}
-            </span>
+          <SelectTrigger className="h-8 w-40 border-[#E2E8F0] bg-white text-xs">
+            <span className="truncate">{filterAge === "todas" ? "Todas as Idades" : filterAge}</span>
           </SelectTrigger>
           <SelectContent className="border-[#E2E8F0] bg-white">
             <SelectItem value="todas" className="text-xs">
-              Todas as idades
+              Todas as Idades
             </SelectItem>
             <SelectItem value="18-25" className="text-xs">
               18-25
@@ -477,20 +366,12 @@ export function SegmentacaoTab() {
         </Select>
 
         <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="h-8 w-40 border-[#E2E8F0] bg-white text-xs text-[#1a1a1a]">
-            <span className="truncate">
-              {filterStatus === "todos"
-                ? "Todos os status"
-                : filterStatus === "Aprovados"
-                  ? "Aprovados"
-                  : filterStatus === "Ativados"
-                    ? "Ativados"
-                    : "Recorrentes"}
-            </span>
+          <SelectTrigger className="h-8 w-40 border-[#E2E8F0] bg-white text-xs">
+            <span className="truncate">{filterStatus === "todos" ? "Todos os Status" : filterStatus}</span>
           </SelectTrigger>
           <SelectContent className="border-[#E2E8F0] bg-white">
             <SelectItem value="todos" className="text-xs">
-              Todos os status
+              Todos os Status
             </SelectItem>
             <SelectItem value="Aprovados" className="text-xs">
               Aprovados
@@ -521,7 +402,13 @@ export function SegmentacaoTab() {
         )}
       </div>
 
-      {/* KPI CARDS */}
+      <p className="text-xs text-[#64748b]">
+        Analisando {metrics.totalClientes.toLocaleString("pt-BR")} clientes
+        {(filterScore !== "todos" || filterAge !== "todas" || filterStatus !== "todos") &&
+          ` (filtrados de ${clientesData.length.toLocaleString("pt-BR")})`}
+      </p>
+
+      {/* KPIs */}
       <div className="grid gap-4 md:grid-cols-5">
         <Card className="border-[#E2E8F0] bg-white">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -536,7 +423,7 @@ export function SegmentacaoTab() {
         <Card className="border-[#E2E8F0] bg-white">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-[#64748b]">Score Médio</CardTitle>
-            <TrendingUp className="h-4 w-4 text-[#22c55e]" />
+            <Target className="h-4 w-4 text-[#22c55e]" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-[#1a1a1a]">{Math.round(metrics.scoreMedia)}</div>
@@ -549,17 +436,21 @@ export function SegmentacaoTab() {
             <DollarSign className="h-4 w-4 text-[#22c55e]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-[#1a1a1a]">R$ {Math.round(metrics.ticketMedia).toLocaleString("pt-BR")}</div>
+            <div className="text-2xl font-bold text-[#1a1a1a]">
+              R$ {Math.round(metrics.ticketMedia).toLocaleString("pt-BR")}
+            </div>
           </CardContent>
         </Card>
 
         <Card className="border-[#E2E8F0] bg-white">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-[#64748b]">LTV Médio</CardTitle>
-            <Target className="h-4 w-4 text-[#22c55e]" />
+            <TrendingUp className="h-4 w-4 text-[#22c55e]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-[#1a1a1a]">R$ {Math.round(metrics.ltvMedia).toLocaleString("pt-BR")}</div>
+            <div className="text-2xl font-bold text-[#1a1a1a]">
+              R$ {Math.round(metrics.ltvMedia).toLocaleString("pt-BR")}
+            </div>
           </CardContent>
         </Card>
 
@@ -569,115 +460,180 @@ export function SegmentacaoTab() {
             <TrendingUp className="h-4 w-4 text-[#22c55e]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-[#22c55e]">
-              {new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(
-                metrics.pctHighValue
-              )}
-              %
-            </div>
+            <div className="text-2xl font-bold text-[#22c55e]">{metrics.pctHighValue.toFixed(1)}%</div>
           </CardContent>
         </Card>
       </div>
 
       {/* SCORE DISTRIBUTION */}
-      <div>
-        <h3 className="mb-4 text-lg font-semibold text-[#1a1a1a]">Distribuição por Score</h3>
-        <Card className="border-[#E2E8F0] bg-white">
-          <CardContent className="pt-6">
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-[#1a1a1a]">Distribuição por Score</h3>
+        <div className="grid gap-4 lg:grid-cols-4">
+          <div className="lg:col-span-1 space-y-2">
+            {scoreDistribution.map((range) => (
+              <Card key={range.label} className="border-[#E2E8F0] bg-white">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-[#64748b]">{range.label}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-1 text-xs">
+                  <div>Aprovação: <span className="font-bold text-[#1a1a1a]">{range.taxaAprovacao.toFixed(0)}%</span></div>
+                  <div>Recorrência: <span className="font-bold text-[#22c55e]">{range.taxaRecorrencia.toFixed(0)}%</span></div>
+                  <div>Ticket: <span className="font-bold">R$ {Math.round(range.ticketMedio).toLocaleString("pt-BR")}</span></div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          <div className="lg:col-span-3">
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={scoreDistribution}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
                 <XAxis dataKey="label" />
-                <YAxis yAxisId="left" />
-                <YAxis yAxisId="right" orientation="right" />
+                <YAxis />
                 <Tooltip />
                 <Legend />
-                <Bar yAxisId="left" dataKey="count" fill="#22c55e" name="Clientes" />
-                <Bar yAxisId="right" dataKey="taxaAprovacao" fill="#60a5fa" name="Taxa Aprovação %" />
+                <Bar dataKey="count" fill="#22c55e" name="Clientes" />
               </BarChart>
             </ResponsiveContainer>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
       {/* AGE DISTRIBUTION */}
-      <div>
-        <h3 className="mb-4 text-lg font-semibold text-[#1a1a1a]">Distribuição por Idade</h3>
-        <Card className="border-[#E2E8F0] bg-white">
-          <CardContent className="pt-6">
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-[#1a1a1a]">Distribuição por Idade</h3>
+        <div className="grid gap-4 lg:grid-cols-4">
+          <div className="lg:col-span-1 space-y-2">
+            {ageDistribution.map((range) => (
+              <Card key={range.label} className="border-[#E2E8F0] bg-white">
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-[#64748b]">{range.label}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-1 text-xs">
+                  <div>Aprovação: <span className="font-bold text-[#1a1a1a]">{range.taxaAprovacao.toFixed(0)}%</span></div>
+                  <div>Recorrência: <span className="font-bold text-[#22c55e]">{range.taxaRecorrencia.toFixed(0)}%</span></div>
+                  <div>Ticket: <span className="font-bold">R$ {Math.round(range.ticketMedio).toLocaleString("pt-BR")}</span></div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          <div className="lg:col-span-3">
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={ageDistribution}>
+              <BarChart data={ageDistribution} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                <XAxis dataKey="label" />
-                <YAxis yAxisId="left" />
-                <YAxis yAxisId="right" orientation="right" />
+                <XAxis type="number" />
+                <YAxis dataKey="label" type="category" width={50} />
                 <Tooltip />
                 <Legend />
-                <Bar yAxisId="left" dataKey="count" fill="#22c55e" name="Clientes" />
-                <Bar yAxisId="right" dataKey="taxaRecorrencia" fill="#f59e0b" name="Taxa Recorrência %" />
+                <Bar dataKey="count" fill="#22c55e" name="Clientes" />
               </BarChart>
             </ResponsiveContainer>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
       {/* VALUE-RISK MATRIX */}
-      <div>
-        <h3 className="mb-4 text-lg font-semibold text-[#1a1a1a]">Matriz Valor × Risco (Score vs LTV)</h3>
-        <Card className="border-[#E2E8F0] bg-white">
-          <CardContent className="pt-6">
-            <ResponsiveContainer width="100%" height={350}>
-              <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                <XAxis type="number" dataKey="scoreMedia" name="Score Médio" />
-                <YAxis type="number" dataKey="ltvMedia" name="LTV Médio" />
-                <Tooltip cursor={{ strokeDasharray: "3 3" }} />
-                <Scatter name="Segmentos" data={valueRiskSegments} fill="#22c55e">
-                  {valueRiskSegments.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Scatter>
-              </ScatterChart>
-            </ResponsiveContainer>
-          </CardContent>
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-[#1a1a1a]">Matriz Valor × Risco</h3>
+        <Card className="border-[#E2E8F0] bg-white p-6">
+          <ResponsiveContainer width="100%" height={400}>
+            <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+              <XAxis dataKey="scoreMedia" name="Score Médio" />
+              <YAxis dataKey="ltvMedia" name="LTV Médio" />
+              <Tooltip cursor={{ strokeDasharray: "3 3" }} />
+              <Scatter name="Segmentos" data={valueRiskSegments} fill="#22c55e">
+                {valueRiskSegments.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Scatter>
+            </ScatterChart>
+          </ResponsiveContainer>
+
+          {/* Quadrant labels */}
+          <div className="mt-6 grid grid-cols-2 gap-4 text-xs">
+            <div className="rounded p-3 bg-green-100 border border-green-300">
+              <div className="font-bold text-green-900">OURO</div>
+              <div className="text-green-800">Alto valor + Alto score</div>
+            </div>
+            <div className="rounded p-3 bg-green-50 border border-green-200">
+              <div className="font-bold text-green-700">PROMISSORES</div>
+              <div className="text-green-600">Baixo valor + Alto score</div>
+            </div>
+            <div className="rounded p-3 bg-yellow-50 border border-yellow-200">
+              <div className="font-bold text-yellow-700">RISCO CALCULADO</div>
+              <div className="text-yellow-600">Alto valor + Score médio</div>
+            </div>
+            <div className="rounded p-3 bg-red-50 border border-red-200">
+              <div className="font-bold text-red-700">DESTRUIDORES</div>
+              <div className="text-red-600">Baixo valor + Baixo score</div>
+            </div>
+          </div>
+        </Card>
+
+        {/* Matrix insight */}
+        <Card className="border-l-4 border-[#22c55e] bg-gradient-to-r from-green-50 to-white p-4">
+          <div className="text-sm">
+            <p className="font-bold text-green-900">
+              {insight.ouroPct.toFixed(1)}% dos clientes estão no quadrante OURO, gerando {insight.ouroLTVPct.toFixed(1)}% do LTV total.
+            </p>
+            <p className="text-xs text-green-800 mt-2">
+              A política atual pode estar mirada no cliente médio, deixando de capturar o potencial do segmento high-value.
+            </p>
+          </div>
         </Card>
       </div>
 
       {/* PERSONAS */}
-      <div>
-        <h3 className="mb-4 text-lg font-semibold text-[#1a1a1a]">Personas Comportamentais</h3>
-        <div className="grid gap-4 md:grid-cols-2">
+      <div className="space-y-4">
+        <h3 className="text-lg font-semibold text-[#1a1a1a]">Personas Comportamentais</h3>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {personas.map((persona) => (
-            <Card key={persona.label} className="border-l-4" style={{ borderLeftColor: persona.color }}>
-              <CardHeader>
-                <CardTitle className="text-base text-[#1a1a1a]">{persona.label}</CardTitle>
+            <Card key={persona.name} className="border-[#E2E8F0] bg-white">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-bold text-[#1a1a1a]">{persona.name}</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-3xl font-bold" style={{ color: persona.color }}>
-                  {persona.count.toLocaleString("pt-BR")}
+              <CardContent className="space-y-2 text-xs">
+                <div className="text-2xl font-bold text-[#22c55e]">{persona.pct.toFixed(1)}%</div>
+                <div className="text-[#64748b]">
+                  <div>Ticket médio: R$ {Math.round(persona.ticketMedio).toLocaleString("pt-BR")}</div>
+                  <div>LTV estimado: R$ {Math.round(persona.ltv).toLocaleString("pt-BR")}</div>
                 </div>
-                <p className="mt-1 text-xs text-[#64748b]">{persona.pct.toFixed(1)}% da base</p>
+                <div className="border-t border-[#E2E8F0] pt-2 text-[#22c55e] font-medium">
+                  {persona.acao}
+                </div>
               </CardContent>
             </Card>
           ))}
         </div>
       </div>
 
-      {/* INSIGHT CARD */}
-      <Card className="border-l-4 border-[#f59e0b] bg-gradient-to-r from-[#FFFBEB] to-white">
+      {/* EXECUTIVE INSIGHT */}
+      <Card className="border-l-4 border-[#FFC107] bg-gradient-to-r from-yellow-50 to-white">
         <CardHeader>
-          <CardTitle className="text-[#D97706]">💡 Insight Executivo</CardTitle>
+          <CardTitle className="text-[#D97706] flex items-center gap-2">
+            <span className="text-2xl">💡</span>
+            Onde está o valor
+          </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2 text-sm text-[#64748b]">
-          <p>
-            <strong>Ouro (High Score + High Value)</strong> representa a minoria mas com maior ROI. Concentre esforços de retenção.
-          </p>
-          <p>
-            <strong>Promissores (High Score + Low Value)</strong> têm potencial — ativações focadas no ticket médio resultarão em migração para Ouro.
-          </p>
-          <p>
-            <strong>Ativador Perdido</strong> mostra aprovações que não ativam — revisar fluxo pós-aprovação (jornada).
-          </p>
+        <CardContent className="space-y-3">
+          <div className="space-y-1">
+            <p className="text-sm font-bold text-[#1a1a1a]">
+              {insight.ouroPct.toFixed(1)}% dos clientes (quadrante Ouro) geram {insight.ouroLTVPct.toFixed(1)}% do LTV total.
+            </p>
+            <p className="text-sm text-[#64748b]">
+              A concentração de valor sugere que a política atual está bem distribuída, mas há oportunidade de maximizar o
+              segmento high-value com trilha diferenciada.
+            </p>
+          </div>
+          <div className="border-t border-[#FFC107]/20 pt-3 space-y-2">
+            <div>
+              <p className="text-xs font-semibold text-[#D97706] mb-1">🎯 Ação sugerida:</p>
+              <p className="text-sm text-[#64748b]">
+                Implementar trilha dedicada para clientes Ouro: limite inicial mais elevado, comunicação VIP, follow-up
+                pós-ativação e oferta de produtos premium.
+              </p>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
