@@ -272,7 +272,9 @@ export function SegmentacaoTab() {
     };
   }, [aprovadosCohort, ativosCohort]);
 
-  const topAgeGroup = ageDistribution.length > 0 ? ageDistribution[0].group : "—";
+  const topAgeGroup = ageDistribution.length > 0 
+    ? ageDistribution.reduce((a, b) => (a.count > b.count ? a : b)).group 
+    : "—";
   const topGenderLabel =
     genderDistribution.length > 0
       ? genderDistribution.reduce((a, b) => (a.percentage > b.percentage ? a : b)).gender
@@ -429,7 +431,7 @@ export function SegmentacaoTab() {
             />
             <KpiCard
               label="Taxa de Juros"
-              value={clienteUmeKpis.avgJuros ? formatPercentage(clienteUmeKpis.avgJuros * 100, 1) : "—"}
+              value={clienteUmeKpis.avgJuros ? formatPercentage(clienteUmeKpis.avgJuros * 100, 2) : "—"}
               sub="ao mês"
             />
             <KpiCard label="App Adoption" value={formatPercentage(clienteUmeKpis.appAdoption)} sub="entre aprovados" />
@@ -461,7 +463,7 @@ export function SegmentacaoTab() {
               <span className="font-semibold">~{clienteUmeKpis.avgParcelas?.toFixed(0) || "—"}x</span>{" "}
               com taxa de{" "}
               <span className="font-semibold">
-                {clienteUmeKpis.avgJuros ? formatPercentage(clienteUmeKpis.avgJuros * 100, 1) : "—"}
+                {clienteUmeKpis.avgJuros ? formatPercentage(clienteUmeKpis.avgJuros * 100, 2) : "—"}
               </span>{" "}
               ao mês. Quando ativo, compra em média{" "}
               <span className="font-semibold">
