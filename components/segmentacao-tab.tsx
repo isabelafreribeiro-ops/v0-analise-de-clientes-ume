@@ -6,8 +6,6 @@ import { useData } from "@/lib/data-context";
 import {
   calculatePurchaseDistribution,
   calculatePurchaseGroupComparison,
-  calculateAgeDistribution,
-  calculateGenderDistribution,
   parseNumber,
   parseBoolean,
   getColumnValue,
@@ -16,7 +14,7 @@ import {
 import type { ClienteRow } from "@/lib/types";
 
 // ============================================================================
-// 7-SEGMENT CONFIG — must mirror jornada-tab.tsx for visual consistency
+// 7-SEGMENT CONFIG — RENAMED "Negados Recuperáveis" → "Negados Próximos do Corte"
 // ============================================================================
 const SEGMENT_CONFIG = {
   "ume-plus": {
@@ -25,7 +23,7 @@ const SEGMENT_CONFIG = {
     text: "#1B5E20",
     icon: "💎",
     label: "Ume Plus",
-    criterio: "3+ compras + score ≥700",
+    criterio: "Aprovado + 3+ compras + score ≥700",
   },
   "recorrentes": {
     bg: "#F1F8E9",
@@ -51,13 +49,13 @@ const SEGMENT_CONFIG = {
     label: "Aprovados Não Ativados",
     criterio: "Aprovado + 0 compras",
   },
-  "negados-recuperaveis": {
+  "negados-proximos-do-corte": {
     bg: "#F8FAFC",
     accent: "#64748B",
     text: "#1E293B",
     icon: "📋",
-    label: "Negados Recuperáveis",
-    criterio: "Negada + score ≥300",
+    label: "Negados Próximos do Corte",
+    criterio: "Negada + score 300-449",
   },
   "negados-alto-risco": {
     bg: "#F1F5F9",
@@ -82,12 +80,44 @@ const SEGMENT_ORDER = [
   "recorrentes",
   "potencial",
   "aprovados-nao-ativados",
-  "negados-recuperaveis",
+  "negados-proximos-do-corte",
   "negados-alto-risco",
   "inadimplentes",
 ] as const;
 
-type SegmentId = typeof SEGMENT_ORDER[number];
+type SegmentId = (typeof SEGMENT_ORDER)[number];
+
+// Segment profile texts
+const SEGMENT_PROFILES: Record<SegmentId, { perfil: string; porqueEstaAqui: string }> = {
+  "ume-plus": {
+    perfil: "Núcleo de valor: ~54 anos, score 851, 11 compras em 8 varejos diferentes, 70% têm app. Ticket parcelado em 6-7x, taxa 11,5%/mês.",
+    porqueEstaAqui: "Aprovado + 3+ compras + score ≥ 700",
+  },
+  "recorrentes": {
+    perfil: "Quase Plus, mas score menor: ~54 anos, score 653, 10 compras em 7 varejos, 70% têm app. Mesmo padrão de parcelamento que Ume Plus.",
+    porqueEstaAqui: "Aprovado + 2+ compras (sem critério Plus)",
+  },
+  "potencial": {
+    perfil: "Compraram 1 vez recentemente, score alto (776). Já têm app (70%). Estão na janela de definir se viram recorrentes ou não.",
+    porqueEstaAqui: "Aprovado + 1 compra",
+  },
+  "aprovados-nao-ativados": {
+    perfil: "Score alto (775) — politicamente aprovados — mas zero compras e só 5% têm app. CAC pago, sem retorno.",
+    porqueEstaAqui: "Aprovado + 0 compras",
+  },
+  "negados-proximos-do-corte": {
+    perfil: "Maior bloco da base. Score médio 350 (entre 300-400), barrados pela política atual. Sem histórico transacional na Ume.",
+    porqueEstaAqui: "Negada + score 300-449",
+  },
+  "negados-alto-risco": {
+    perfil: "Score médio 275, bem abaixo do corte. Improvável aprovação no curto prazo mesmo com mudança marginal de política.",
+    porqueEstaAqui: "Negada + score < 300",
+  },
+  "inadimplentes": {
+    perfil: "Comportamento de Recorrente que virou: score 575, 10 compras em 7 varejos, 70% têm app. Eram clientes engajados que pararam de pagar.",
+    porqueEstaAqui: "Situação = Inadimplente",
+  },
+};
 
 // ============================================================================
 // FORMATTERS
@@ -113,14 +143,16 @@ function formatCurrency(value: number | null): string {
 
 function formatPercentage(value: number | null, decimals = 1): string {
   if (value === null || value === undefined || isNaN(value)) return "—";
-  return new Intl.NumberFormat("pt-BR", {
-    minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals,
-  }).format(value) + "%";
+  return (
+    new Intl.NumberFormat("pt-BR", {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    }).format(value) + "%"
+  );
 }
 
 // ============================================================================
-// SEGMENT CLASSIFIER
+// SEGMENT CLASSIFIER — UPDATED for "Negados Próximos do Corte" (300-449)
 // ============================================================================
 function classifySegment(cliente: ClienteRow): SegmentId {
   const situacao = String(getColumnValue(cliente, ["situação", "situacao", "status"]) || "")
@@ -131,7 +163,8 @@ function classifySegment(cliente: ClienteRow): SegmentId {
 
   if (situacao === "inadimplente") return "inadimplentes";
   if (situacao === "negada") {
-    return score < 300 ? "negados-alto-risco" : "negados-recuperaveis";
+    // Updated: 300-449 = Próximos do Corte, <300 = Alto Risco
+    return score >= 300 && score < 450 ? "negados-proximos-do-corte" : "negados-alto-risco";
   }
   if (compras === 0) return "aprovados-nao-ativados";
   if (compras === 1) return "potencial";
@@ -140,7 +173,7 @@ function classifySegment(cliente: ClienteRow): SegmentId {
 }
 
 // ============================================================================
-// SEGMENT METRICS COMPUTATION (fact-based only, no rentability)
+// SEGMENT METRICS COMPUTATION
 // ============================================================================
 interface SegmentMetric {
   id: SegmentId;
@@ -150,6 +183,7 @@ interface SegmentMetric {
   avgLimite: number | null;
   avgCompras: number | null;
   pctComApp: number;
+  avgVarejos: number | null;
   customers: ClienteRow[];
 }
 
@@ -159,7 +193,7 @@ function computeSegmentMetrics(clientesData: ClienteRow[]): SegmentMetric[] {
     "potencial": [],
     "recorrentes": [],
     "ume-plus": [],
-    "negados-recuperaveis": [],
+    "negados-proximos-do-corte": [],
     "negados-alto-risco": [],
     "inadimplentes": [],
   };
@@ -187,17 +221,13 @@ function computeSegmentMetrics(clientesData: ClienteRow[]): SegmentMetric[] {
       avgCompras: calculateAverage(
         customers.map((c) => parseNumber(getColumnValue(c, ["qtd de compras", "compras"])))
       ),
+      avgVarejos: calculateAverage(
+        customers.map((c) => parseNumber(getColumnValue(c, ["qtd de varejos", "varejos"])))
+      ),
       pctComApp: customers.length > 0 ? (comAppCount / customers.length) * 100 : 0,
       customers,
     };
   });
-}
-
-function calculateMedian(values: (number | null)[]): number | null {
-  const valid = values.filter((v): v is number => v !== null && !isNaN(v)).sort((a, b) => a - b);
-  if (valid.length === 0) return null;
-  const mid = Math.floor(valid.length / 2);
-  return valid.length % 2 === 0 ? (valid[mid - 1] + valid[mid]) / 2 : valid[mid];
 }
 
 // ============================================================================
@@ -237,62 +267,36 @@ export function SegmentacaoTab() {
     [aprovadosCohort]
   );
 
+  const recorrentesCohort = useMemo(
+    () =>
+      aprovadosCohort.filter(
+        (c) => (parseNumber(getColumnValue(c, ["qtd de compras", "compras"])) || 0) >= 2
+      ),
+    [aprovadosCohort]
+  );
+
   const distribution = useMemo(() => calculatePurchaseDistribution(clientesData), [clientesData]);
-  const groupComparison = useMemo(() => calculatePurchaseGroupComparison(clientesData), [clientesData]);
-  const ageDistribution = useMemo(() => calculateAgeDistribution(aprovadosCohort), [aprovadosCohort]);
-  const genderDistribution = useMemo(() => calculateGenderDistribution(aprovadosCohort), [aprovadosCohort]);
+  const groupComparison = useMemo(
+    () => calculatePurchaseGroupComparison(clientesData),
+    [clientesData]
+  );
 
-  const clienteUmeKpis = useMemo(() => {
-    const idadeMediana = calculateMedian(
-      aprovadosCohort.map((c) => parseNumber(getColumnValue(c, ["idade"])))
-    );
-    const avgScore = calculateAverage(
-      aprovadosCohort.map((c) => parseNumber(getColumnValue(c, ["score de crédito", "score"])))
-    );
-    const avgParcelas = calculateAverage(
-      aprovadosCohort.map((c) => parseNumber(getColumnValue(c, ["n. médio de parcelas", "parcelas"])))
-    );
-    const avgJuros = calculateAverage(
-      aprovadosCohort.map((c) =>
-        parseNumber(
-          getColumnValue(c, ["taxa de juros média ( ao mês)", "taxa de juros média", "taxa juros"])
-        )
-      )
-    );
-    const comApp = aprovadosCohort.filter((c) =>
-      parseBoolean(getColumnValue(c, ["tem app?", "tem app", "app"]))
-    ).length;
-    const appAdoption = aprovadosCohort.length > 0 ? (comApp / aprovadosCohort.length) * 100 : 0;
-    const avgComprasAtivos = calculateAverage(
-      ativosCohort.map((c) => parseNumber(getColumnValue(c, ["qtd de compras", "compras"])))
-    );
-    const comAumento = aprovadosCohort.filter((c) =>
-      parseBoolean(
-        getColumnValue(c, ["já teve aumento de limite?", "aumento limite", "limite aumentado"])
-      )
-    ).length;
-    const pctAumentoLimite = aprovadosCohort.length > 0 ? (comAumento / aprovadosCohort.length) * 100 : 0;
-    const ticketMedio = 227.78; // Single fact: from Base de Varejo aggregate
-
+  // ===== CONTEXT KPIs =====
+  const contextKpis = useMemo(() => {
     return {
-      idadeMediana,
-      avgScore,
-      avgParcelas,
-      avgJuros,
-      appAdoption,
-      avgComprasAtivos,
-      pctAumentoLimite,
-      ticketMedio,
+      total: clientesData.length,
+      aprovados: aprovadosCohort.length,
+      pctAprovados: (aprovadosCohort.length / clientesData.length) * 100,
+      ativados: ativosCohort.length,
+      pctAtivados: (ativosCohort.length / clientesData.length) * 100,
+      recorrentes: recorrentesCohort.length,
+      pctRecorrentes: (recorrentesCohort.length / clientesData.length) * 100,
     };
-  }, [aprovadosCohort, ativosCohort]);
+  }, [clientesData, aprovadosCohort, ativosCohort, recorrentesCohort]);
 
-  const topAgeGroup = ageDistribution.length > 0 
-    ? ageDistribution.reduce((a, b) => (a.count > b.count ? a : b)).group 
-    : "—";
+  // ===== INSIGHTS =====
 
-  // ===== INSIGHTS — TODOS BASEADOS EM FATOS DA BASE =====
-
-  // INSIGHT 01: App como diferenciador (FATO)
+  // INSIGHT 01: App como diferenciador
   const insight1 = useMemo(() => {
     const sem = clientesData.filter(
       (c) => (parseNumber(getColumnValue(c, ["qtd de compras", "compras"])) || 0) === 0
@@ -312,7 +316,7 @@ export function SegmentacaoTab() {
     return { pctSem, pctCom, multiplier };
   }, [clientesData]);
 
-  // INSIGHT 02: Score bipolar (FATO)
+  // INSIGHT 02: Score bipolar
   const scoreDistribution = useMemo(() => {
     const scores = clientesData
       .map((c) => parseNumber(getColumnValue(c, ["score de crédito", "score"])))
@@ -333,7 +337,7 @@ export function SegmentacaoTab() {
     };
   }, [clientesData, scoreDistribution]);
 
-  // INSIGHT 03 NOVO: Concentração de transações (FATO PURO)
+  // INSIGHT 03: Concentração de transações
   const insight3 = useMemo(() => {
     const totalTransacoes = clientesData.reduce(
       (sum, c) => sum + (parseNumber(getColumnValue(c, ["qtd de compras", "compras"])) || 0),
@@ -360,7 +364,7 @@ export function SegmentacaoTab() {
     };
   }, [clientesData]);
 
-  // INSIGHT 04 NOVO: Score alto inativo (FATO PURO)
+  // INSIGHT 04: Score alto inativo
   const insight4 = useMemo(() => {
     const scoreAlto = clientesData.filter((c) => {
       const score = parseNumber(getColumnValue(c, ["score de crédito", "score"])) || 0;
@@ -390,7 +394,7 @@ export function SegmentacaoTab() {
 
   return (
     <div className="space-y-6">
-      {/* TÍTULO + PERGUNTA-ÂNCORA */}
+      {/* TÍTULO */}
       <div>
         <h2 className="text-xl font-bold text-[#1a1a1a]">Segmentação de Clientes</h2>
         <p className="text-sm text-[#64748b] mt-1">
@@ -398,106 +402,76 @@ export function SegmentacaoTab() {
         </p>
       </div>
 
-      {/* SEÇÃO 1: QUEM É O CLIENTE UME */}
+      {/* ══════════════════════════════════════════════════════════════════════
+          SEÇÃO 1: CONTEXTO DA BASE (merge das antigas 1+2)
+          ══════════════════════════════════════════════════════════════════════ */}
       <Card className="border-[#E2E8F0]">
         <CardHeader>
-          <CardTitle>1. Quem é o Cliente Ume?</CardTitle>
+          <CardTitle>1. Contexto da Base</CardTitle>
           <p className="text-xs text-[#64748b] mt-2">
-            Perfil dos {formatNumber(aprovadosCohort.length)} clientes aprovados — quem efetivamente usa
-            ou pode usar o produto. Métricas comportamentais (compras médias) baseadas em{" "}
-            {formatNumber(ativosCohort.length)} clientes ativos.
+            {formatNumber(clientesData.length)} clientes — distribuição rápida do funil e da
+            concentração transacional.
           </p>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* 4 KPIs inline */}
           <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
-            <KpiCard label="Idade Mediana" value={`${clienteUmeKpis.idadeMediana?.toFixed(0) || "—"} anos`} />
-            <KpiCard label="Score Médio" value={formatNumber(clienteUmeKpis.avgScore)} sub="0-1000" />
-            <KpiCard label="Ticket Médio" value={formatCurrency(clienteUmeKpis.ticketMedio)} sub="por compra" />
-            <KpiCard
-              label="N. Parcelas"
-              value={clienteUmeKpis.avgParcelas ? clienteUmeKpis.avgParcelas.toFixed(1) : "—"}
-              sub="médio por compra"
+            <ContextKpiCard
+              label="Total de Clientes"
+              value={formatNumber(contextKpis.total)}
             />
-            <KpiCard
-              label="Taxa de Juros"
-              value={clienteUmeKpis.avgJuros ? formatPercentage(clienteUmeKpis.avgJuros, 2) : "—"}
-              sub="ao mês"
+            <ContextKpiCard
+              label="Aprovados"
+              value={formatNumber(contextKpis.aprovados)}
+              sub={`${formatPercentage(contextKpis.pctAprovados)}`}
             />
-            <KpiCard label="App Adoption" value={formatPercentage(clienteUmeKpis.appAdoption)} sub="entre aprovados" />
-            <KpiCard
-              label="Compras Médias"
-              value={clienteUmeKpis.avgComprasAtivos ? clienteUmeKpis.avgComprasAtivos.toFixed(1) : "—"}
-              sub={`entre ${formatNumber(ativosCohort.length)} ativos`}
+            <ContextKpiCard
+              label="Ativados"
+              value={formatNumber(contextKpis.ativados)}
+              sub={`${formatPercentage(contextKpis.pctAtivados)}`}
             />
-            <KpiCard
-              label="Aumento de Limite"
-              value={formatPercentage(clienteUmeKpis.pctAumentoLimite)}
-              sub="já recebido"
+            <ContextKpiCard
+              label="Recorrentes"
+              value={formatNumber(contextKpis.recorrentes)}
+              sub={`${formatPercentage(contextKpis.pctRecorrentes)}`}
             />
           </div>
 
-          <div className="p-4 bg-[#F7FAF8] rounded border border-[#E2E8F0]">
-            <p className="text-xs font-semibold text-[#64748b] uppercase mb-2">🎯 Cliente Ume Predominante</p>
-            <p className="text-sm text-[#1a1a1a] leading-relaxed">
-              Faixa de <span className="font-semibold">{topAgeGroup}</span>, score médio{" "}
-              <span className="font-semibold">{Math.round(clienteUmeKpis.avgScore || 0)}</span> (perfil
-              de risco{" "}
-              {(clienteUmeKpis.avgScore || 0) >= 700
-                ? "bom"
-                : (clienteUmeKpis.avgScore || 0) >= 400
-                ? "médio"
-                : "baixo"}
-              ), parcela em{" "}
-              <span className="font-semibold">~{clienteUmeKpis.avgParcelas?.toFixed(0) || "—"}x</span>{" "}
-              com taxa de{" "}
-              <span className="font-semibold">
-                {clienteUmeKpis.avgJuros ? formatPercentage(clienteUmeKpis.avgJuros, 2) : "—"}
-              </span>{" "}
-              ao mês. Quando ativo, compra em média{" "}
-              <span className="font-semibold">
-                {clienteUmeKpis.avgComprasAtivos?.toFixed(1) || "—"} vezes
-              </span>{" "}
-              com ticket de{" "}
-              <span className="font-semibold">{formatCurrency(clienteUmeKpis.ticketMedio)}</span>. Tem app
-              instalado em{" "}
-              <span className="font-semibold">{formatPercentage(clienteUmeKpis.appAdoption)}</span> dos
-              casos.
+          {/* Distribuição de Compras */}
+          <div>
+            <p className="text-xs font-semibold text-[#64748b] mb-3 uppercase">
+              Distribuição de Compras
             </p>
+            <div className="space-y-3">
+              {distribution.map((d) => (
+                <div key={d.range} className="flex items-center gap-3">
+                  <div className="w-24 text-xs font-medium text-[#64748b]">{d.range}</div>
+                  <div className="flex-1 bg-[#E2E8F0] rounded h-2">
+                    <div
+                      className="bg-[#00C853] h-2 rounded"
+                      style={{ width: `${Math.min(d.percentage, 100)}%` }}
+                    />
+                  </div>
+                  <div className="w-28 text-xs text-right font-medium text-[#1a1a1a]">
+                    {formatNumber(d.count)} (
+                    {new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(
+                      d.percentage
+                    )}
+                    %)
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* SEÇÃO 2: DISTRIBUIÇÃO DE COMPRAS */}
+      {/* ══════════════════════════════════════════════════════════════════════
+          SEÇÃO 2: OS 4 INSIGHTS QUE ORIENTAM A SEGMENTAÇÃO
+          ══════════════════════════════════════════════════════════════════════ */}
       <Card className="border-[#E2E8F0]">
         <CardHeader>
-          <CardTitle>2. Distribuição de Compras na Base</CardTitle>
-          <p className="text-xs text-[#64748b] mt-2">
-            A base é altamente concentrada em zero compras — combinação de negados (que não puderam
-            comprar) e aprovados que ainda não ativaram.
-          </p>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {distribution.map((d) => (
-              <div key={d.range} className="flex items-center gap-3">
-                <div className="w-24 text-xs font-medium text-[#64748b]">{d.range}</div>
-                <div className="flex-1 bg-[#E2E8F0] rounded h-2">
-                  <div className="bg-[#00C853] h-2 rounded" style={{ width: `${Math.min(d.percentage, 100)}%` }} />
-                </div>
-                <div className="w-28 text-xs text-right font-medium text-[#1a1a1a]">
-                  {formatNumber(d.count)} (
-                  {new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(d.percentage)}%)
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* SEÇÃO 3: 4 INSIGHTS-CHAVE — TODOS DE FATO PURO */}
-      <Card className="border-[#E2E8F0]">
-        <CardHeader>
-          <CardTitle>3. Insights-Chave da Base</CardTitle>
+          <CardTitle>2. Os 4 Insights que Orientam a Segmentação</CardTitle>
           <p className="text-xs text-[#64748b] mt-2">
             Quatro correlações observadas diretamente nos dados que orientam a estratégia de
             segmentação. Cada insight justifica uma dimensão da segmentação proposta.
@@ -552,137 +526,241 @@ export function SegmentacaoTab() {
         </CardContent>
       </Card>
 
-      {/* SEÇÃO 4: EVIDÊNCIA QUANTITATIVA */}
-      {groupComparison.length > 0 && (
-        <Card className="border-[#E2E8F0]">
-          <CardHeader>
-            <CardTitle>4. Evidência Quantitativa</CardTitle>
-            <p className="text-xs text-[#64748b] mt-2">
-              Dados que sustentam os Insights 01-02: clientes com maior frequência têm
-              simultaneamente score mais alto, limite maior e adoção massiva do app.
-            </p>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b border-[#E2E8F0]">
-                    <th className="text-left py-2 px-2 font-semibold text-[#64748b]">Grupo</th>
-                    <th className="text-right py-2 px-2 font-semibold text-[#64748b]">Count</th>
-                    <th className="text-right py-2 px-2 font-semibold text-[#64748b]">Score Médio</th>
-                    <th className="text-right py-2 px-2 font-semibold text-[#64748b]">Limite Médio</th>
-                    <th className="text-right py-2 px-2 font-semibold text-[#64748b]">% Com App</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {groupComparison.map((g) => (
-                    <tr key={g.group} className="border-b border-[#E2E8F0] hover:bg-[#F7FAF8]">
-                      <td className="py-2 px-2 text-[#64748b] font-medium">{g.group}</td>
-                      <td className="py-2 px-2 text-right text-[#64748b]">{formatNumber(g.count)}</td>
-                      <td className="py-2 px-2 text-right text-[#64748b]">{formatNumber(g.avgScore)}</td>
-                      <td className="py-2 px-2 text-right text-[#64748b]">{formatCurrency(g.avgLimite)}</td>
-                      <td className="py-2 px-2 text-right text-[#64748b]">
-                        {formatPercentage(g.percentageComApp)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+      {/* ══════════════════════════════════════════════════════════════════════
+          SEÇÃO 3: METODOLOGIA: 2 EIXOS + RACIONAL DOS CORTES (NOVA)
+          ══════════════════════════════════════════════════════════════════════ */}
+      <Card className="border-[#E2E8F0]">
+        <CardHeader>
+          <CardTitle>3. Metodologia da Segmentação</CardTitle>
+          <p className="text-xs text-[#64748b] mt-2">
+            Como os 4 insights se traduzem em 7 segmentos com cobertura de 100% da base.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* 3.1 Hipótese dos 2 Eixos */}
+          <div className="border-l-4 border-[#00C853] bg-gradient-to-r from-[#F0F4F3] to-white p-5 rounded-r">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl">💡</span>
+              <div className="flex-1">
+                <p className="text-xs font-semibold text-[#001a0f] uppercase tracking-wide mb-2">
+                  Hipótese de Segmentação
+                </p>
+                <p className="text-sm text-[#1a1a1a] leading-relaxed">
+                  Os 4 insights apontam para 2 eixos principais de diferenciação:{" "}
+                  <span className="font-semibold">status no funil</span> (negado / aprovado / ativo
+                  / recorrente) e <span className="font-semibold">qualidade de risco</span> (score).
+                  A combinação dos dois eixos resulta em{" "}
+                  <span className="font-semibold">7 segmentos</span> com cobertura de 100% da base —
+                  cada um com perfil distinto de comportamento, risco e oportunidade. Cada segmento
+                  se conecta a uma jornada própria (ver aba Jornada) e a um perfil financeiro
+                  próprio (ver aba Rentabilidade).
+                </p>
+              </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          </div>
 
-      {/* SEÇÃO 5: HIPÓTESE DE SEGMENTAÇÃO */}
-      <Card className="border-l-4 border-[#00C853] bg-gradient-to-r from-[#F0F4F3] to-white">
-        <CardContent className="py-5">
-          <div className="flex items-start gap-3">
-            <span className="text-2xl">💡</span>
-            <div className="flex-1">
-              <p className="text-xs font-semibold text-[#001a0f] uppercase tracking-wide mb-2">
-                Hipótese de Segmentação
+          {/* 3.2 Evidência Quantitativa */}
+          {groupComparison.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold text-[#64748b] mb-3 uppercase">
+                Evidência Quantitativa
               </p>
-              <p className="text-sm text-[#1a1a1a] leading-relaxed">
-                Os 4 insights apontam para 2 eixos principais de diferenciação:{" "}
-                <span className="font-semibold">status no funil</span> (negado / aprovado / ativo /
-                recorrente) e <span className="font-semibold">qualidade de risco</span> (score).
-                A combinação dos dois eixos resulta em{" "}
-                <span className="font-semibold">7 segmentos</span> com cobertura de 100% da
-                base — cada um com perfil distinto de comportamento, risco e oportunidade. Cada
-                segmento se conecta a uma jornada própria (ver aba Jornada) e a um perfil financeiro próprio (ver aba Rentabilidade).
+              <p className="text-xs text-[#64748b] mb-3">
+                Dados que sustentam os Insights 01-02: clientes com maior frequência têm
+                simultaneamente score mais alto, limite maior e adoção massiva do app.
               </p>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-[#E2E8F0]">
+                      <th className="text-left py-2 px-2 font-semibold text-[#64748b]">Grupo</th>
+                      <th className="text-right py-2 px-2 font-semibold text-[#64748b]">Count</th>
+                      <th className="text-right py-2 px-2 font-semibold text-[#64748b]">
+                        Score Médio
+                      </th>
+                      <th className="text-right py-2 px-2 font-semibold text-[#64748b]">
+                        Limite Médio
+                      </th>
+                      <th className="text-right py-2 px-2 font-semibold text-[#64748b]">
+                        % Com App
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {groupComparison.map((g) => (
+                      <tr key={g.group} className="border-b border-[#E2E8F0] hover:bg-[#F7FAF8]">
+                        <td className="py-2 px-2 text-[#64748b] font-medium">{g.group}</td>
+                        <td className="py-2 px-2 text-right text-[#64748b]">
+                          {formatNumber(g.count)}
+                        </td>
+                        <td className="py-2 px-2 text-right text-[#64748b]">
+                          {formatNumber(g.avgScore)}
+                        </td>
+                        <td className="py-2 px-2 text-right text-[#64748b]">
+                          {formatCurrency(g.avgLimite)}
+                        </td>
+                        <td className="py-2 px-2 text-right text-[#64748b]">
+                          {formatPercentage(g.percentageComApp)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* 3.3 Por que esses cortes específicos? (NOVO) */}
+          <div
+            className="p-5 rounded border-l-4"
+            style={{ backgroundColor: "#F8FAFC", borderLeftColor: "#3B82F6" }}
+          >
+            <div className="flex items-start gap-3">
+              <span className="text-xl">📐</span>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-[#1a1a1a] mb-3">
+                  Por que esses cortes específicos?
+                </p>
+                <p className="text-xs text-[#64748b] mb-3">
+                  Os 3 thresholds que definem os segmentos foram calibrados diretamente nos dados:
+                </p>
+                <ul className="text-xs text-[#64748b] space-y-3">
+                  <li>
+                    <span className="font-semibold text-[#1a1a1a]">
+                      Score 300 (limite inferior dos negados):
+                    </span>{" "}
+                    Abaixo desta marca, a probabilidade de aprovação na Ume é praticamente nula. É o
+                    piso técnico da política atual. Negados com score abaixo de 300 são separados
+                    como &quot;Alto Risco&quot; porque não respondem a ajustes marginais de política.
+                  </li>
+                  <li>
+                    <span className="font-semibold text-[#1a1a1a]">
+                      Score 700 (limite superior — núcleo de valor):
+                    </span>{" "}
+                    A faixa &quot;Alto&quot; (≥700) concentra 14,7% da base e coincide com o segmento de
+                    maior recorrência. O score médio de Ume Plus é 851 — bem acima do corte. Define
+                    o pool de clientes premium.
+                  </li>
+                  <li>
+                    <span className="font-semibold text-[#1a1a1a]">3+ compras (Ume Plus):</span> A
+                    partir de 3 compras, o cliente diversifica em média 8 varejos diferentes (vs. 1
+                    varejo no segmento Potencial). É o ponto onde o uso vira hábito e o cliente
+                    passa a se comportar como &quot;carteira&quot;, não como compra pontual.
+                  </li>
+                </ul>
+                <p className="text-xs text-[#64748b] mt-4">
+                  Idade e sexo não diferenciam segmentos — a base é uniforme nessas dimensões
+                  (variação de ~1 ano entre os extremos, ~50% feminino em todos). Os 2 eixos
+                  escolhidos (status no funil × score) capturam toda a variância comportamental
+                  relevante.
+                </p>
+              </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* SEÇÃO 6: OS 7 SEGMENTOS — CARDS SEM RENT. MÉDIA */}
+      {/* ══════════════════════════════════════════════════════════════════════
+          SEÇÃO 4: OS 7 SEGMENTOS (cards reformulados)
+          ══════════════════════════════════════════════════════════════════════ */}
       <Card className="border-[#E2E8F0]">
         <CardHeader>
-          <CardTitle>5. Os 7 Segmentos</CardTitle>
+          <CardTitle>4. Os 7 Segmentos</CardTitle>
           <p className="text-xs text-[#64748b] mt-2">
             Aplicação da hipótese — cada segmento corresponde a uma jornada de CRM (aba Jornada) e a
             um nível de rentabilidade (aba Rentabilidade).
           </p>
         </CardHeader>
         <CardContent>
-          <div className="mb-4 p-3 bg-[#F7FAF8] rounded border border-[#E2E8F0]">
-            <p className="text-xs font-semibold text-[#64748b] mb-2">Critérios de Segmentação:</p>
-            <ul className="text-xs text-[#64748b] space-y-1 list-disc list-inside">
-              {SEGMENT_ORDER.map((id) => (
-                <li key={id}>
-                  <span className="mr-1">{SEGMENT_CONFIG[id].icon}</span>
-                  <span className="font-medium" style={{ color: SEGMENT_CONFIG[id].accent }}>
-                    {SEGMENT_CONFIG[id].label}:
-                  </span>{" "}
-                  {SEGMENT_CONFIG[id].criterio}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {segmentMetrics.map((seg) => {
               const cfg = SEGMENT_CONFIG[seg.id];
+              const profile = SEGMENT_PROFILES[seg.id];
               return (
                 <div
                   key={seg.id}
-                  className="p-3 rounded border-l-4 transition hover:shadow-md"
+                  className="p-4 rounded border-l-4 transition hover:shadow-md"
                   style={{ backgroundColor: cfg.bg, borderLeftColor: cfg.accent }}
                 >
-                  <div className="flex items-start gap-2">
-                    <span className="text-base leading-none">{cfg.icon}</span>
-                    <p className="text-xs font-semibold uppercase truncate" style={{ color: cfg.accent }}>
-                      {cfg.label}
-                    </p>
+                  {/* Header: Icon + Name + Count */}
+                  <div className="flex items-start gap-2 mb-3">
+                    <span className="text-xl leading-none">{cfg.icon}</span>
+                    <div className="flex-1 min-w-0">
+                      <p
+                        className="text-sm font-semibold uppercase truncate"
+                        style={{ color: cfg.accent }}
+                      >
+                        {cfg.label}
+                      </p>
+                      <p className="text-xs text-[#64748b] mt-0.5">
+                        {formatNumber(seg.count)} (
+                        {new Intl.NumberFormat("pt-BR", {
+                          minimumFractionDigits: 1,
+                          maximumFractionDigits: 1,
+                        }).format(seg.pctOfBase)}
+                        % base)
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-xl font-bold text-[#1a1a1a] mt-2">{formatNumber(seg.count)}</p>
-                  <p className="text-xs text-[#64748b] mt-0.5">
-                    {new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(
-                      seg.pctOfBase
-                    )}
-                    % da base
-                  </p>
 
-                  <div className="mt-3 pt-3 border-t" style={{ borderColor: cfg.accent + "33" }}>
-                    <div className="text-xs space-y-1">
+                  {/* PERFIL */}
+                  <div className="mb-3">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#64748b] mb-1">
+                      Perfil
+                    </p>
+                    <p className="text-xs text-[#1a1a1a] leading-relaxed">{profile.perfil}</p>
+                  </div>
+
+                  {/* MÉTRICAS-CHAVE */}
+                  <div
+                    className="mb-3 pt-3 border-t"
+                    style={{ borderColor: cfg.accent + "33" }}
+                  >
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#64748b] mb-2">
+                      Métricas-Chave
+                    </p>
+                    <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
                       <div className="flex justify-between">
                         <span className="text-[#64748b]">Compras:</span>
-                        <span className="font-medium text-[#1a1a1a]">{formatNumber(seg.avgCompras)}</span>
+                        <span className="font-medium text-[#1a1a1a]">
+                          {formatNumber(seg.avgCompras)}
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-[#64748b]">Score:</span>
-                        <span className="font-medium text-[#1a1a1a]">{formatNumber(seg.avgScore)}</span>
+                        <span className="font-medium text-[#1a1a1a]">
+                          {formatNumber(seg.avgScore)}
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-[#64748b]">Limite:</span>
-                        <span className="font-medium text-[#1a1a1a]">{formatCurrency(seg.avgLimite)}</span>
+                        <span className="font-medium text-[#1a1a1a]">
+                          {formatCurrency(seg.avgLimite)}
+                        </span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-[#64748b]">App:</span>
-                        <span className="font-medium text-[#1a1a1a]">{formatPercentage(seg.pctComApp)}</span>
+                        <span className="font-medium text-[#1a1a1a]">
+                          {formatPercentage(seg.pctComApp, 0)}
+                        </span>
                       </div>
+                      {seg.avgVarejos !== null && (
+                        <div className="flex justify-between col-span-2">
+                          <span className="text-[#64748b]">Varejos visitados:</span>
+                          <span className="font-medium text-[#1a1a1a]">
+                            {formatNumber(seg.avgVarejos)}
+                          </span>
+                        </div>
+                      )}
                     </div>
+                  </div>
+
+                  {/* POR QUE ESTÁ AQUI */}
+                  <div className="pt-3 border-t" style={{ borderColor: cfg.accent + "33" }}>
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[#64748b] mb-1">
+                      Por que está aqui
+                    </p>
+                    <p className="text-xs text-[#1a1a1a]">{profile.porqueEstaAqui}</p>
                   </div>
                 </div>
               );
@@ -690,86 +768,21 @@ export function SegmentacaoTab() {
           </div>
 
           <div className="mt-4 p-3 bg-[#F7FAF8] rounded border border-[#E2E8F0] text-xs text-[#64748b]">
-            ✓ Soma dos 7 segmentos: {formatNumber(segmentMetrics.reduce((s, m) => s + m.count, 0))} clientes ={" "}
-            {formatNumber(clientesData.length)} total — cobertura 100%.
+            ✓ Soma dos 7 segmentos: {formatNumber(segmentMetrics.reduce((s, m) => s + m.count, 0))}{" "}
+            clientes = {formatNumber(clientesData.length)} total — cobertura 100%.
           </div>
         </CardContent>
       </Card>
 
-      {/* SEÇÃO 7: ANÁLISE DE RISCO */}
+      {/* ══════════════════════════════════════════════════════════════════════
+          SEÇÃO 5: OPORTUNIDADES POR SEGMENTO (movido da antiga seção 7)
+          ══════════════════════════════════════════════════════════════════════ */}
       <Card className="border-[#E2E8F0]">
         <CardHeader>
-          <CardTitle>6. Análise de Risco</CardTitle>
+          <CardTitle>5. Oportunidades por Segmento</CardTitle>
           <p className="text-xs text-[#64748b] mt-2">
-            Distribuição de score na base e implicações para política de crédito.
-          </p>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
-            <div>
-              <p className="text-xs font-semibold text-[#64748b] mb-3 uppercase">⚠️ Distribuição de Score</p>
-              <div className="space-y-2">
-                <ScoreBar
-                  label="Baixo (<400)"
-                  count={scoreDistribution.low}
-                  total={clientesData.length}
-                  color="#F44336"
-                />
-                <ScoreBar
-                  label="Médio (400-700)"
-                  count={scoreDistribution.medium}
-                  total={clientesData.length}
-                  color="#94A3B8"
-                />
-                <ScoreBar
-                  label="Alto (≥700)"
-                  count={scoreDistribution.high}
-                  total={clientesData.length}
-                  color="#00C853"
-                />
-              </div>
-            </div>
-
-            <div>
-              <p className="text-xs font-semibold text-[#64748b] mb-3 uppercase">📊 Insights de Risco</p>
-              <div className="space-y-2 text-xs">
-                <div className="p-2 rounded border-l-4" style={{ backgroundColor: "#F1F5F9", borderLeftColor: "#94A3B8" }}>
-                  <span className="font-medium text-[#334155]">Score vs Compras:</span>
-                  <p className="text-[#64748b] mt-1">
-                    Ume Plus tem score médio {formatNumber(getSeg("ume-plus")?.avgScore || 0)} e{" "}
-                    {formatNumber(getSeg("ume-plus")?.avgCompras || 0)} compras médias.
-                  </p>
-                </div>
-                <div className="p-2 rounded border-l-4" style={{ backgroundColor: "#F0FDF4", borderLeftColor: "#22C55E" }}>
-                  <span className="font-medium text-[#166534]">Recorrência:</span>
-                  <p className="text-[#64748b] mt-1">
-                    {formatNumber(
-                      (getSeg("recorrentes")?.count || 0) + (getSeg("ume-plus")?.count || 0)
-                    )}{" "}
-                    clientes ativos recorrentes — base com menor inadimplência observada.
-                  </p>
-                </div>
-                <div className="p-2 rounded border-l-4" style={{ backgroundColor: "#FEF2F2", borderLeftColor: "#EF4444" }}>
-                  <span className="font-medium text-[#991B1B]">Inadimplência:</span>
-                  <p className="text-[#64748b] mt-1">
-                    {formatNumber(getSeg("inadimplentes")?.count || 0)} clientes inadimplentes —{" "}
-                    {formatPercentage(((getSeg("inadimplentes")?.count || 0) / clientesData.length) * 100)} da
-                    base.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* SEÇÃO 8: OPORTUNIDADES ESTRATÉGICAS — SEM ÂNCORA R$ */}
-      <Card className="border-[#E2E8F0]">
-        <CardHeader>
-          <CardTitle>7. Oportunidades Estratégicas por Segmento</CardTitle>
-          <p className="text-xs text-[#64748b] mt-2">
-            Característica do segmento e ações sugeridas. Detalhamento das jornadas
-            específicas na aba Jornada; modelagem financeira na aba Rentabilidade.
+            Ações sugeridas para cada segmento. Detalhes de jornada na aba Jornada; impacto
+            financeiro na aba Rentabilidade.
           </p>
         </CardHeader>
         <CardContent>
@@ -823,10 +836,10 @@ export function SegmentacaoTab() {
             />
 
             <SegmentOpportunityCard
-              segmentId="negados-recuperaveis"
-              count={getSeg("negados-recuperaveis")?.count || 0}
+              segmentId="negados-proximos-do-corte"
+              count={getSeg("negados-proximos-do-corte")?.count || 0}
               total={clientesData.length}
-              caracteristica="Maior segmento da base — score 300-400 com potencial de subir. Educação financeira como ponte para reaplicação."
+              caracteristica="Maior segmento da base — score 300-449 com potencial de subir. Educação financeira como ponte para reaplicação."
               acoes={[
                 "Apenas SMS (custo controlado, sem WhatsApp)",
                 "Conteúdo educativo: como subir score em 60-90 dias",
@@ -860,6 +873,90 @@ export function SegmentacaoTab() {
           </div>
         </CardContent>
       </Card>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          SEÇÃO 6: ANÁLISE DE RISCO TRANSVERSAL (movido para o fim)
+          ══════════════════════════════════════════════════════════════════════ */}
+      <Card className="border-[#E2E8F0]">
+        <CardHeader>
+          <CardTitle>6. Análise de Risco Transversal</CardTitle>
+          <p className="text-xs text-[#64748b] mt-2">
+            Visão de risco que cruza os 7 segmentos.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
+            <div>
+              <p className="text-xs font-semibold text-[#64748b] mb-3 uppercase">
+                ⚠️ Distribuição de Score
+              </p>
+              <div className="space-y-2">
+                <ScoreBar
+                  label="Baixo (<400)"
+                  count={scoreDistribution.low}
+                  total={clientesData.length}
+                  color="#F44336"
+                />
+                <ScoreBar
+                  label="Médio (400-700)"
+                  count={scoreDistribution.medium}
+                  total={clientesData.length}
+                  color="#64748B"
+                />
+                <ScoreBar
+                  label="Alto (≥700)"
+                  count={scoreDistribution.high}
+                  total={clientesData.length}
+                  color="#00C853"
+                />
+              </div>
+            </div>
+
+            <div>
+              <p className="text-xs font-semibold text-[#64748b] mb-3 uppercase">
+                📊 Insights de Risco
+              </p>
+              <div className="space-y-2 text-xs">
+                <div
+                  className="p-2 rounded border-l-4"
+                  style={{ backgroundColor: "#F1F5F9", borderLeftColor: "#94A3B8" }}
+                >
+                  <span className="font-medium text-[#334155]">Score vs Compras:</span>
+                  <p className="text-[#64748b] mt-1">
+                    Ume Plus tem score médio {formatNumber(getSeg("ume-plus")?.avgScore || 0)} e{" "}
+                    {formatNumber(getSeg("ume-plus")?.avgCompras || 0)} compras médias.
+                  </p>
+                </div>
+                <div
+                  className="p-2 rounded border-l-4"
+                  style={{ backgroundColor: "#F0FDF4", borderLeftColor: "#22C55E" }}
+                >
+                  <span className="font-medium text-[#166534]">Recorrência:</span>
+                  <p className="text-[#64748b] mt-1">
+                    {formatNumber(
+                      (getSeg("recorrentes")?.count || 0) + (getSeg("ume-plus")?.count || 0)
+                    )}{" "}
+                    clientes ativos recorrentes — base com menor inadimplência observada.
+                  </p>
+                </div>
+                <div
+                  className="p-2 rounded border-l-4"
+                  style={{ backgroundColor: "#FEF2F2", borderLeftColor: "#EF4444" }}
+                >
+                  <span className="font-medium text-[#991B1B]">Inadimplência:</span>
+                  <p className="text-[#64748b] mt-1">
+                    {formatNumber(getSeg("inadimplentes")?.count || 0)} clientes inadimplentes —{" "}
+                    {formatPercentage(
+                      ((getSeg("inadimplentes")?.count || 0) / clientesData.length) * 100
+                    )}{" "}
+                    da base.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -868,18 +965,18 @@ export function SegmentacaoTab() {
 // SUB-COMPONENTS
 // ============================================================================
 
-interface KpiCardProps {
+interface ContextKpiCardProps {
   label: string;
   value: string;
   sub?: string;
 }
 
-function KpiCard({ label, value, sub }: KpiCardProps) {
+function ContextKpiCard({ label, value, sub }: ContextKpiCardProps) {
   return (
     <div className="p-3 rounded border border-[#E2E8F0] bg-gradient-to-br from-[#F7FAF8] to-white">
       <p className="text-[10px] font-semibold text-[#64748b] uppercase tracking-wide">{label}</p>
-      <p className="text-lg font-bold text-[#1a1a1a] mt-1">{value}</p>
-      {sub && <p className="text-[10px] text-[#94a3b8] mt-0.5">{sub}</p>}
+      <p className="text-xl font-bold text-[#1a1a1a] mt-1">{value}</p>
+      {sub && <p className="text-xs text-[#00C853] font-medium mt-0.5">{sub}</p>}
     </div>
   );
 }
@@ -895,7 +992,16 @@ interface InsightCardProps {
   implicacao: string;
 }
 
-function InsightCard({ icon, numero, accent, bg, titulo, shockValue, shockLabel, implicacao }: InsightCardProps) {
+function InsightCard({
+  icon,
+  numero,
+  accent,
+  bg,
+  titulo,
+  shockValue,
+  shockLabel,
+  implicacao,
+}: InsightCardProps) {
   return (
     <div
       className="p-5 rounded border-l-4 transition hover:shadow-md"
@@ -952,7 +1058,10 @@ function ScoreBar({ label, count, total, color }: ScoreBarProps) {
         </span>
       </div>
       <div className="bg-[#E2E8F0] rounded h-2">
-        <div className="h-2 rounded" style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: color }} />
+        <div
+          className="h-2 rounded"
+          style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: color }}
+        />
       </div>
     </div>
   );
@@ -966,7 +1075,13 @@ interface SegmentOpportunityCardProps {
   acoes: string[];
 }
 
-function SegmentOpportunityCard({ segmentId, count, total, caracteristica, acoes }: SegmentOpportunityCardProps) {
+function SegmentOpportunityCard({
+  segmentId,
+  count,
+  total,
+  caracteristica,
+  acoes,
+}: SegmentOpportunityCardProps) {
   const cfg = SEGMENT_CONFIG[segmentId];
   const pct = total > 0 ? (count / total) * 100 : 0;
 
