@@ -32,8 +32,8 @@ export function VarejoTopBottom({ data }: VarejoTopBottomProps) {
     const top5 = sorted.slice(0, 5);
     const bottom5 = sorted.slice(-5).reverse();
     
-    const spread = top5.length > 0 && bottom5.length > 0 
-      ? top5[0].transacoes / Math.max(bottom5[4].transacoes, 1)
+    const spread = top5.length > 0 && bottom5.length >= 5
+      ? top5[0].transacoes / Math.max(bottom5[4]?.transacoes ?? 1, 1)
       : 0;
 
     return { top5, bottom5, spread };
