@@ -42,7 +42,7 @@ function formatBRL(value: number, decimals: number = 1): string {
       minimumFractionDigits: decimals,
       maximumFractionDigits: decimals,
     }).format(abs / 1_000_000)} M`;
-  } else if (abs >= 1_000) {
+  } else if (abs >= 10_000) {
     formatted = `R$ ${new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(abs / 1_000)} mil`;
   } else {
     formatted = `R$ ${Math.round(abs)}`;
