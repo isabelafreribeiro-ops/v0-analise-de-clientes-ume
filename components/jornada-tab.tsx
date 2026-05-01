@@ -18,7 +18,7 @@ const SEGMENT_CONFIG: Record<string, { bg: string; accent: string; text: string;
   "recorrentes": { bg: "#F1F8E9", accent: "#66BB6A", text: "#2E7D32", icon: "🔁", name: "Recorrentes (2+ compras)", coverage: 0 },
   "potencial": { bg: "#F9FBE7", accent: "#9CCC65", text: "#558B2F", icon: "🌱", name: "Potencial (1 compra)", coverage: 0 },
   "aprovados-nao-ativados": { bg: "#F1F5F9", accent: "#94A3B8", text: "#334155", icon: "💤", name: "Aprovados Não Ativados", coverage: 0 },
-  "negados-proximos-do-corte": { bg: "#F8FAFC", accent: "#64748B", text: "#1E293B", icon: "📋", name: "Negados Próximos do Corte (Score 300-449)", coverage: 0 },
+  "negados-recuperaveis": { bg: "#F8FAFC", accent: "#64748B", text: "#1E293B", icon: "📋", name: "Negados Recuperáveis (Score 300-400)", coverage: 0 },
   "negados-alto-risco": { bg: "#F1F5F9", accent: "#475569", text: "#0F172A", icon: "🚫", name: "Negados Alto Risco (Score <300)", coverage: 0 },
   "inadimplentes": { bg: "#FEF2F2", accent: "#EF4444", text: "#991B1B", icon: "⚠️", name: "Inadimplentes", coverage: 0 },
 };
@@ -49,7 +49,7 @@ function calculateSegmentSizes(clientesData: ClienteRow[]) {
       "potencial": 0,
       "recorrentes": 0,
       "ume-plus": 0,
-      "negados-proximos-do-corte": 0,
+      "negados-recuperaveis": 0,
       "negados-alto-risco": 0,
       "inadimplentes": 0,
     };
@@ -60,7 +60,7 @@ function calculateSegmentSizes(clientesData: ClienteRow[]) {
     "potencial": 0,
     "recorrentes": 0,
     "ume-plus": 0,
-    "negados-proximos-do-corte": 0,
+    "negados-recuperaveis": 0,
     "negados-alto-risco": 0,
     "inadimplentes": 0,
   };
@@ -76,10 +76,8 @@ function calculateSegmentSizes(clientesData: ClienteRow[]) {
     } else if (situacao === "negada") {
       if (score < 300) {
         sizes["negados-alto-risco"]++;
-      } else if (score >= 300 && score < 450) {
-        sizes["negados-proximos-do-corte"]++;
       } else {
-        sizes["negados-alto-risco"]++;
+        sizes["negados-recuperaveis"]++;
       }
     } else {
       // Adimplente / aprovado
@@ -202,11 +200,11 @@ export function JornadaTab() {
       resultadoEsperado: ["Maximização de LTV", "Redução de churn em alto valor", "Advocacy e indicações"],
     },
     {
-      id: "negados-proximos-do-corte",
-      name: "Negados Próximos do Corte",
-      size: segmentSizes["negados-proximos-do-corte"],
+      id: "negados-recuperaveis",
+      name: "Negados Recuperáveis",
+      size: segmentSizes["negados-recuperaveis"],
       objetivo: "Educação financeira + reaplicação",
-      trigger: "Situação = Negada + Score 300-449",
+      trigger: "Situação = Negada + Score 300-400",
       timeline: ["D0", "D30", "D90"],
       channels: ["sms"],
       fluxo: ["SMS", "SMS", "SMS"],
@@ -394,7 +392,7 @@ export function JornadaTab() {
         </CardHeader>
         <CardContent className="text-xs space-y-2 text-[#1a1a1a]">
           <p>✓ Soma de tamanhos dos 7 segmentos = {formatNumber(totalSegments)} clientes</p>
-          <p>✓ Negados recebem APENAS SMS (custo controlado em ~R${(segmentSizes["negados-proximos-do-corte"] * 0.03 + segmentSizes["negados-alto-risco"] * 0.03).toFixed(0)})</p>
+          <p>✓ Negados recebem APENAS SMS (custo controlado em ~R${(segmentSizes["negados-recuperaveis"] * 0.03 + segmentSizes["negados-alto-risco"] * 0.03).toFixed(0)})</p>
           <p>✓ Mensagens de Inadimplentes nunca mencionam "VIP" ou "Plus"</p>
           <p>✓ Score baixo NUNCA recebe oferta de aumento de limite</p>
           <p>✓ Personalização por score aplicada em 3 segmentos de aprovados (via seção textual dentro dos cards)</p>
@@ -451,7 +449,7 @@ export function JornadaTab() {
                   <td className="text-right p-2 font-semibold text-[#001a0f]">R$ 8,16</td>
                 </tr>
                 <tr className="border-b border-[#E2E8F0] bg-[#FFF9C4]">
-                  <td className="p-2 font-medium text-[#F57F17]">🟡 Negados Próximos do Corte</td>
+                  <td className="p-2 font-medium text-[#F57F17]">🟡 Negados Recuperáveis</td>
                   <td className="text-center p-2 text-[#1a1a1a]">0</td>
                   <td className="text-center p-2 text-[#1a1a1a]">0</td>
                   <td className="text-center p-2 text-[#1a1a1a]">3</td>
@@ -508,7 +506,7 @@ export function JornadaTab() {
                   segmentSizes["potencial"] * 0.63 +
                   segmentSizes["recorrentes"] * 4.20 +
                   segmentSizes["ume-plus"] * 8.16 +
-                  segmentSizes["negados-proximos-do-corte"] * 0.09 +
+                  segmentSizes["negados-recuperaveis"] * 0.09 +
                   segmentSizes["negados-alto-risco"] * 0.03 +
                   segmentSizes["inadimplentes"] * 0.66)
               )}

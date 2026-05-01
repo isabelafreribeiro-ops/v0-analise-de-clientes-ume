@@ -35,7 +35,7 @@ export type SegmentId =
   | "recorrentes"
   | "potencial"
   | "aprovados-nao-ativados"
-  | "negados-proximos-do-corte"
+  | "negados-recuperaveis"
   | "negados-alto-risco"
   | "inadimplentes";
 
@@ -44,7 +44,7 @@ export const CUSTO_MSG_ANUAL: Record<SegmentId, number> = {
   "potencial": 0.63,
   "recorrentes": 4.20,
   "ume-plus": 8.16,
-  "negados-proximos-do-corte": 0.09,
+  "negados-recuperaveis": 0.09,
   "negados-alto-risco": 0.03,
   "inadimplentes": 0.66,
 };
@@ -61,7 +61,7 @@ export const SEGMENT_META: Record<SegmentId, {
   "recorrentes": { label: "Recorrentes", icon: "🔁", accent: "#66BB6A", bg: "#F1F8E9", text: "#2E7D32" },
   "potencial": { label: "Potencial", icon: "🌱", accent: "#9CCC65", bg: "#F9FBE7", text: "#558B2F" },
   "aprovados-nao-ativados": { label: "Aprovados Não Ativados", icon: "💤", accent: "#94A3B8", bg: "#F1F5F9", text: "#334155" },
-  "negados-proximos-do-corte": { label: "Negados Próximos do Corte", icon: "📋", accent: "#64748B", bg: "#F8FAFC", text: "#1E293B" },
+  "negados-recuperaveis": { label: "Negados Recuperáveis", icon: "📋", accent: "#64748B", bg: "#F8FAFC", text: "#1E293B" },
   "negados-alto-risco": { label: "Negados Alto Risco", icon: "🚫", accent: "#475569", bg: "#F1F5F9", text: "#0F172A" },
   "inadimplentes": { label: "Inadimplentes", icon: "⚠️", accent: "#EF4444", bg: "#FEF2F2", text: "#991B1B" },
 };
@@ -77,11 +77,7 @@ export function classifySegment(cliente: ClienteRow): SegmentId {
   const score = parseNumber(getColumnValue(cliente, ["score de crédito", "score"])) || 0;
 
   if (sit === "inadimplente") return "inadimplentes";
-  if (sit === "negada") {
-    if (score < 300) return "negados-alto-risco";
-    if (score >= 300 && score < 450) return "negados-proximos-do-corte";
-    return "negados-alto-risco";
-  }
+  if (sit === "negada") return score < 300 ? "negados-alto-risco" : "negados-recuperaveis";
   if (compras === 0) return "aprovados-nao-ativados";
   if (compras === 1) return "potencial";
   if (compras >= 3 && score >= 700) return "ume-plus";
@@ -455,7 +451,7 @@ export function calcularInsights(
   const segRecor = processed.filter((p) => p.breakdown.segmentId === "recorrentes");
   const segPot = processed.filter((p) => p.breakdown.segmentId === "potencial");
   const segInad = processed.filter((p) => p.breakdown.segmentId === "inadimplentes");
-  const segNegRec = processed.filter((p) => p.breakdown.segmentId === "negados-proximos-do-corte");
+  const segNegRec = processed.filter((p) => p.breakdown.segmentId === "negados-recuperaveis");
   const segNegAlto = processed.filter((p) => p.breakdown.segmentId === "negados-alto-risco");
 
   const topClientes = segPlus.length + segRecor.length;
