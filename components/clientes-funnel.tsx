@@ -267,6 +267,67 @@ export function ClientesFunnel({ }: ClientesFunnelProps) {
         </CardContent>
       </Card>
 
+      {/* Maior Perda Identificada */}
+      {hasData && funnelData.length > 1 && (
+        <Card className="border-l-4 border-[#EF4444] bg-[#FEF2F2]">
+          <CardHeader>
+            <CardTitle className="text-[#991B1B] flex items-center gap-2">
+              <span className="text-2xl">⚠️</span>
+              Maior Perda Identificada
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {(() => {
+              let maiorPerda = { label: "", diff: 0, pct: 0, de: "", para: "", deDiff: 0, paraDiff: 0 };
+              
+              for (let i = 0; i < funnelData.length - 1; i++) {
+                const diff = funnelData[i].value - funnelData[i + 1].value;
+                const pct = funnelData[i].value > 0 ? (diff / funnelData[i].value) * 100 : 0;
+                
+                if (diff > maiorPerda.diff) {
+                  maiorPerda = {
+                    label: `${funnelData[i].name} → ${funnelData[i + 1].name}`,
+                    diff,
+                    pct,
+                    de: funnelData[i].name,
+                    para: funnelData[i + 1].name,
+                    deDiff: funnelData[i].value,
+                    paraDiff: funnelData[i + 1].value
+                  };
+                }
+              }
+
+              return (
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-sm text-[#64748b] mb-1">Etapa crítica:</p>
+                    <p className="text-lg font-bold text-[#1a1a1a]">{maiorPerda.label}</p>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <p className="text-xs text-[#64748b] font-semibold">Saída:</p>
+                      <p className="text-2xl font-bold text-[#1a1a1a]">{maiorPerda.deDiff.toLocaleString("pt-BR")}</p>
+                    </div>
+                    <div className="flex items-center justify-center">
+                      <span className="text-2xl">→</span>
+                    </div>
+                    <div>
+                      <p className="text-xs text-[#64748b] font-semibold">Chegada:</p>
+                      <p className="text-2xl font-bold text-[#1a1a1a]">{maiorPerda.paraDiff.toLocaleString("pt-BR")}</p>
+                    </div>
+                  </div>
+                  <div className="bg-white/50 rounded p-3 border border-[#EF4444]/20">
+                    <p className="text-sm font-bold text-[#EF4444]">
+                      {maiorPerda.diff.toLocaleString("pt-BR")} clientes perdidos ({maiorPerda.pct.toFixed(1)}% de atrito)
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Insight */}
       <InsightCallout data={funnelData} title="clientes" />
     </div>
