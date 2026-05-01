@@ -10,6 +10,7 @@ import { ClientesFunnel } from "@/components/clientes-funnel";
 import { SegmentacaoTab } from "@/components/segmentacao-tab";
 import { JornadaTab } from "@/components/jornada-tab";
 import { RentabilidadeTab } from "@/components/rentabilidade-tab";
+import { CreditoTab } from "@/components/credito-tab";
 import { GlobalMetricsDisplay } from "@/components/global-metrics-display";
 
 export default function Home() {
@@ -112,14 +113,9 @@ export default function Home() {
 
           {/* Crédito Tab */}
           {activeTab === "credito" && (
-            <div className="flex h-96 flex-col items-center justify-center text-center">
-              <p className="text-lg font-medium text-[#64748b]">
-                Análise de Crédito em desenvolvimento
-              </p>
-              <p className="text-sm text-[#94a3b8]">
-                Esta seção será adicionada em breve
-              </p>
-            </div>
+            <section>
+              <CreditoTab />
+            </section>
           )}
         </main>
       </div>
