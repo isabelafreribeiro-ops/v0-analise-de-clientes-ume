@@ -79,8 +79,13 @@ export function parseNumber(value: any): number | null {
 
     // Handle Brazilian number format: "1.234,56" → convert to 1234.56
     if (cleaned.includes(",")) {
+      // Formato BR com decimal: "1.234,56" → 1234.56
       cleaned = cleaned.replace(/\./g, "").replace(",", ".");
+    } else if (/^\d{1,3}(\.\d{3})+$/.test(cleaned)) {
+      // Inteiro com separador de milhar BR: "1.500" → 1500, "12.345" → 12345
+      cleaned = cleaned.replace(/\./g, "");
     }
+    // Senão: deixa como está (decimal anglo "1.5" ou inteiro "1500")
 
     const parsed = parseFloat(cleaned);
     if (isNaN(parsed)) return null;
