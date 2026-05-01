@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { TrendingUp, AlertCircle, MessageSquare, Send, Phone, Users } from "lucide-react";
+import { TrendingUp, AlertCircle, MessageSquare, Send, Phone, Users, ChevronDown } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useData } from "@/lib/data-context";
 import {
@@ -18,7 +18,7 @@ const SEGMENT_CONFIG: Record<string, { bg: string; accent: string; text: string;
   "recorrentes": { bg: "#F1F8E9", accent: "#66BB6A", text: "#2E7D32", icon: "🔁", name: "Recorrentes (2+ compras)", coverage: 0 },
   "potencial": { bg: "#F9FBE7", accent: "#9CCC65", text: "#558B2F", icon: "🌱", name: "Potencial (1 compra)", coverage: 0 },
   "aprovados-nao-ativados": { bg: "#F1F5F9", accent: "#94A3B8", text: "#334155", icon: "💤", name: "Aprovados Não Ativados", coverage: 0 },
-  "negados-recuperaveis": { bg: "#F8FAFC", accent: "#64748B", text: "#1E293B", icon: "📋", name: "Negados Recuperáveis (Score 300-400)", coverage: 0 },
+  "negados-recuperaveis": { bg: "#F8FAFC", accent: "#64748B", text: "#1E293B", icon: "📋", name: "Negados Próximos do Corte (Score 300-449)", coverage: 0 },
   "negados-alto-risco": { bg: "#F1F5F9", accent: "#475569", text: "#0F172A", icon: "🚫", name: "Negados Alto Risco (Score <300)", coverage: 0 },
   "inadimplentes": { bg: "#FEF2F2", accent: "#EF4444", text: "#991B1B", icon: "⚠️", name: "Inadimplentes", coverage: 0 },
 };
@@ -85,7 +85,7 @@ function calculateSegmentSizes(clientesData: ClienteRow[]) {
         sizes["aprovados-nao-ativados"]++;
       } else if (compras === 1) {
         sizes["potencial"]++;
-      } else if (compras >= 3 && score >= 700 && limite >= 1000) {
+      } else if (compras >= 3 && score >= 700) {
         sizes["ume-plus"]++;
       } else {
         sizes["recorrentes"]++;
@@ -98,6 +98,8 @@ function calculateSegmentSizes(clientesData: ClienteRow[]) {
 
 export function JornadaTab() {
   const { clientesData } = useData();
+  const [expandedSegments, setExpandedSegments] = useState<Record<string, boolean>>({});
+  const [expandedTriggers, setExpandedTriggers] = useState<Record<string, boolean>>({});
 
   if (!clientesData || clientesData.length === 0) {
     return (
@@ -280,19 +282,31 @@ export function JornadaTab() {
           const percentage = ((journey.size / totalClientes) * 100).toFixed(1);
 
           return (
-            <Card key={journey.id} className={`border-l-4`} style={{ borderLeftColor: config.accent, backgroundColor: config.bg }}>
+            <Card key={journey.id} className={`border-l-4 cursor-pointer`} style={{ borderLeftColor: config.accent, backgroundColor: config.bg }} onClick={() => setExpandedSegments(prev => ({ ...prev, [journey.id]: !prev[journey.id] }))}>
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
-                  <div>
+                  <div className="flex-1">
                     <CardTitle className="text-lg" style={{ color: config.text }}>
-                      {journey.name}
+                      {journey.icon} {journey.name}
                     </CardTitle>
                     <p className="text-xs mt-1" style={{ color: config.text, opacity: 0.8 }}>
-                      {formatNumber(journey.size)} clientes ({percentage}% da base)
+                      {formatNumber(journey.size)} clientes — {percentage}% da base
                     </p>
+                    {!expandedSegments[journey.id] && (
+                      <p className="text-xs mt-2 font-medium" style={{ color: config.text }}>
+                        Objetivo: {journey.objetivo}
+                      </p>
+                    )}
+                    {!expandedSegments[journey.id] && (
+                      <p className="text-xs mt-1" style={{ color: config.text, opacity: 0.8 }}>
+                        Canais: {journey.channels.map(c => c === "sms" ? "SMS" : c === "whatsapp" ? "WhatsApp" : "Push").join(", ")}
+                      </p>
+                    )}
                   </div>
+                  <ChevronDown className="h-5 w-5 transition-transform" style={{ color: config.text, transform: expandedSegments[journey.id] ? "rotate(180deg)" : "rotate(0deg)" }} />
                 </div>
               </CardHeader>
+              {expandedSegments[journey.id] && (
               <CardContent className="space-y-4">
                 {/* Key Info */}
                 <div className="grid grid-cols-2 gap-4 text-sm">
@@ -380,6 +394,7 @@ export function JornadaTab() {
                   </ul>
                 </div>
               </CardContent>
+              )}
             </Card>
           );
         })}
@@ -420,54 +435,54 @@ export function JornadaTab() {
                 </tr>
               </thead>
               <tbody>
-                <tr className="border-b border-[#E2E8F0] bg-[#E3F2FD]">
-                  <td className="p-2 font-medium text-[#0D47A1]">🔵 Aprovados Não Ativados</td>
+                <tr className="border-b border-[#E2E8F0]" style={{ backgroundColor: "#F1F5F9" }}>
+                  <td className="p-2 font-medium text-[#334155]">💤 Aprovados Não Ativados</td>
                   <td className="text-center p-2 text-[#1a1a1a]">0</td>
                   <td className="text-center p-2 text-[#1a1a1a]">2</td>
                   <td className="text-center p-2 text-[#1a1a1a]">3</td>
-                  <td className="text-right p-2 font-semibold text-[#0D47A1]">R$ 0,69</td>
+                  <td className="text-right p-2 font-semibold text-[#334155]">R$ 0,69</td>
                 </tr>
-                <tr className="border-b border-[#E2E8F0] bg-[#FFF3E0]">
-                  <td className="p-2 font-medium text-[#3E2723]">🟠 Potencial</td>
+                <tr className="border-b border-[#E2E8F0]" style={{ backgroundColor: "#F9FBE7" }}>
+                  <td className="p-2 font-medium text-[#558B2F]">🌱 Potencial</td>
                   <td className="text-center p-2 text-[#1a1a1a]">0</td>
                   <td className="text-center p-2 text-[#1a1a1a]">2</td>
                   <td className="text-center p-2 text-[#1a1a1a]">1</td>
-                  <td className="text-right p-2 font-semibold text-[#3E2723]">R$ 0,63</td>
+                  <td className="text-right p-2 font-semibold text-[#558B2F]">R$ 0,63</td>
                 </tr>
-                <tr className="border-b border-[#E2E8F0] bg-[#F3E5F5]">
-                  <td className="p-2 font-medium text-[#4A148C]">🟣 Recorrentes</td>
+                <tr className="border-b border-[#E2E8F0]" style={{ backgroundColor: "#F1F8E9" }}>
+                  <td className="p-2 font-medium text-[#2E7D32]">🔁 Recorrentes</td>
                   <td className="text-center p-2 text-[#1a1a1a]">0</td>
                   <td className="text-center p-2 text-[#1a1a1a]">12</td>
                   <td className="text-center p-2 text-[#1a1a1a]">8</td>
-                  <td className="text-right p-2 font-semibold text-[#4A148C]">R$ 4,20</td>
+                  <td className="text-right p-2 font-semibold text-[#2E7D32]">R$ 4,20</td>
                 </tr>
-                <tr className="border-b border-[#E2E8F0] bg-[#F0F4F3]">
-                  <td className="p-2 font-medium text-[#001a0f]">🟢 Ume Plus</td>
+                <tr className="border-b border-[#E2E8F0]" style={{ backgroundColor: "#E8F5E9" }}>
+                  <td className="p-2 font-medium text-[#1B5E20]">💎 Ume Plus</td>
                   <td className="text-center p-2 text-[#1a1a1a]">0</td>
                   <td className="text-center p-2 text-[#1a1a1a]">24</td>
                   <td className="text-center p-2 text-[#1a1a1a]">12</td>
-                  <td className="text-right p-2 font-semibold text-[#001a0f]">R$ 8,16</td>
+                  <td className="text-right p-2 font-semibold text-[#1B5E20]">R$ 8,16</td>
                 </tr>
-                <tr className="border-b border-[#E2E8F0] bg-[#FFF9C4]">
-                  <td className="p-2 font-medium text-[#F57F17]">🟡 Negados Recuperáveis</td>
+                <tr className="border-b border-[#E2E8F0]" style={{ backgroundColor: "#F8FAFC" }}>
+                  <td className="p-2 font-medium text-[#1E293B]">📋 Negados Próximos do Corte</td>
                   <td className="text-center p-2 text-[#1a1a1a]">0</td>
                   <td className="text-center p-2 text-[#1a1a1a]">0</td>
                   <td className="text-center p-2 text-[#1a1a1a]">3</td>
-                  <td className="text-right p-2 font-semibold text-[#F57F17]">R$ 0,09</td>
+                  <td className="text-right p-2 font-semibold text-[#1E293B]">R$ 0,09</td>
                 </tr>
-                <tr className="border-b border-[#E2E8F0] bg-[#FFEBEE]">
-                  <td className="p-2 font-medium text-[#B71C1C]">🔴 Negados Alto Risco</td>
+                <tr className="border-b border-[#E2E8F0]" style={{ backgroundColor: "#F1F5F9" }}>
+                  <td className="p-2 font-medium text-[#0F172A]">🚫 Negados Alto Risco</td>
                   <td className="text-center p-2 text-[#1a1a1a]">0</td>
                   <td className="text-center p-2 text-[#1a1a1a]">0</td>
                   <td className="text-center p-2 text-[#1a1a1a]">1</td>
-                  <td className="text-right p-2 font-semibold text-[#B71C1C]">R$ 0,03</td>
+                  <td className="text-right p-2 font-semibold text-[#0F172A]">R$ 0,03</td>
                 </tr>
-                <tr className="bg-[#FCE4EC]">
-                  <td className="p-2 font-medium text-[#880E4F]">🩷 Inadimplentes</td>
+                <tr style={{ backgroundColor: "#FEF2F2" }}>
+                  <td className="p-2 font-medium text-[#991B1B]">⚠️ Inadimplentes</td>
                   <td className="text-center p-2 text-[#1a1a1a]">0</td>
                   <td className="text-center p-2 text-[#1a1a1a]">2</td>
                   <td className="text-center p-2 text-[#1a1a1a]">2</td>
-                  <td className="text-right p-2 font-semibold text-[#880E4F]">R$ 0,66</td>
+                  <td className="text-right p-2 font-semibold text-[#991B1B]">R$ 0,66</td>
                 </tr>
               </tbody>
             </table>
@@ -524,10 +539,17 @@ export function JornadaTab() {
 
         <div className="grid grid-cols-1 gap-6">
           {/* Trigger A: Abandono de Carrinho */}
-          <Card className="border-l-4" style={{ borderLeftColor: "#FF9800", backgroundColor: "#FFF3E0" }}>
+          <Card className="border-l-4 cursor-pointer" style={{ borderLeftColor: "#94A3B8", backgroundColor: "#F1F5F9" }} onClick={() => setExpandedTriggers(prev => ({ ...prev, "A": !prev["A"] }))}>
             <CardHeader>
-              <CardTitle className="text-lg">Gatilho A: Abandono de Carrinho/Checkout</CardTitle>
+              <div className="flex items-start justify-between">
+                <CardTitle className="text-lg text-[#1a1a1a]">⚡ Gatilho A: Abandono de Carrinho/Checkout</CardTitle>
+                <ChevronDown className="h-5 w-5 text-[#475569] transition-transform" style={{ transform: expandedTriggers["A"] ? "rotate(180deg)" : "rotate(0deg)" }} />
+              </div>
+              {!expandedTriggers["A"] && (
+                <p className="text-xs mt-2 text-[#64748b]">Aplicável: Potencial, Recorrentes, Ume Plus</p>
+              )}
             </CardHeader>
+            {expandedTriggers["A"] && (
             <CardContent className="space-y-4">
               <div>
                 <p className="text-sm font-semibold text-[#64748b]">TRIGGER</p>
@@ -549,13 +571,21 @@ export function JornadaTab() {
                 <p className="text-sm text-[#1a1a1a]">Recuperação de ~10-15% dos abandonos</p>
               </div>
             </CardContent>
+            )}
           </Card>
 
           {/* Trigger B: Inatividade Prolongada */}
-          <Card className="border-l-4" style={{ borderLeftColor: "#E53935", backgroundColor: "#FFEBEE" }}>
+          <Card className="border-l-4 cursor-pointer" style={{ borderLeftColor: "#94A3B8", backgroundColor: "#F1F5F9" }} onClick={() => setExpandedTriggers(prev => ({ ...prev, "B": !prev["B"] }))}>
             <CardHeader>
-              <CardTitle className="text-lg">Gatilho B: Inatividade Prolongada (Churn Precoce)</CardTitle>
+              <div className="flex items-start justify-between">
+                <CardTitle className="text-lg text-[#1a1a1a]">⚡ Gatilho B: Inatividade Prolongada (Churn Precoce)</CardTitle>
+                <ChevronDown className="h-5 w-5 text-[#475569] transition-transform" style={{ transform: expandedTriggers["B"] ? "rotate(180deg)" : "rotate(0deg)" }} />
+              </div>
+              {!expandedTriggers["B"] && (
+                <p className="text-xs mt-2 text-[#64748b]">Aplicável: Recorrentes, Ume Plus</p>
+              )}
             </CardHeader>
+            {expandedTriggers["B"] && (
             <CardContent className="space-y-4">
               <div>
                 <p className="text-sm font-semibold text-[#64748b]">TRIGGER</p>
@@ -574,13 +604,21 @@ export function JornadaTab() {
                 <p className="text-sm text-[#1a1a1a]">Recuperação de ~5-8% dos inátivos</p>
               </div>
             </CardContent>
+            )}
           </Card>
 
           {/* Trigger C: Aproximação de Vencimento */}
-          <Card className="border-l-4" style={{ borderLeftColor: "#1976D2", backgroundColor: "#E3F2FD" }}>
+          <Card className="border-l-4 cursor-pointer" style={{ borderLeftColor: "#94A3B8", backgroundColor: "#F1F5F9" }} onClick={() => setExpandedTriggers(prev => ({ ...prev, "C": !prev["C"] }))}>
             <CardHeader>
-              <CardTitle className="text-lg">Gatilho C: Aproximação de Vencimento de Parcela</CardTitle>
+              <div className="flex items-start justify-between">
+                <CardTitle className="text-lg text-[#1a1a1a]">⚡ Gatilho C: Aproximação de Vencimento de Parcela</CardTitle>
+                <ChevronDown className="h-5 w-5 text-[#475569] transition-transform" style={{ transform: expandedTriggers["C"] ? "rotate(180deg)" : "rotate(0deg)" }} />
+              </div>
+              {!expandedTriggers["C"] && (
+                <p className="text-xs mt-2 text-[#64748b]">Aplicável: Todos os aprovados</p>
+              )}
             </CardHeader>
+            {expandedTriggers["C"] && (
             <CardContent className="space-y-4">
               <div>
                 <p className="text-sm font-semibold text-[#64748b]">TRIGGER</p>
@@ -599,13 +637,21 @@ export function JornadaTab() {
                 <p className="text-sm text-[#1a1a1a]">Redução de inadimplência, aumento de antecipações</p>
               </div>
             </CardContent>
+            )}
           </Card>
 
           {/* Trigger D: Primeiro Uso de Novo Varejo */}
-          <Card className="border-l-4" style={{ borderLeftColor: "#9C27B0", backgroundColor: "#F3E5F5" }}>
+          <Card className="border-l-4 cursor-pointer" style={{ borderLeftColor: "#94A3B8", backgroundColor: "#F1F5F9" }} onClick={() => setExpandedTriggers(prev => ({ ...prev, "D": !prev["D"] }))}>
             <CardHeader>
-              <CardTitle className="text-lg">Gatilho D: Primeiro Uso de Novo Varejo</CardTitle>
+              <div className="flex items-start justify-between">
+                <CardTitle className="text-lg text-[#1a1a1a]">⚡ Gatilho D: Primeiro Uso de Novo Varejo</CardTitle>
+                <ChevronDown className="h-5 w-5 text-[#475569] transition-transform" style={{ transform: expandedTriggers["D"] ? "rotate(180deg)" : "rotate(0deg)" }} />
+              </div>
+              {!expandedTriggers["D"] && (
+                <p className="text-xs mt-2 text-[#64748b]">Aplicável: Recorrentes, Ume Plus</p>
+              )}
             </CardHeader>
+            {expandedTriggers["D"] && (
             <CardContent className="space-y-4">
               <div>
                 <p className="text-sm font-semibold text-[#64748b]">TRIGGER</p>
@@ -624,13 +670,21 @@ export function JornadaTab() {
                 <p className="text-sm text-[#1a1a1a]">Cross-loja de 8-12%, diversificação de uso</p>
               </div>
             </CardContent>
+            )}
           </Card>
 
           {/* Trigger E: Aumento Automático de Limite */}
-          <Card className="border-l-4" style={{ borderLeftColor: "#00C853", backgroundColor: "#F0F4F3" }}>
+          <Card className="border-l-4 cursor-pointer" style={{ borderLeftColor: "#94A3B8", backgroundColor: "#F1F5F9" }} onClick={() => setExpandedTriggers(prev => ({ ...prev, "E": !prev["E"] }))}>
             <CardHeader>
-              <CardTitle className="text-lg">Gatilho E: Aumento Automático de Limite</CardTitle>
+              <div className="flex items-start justify-between">
+                <CardTitle className="text-lg text-[#1a1a1a]">⚡ Gatilho E: Aumento Automático de Limite</CardTitle>
+                <ChevronDown className="h-5 w-5 text-[#475569] transition-transform" style={{ transform: expandedTriggers["E"] ? "rotate(180deg)" : "rotate(0deg)" }} />
+              </div>
+              {!expandedTriggers["E"] && (
+                <p className="text-xs mt-2 text-[#64748b]">Aplicável: Todos os aprovados</p>
+              )}
             </CardHeader>
+            {expandedTriggers["E"] && (
             <CardContent className="space-y-4">
               <div>
                 <p className="text-sm font-semibold text-[#64748b]">TRIGGER</p>
@@ -649,13 +703,21 @@ export function JornadaTab() {
                 <p className="text-sm text-[#1a1a1a]">Aumento de AOV 15-25%, retenção reforçada</p>
               </div>
             </CardContent>
+            )}
           </Card>
 
           {/* Trigger F: Recuperação Pós-Inadimplência */}
-          <Card className="border-l-4" style={{ borderLeftColor: "#FBC02D", backgroundColor: "#FFF9C4" }}>
+          <Card className="border-l-4 cursor-pointer" style={{ borderLeftColor: "#94A3B8", backgroundColor: "#F1F5F9" }} onClick={() => setExpandedTriggers(prev => ({ ...prev, "F": !prev["F"] }))}>
             <CardHeader>
-              <CardTitle className="text-lg">Gatilho F: Recuperação Pós-Inadimplência</CardTitle>
+              <div className="flex items-start justify-between">
+                <CardTitle className="text-lg text-[#1a1a1a]">⚡ Gatilho F: Recuperação Pós-Inadimplência</CardTitle>
+                <ChevronDown className="h-5 w-5 text-[#475569] transition-transform" style={{ transform: expandedTriggers["F"] ? "rotate(180deg)" : "rotate(0deg)" }} />
+              </div>
+              {!expandedTriggers["F"] && (
+                <p className="text-xs mt-2 text-[#64748b]">Aplicável: Inadimplentes</p>
+              )}
             </CardHeader>
+            {expandedTriggers["F"] && (
             <CardContent className="space-y-4">
               <div>
                 <p className="text-sm font-semibold text-[#64748b]">TRIGGER</p>
@@ -677,6 +739,7 @@ export function JornadaTab() {
                 <p className="text-sm text-[#1a1a1a]">Retenção de ~40-50% dos recuperados, reativação suave</p>
               </div>
             </CardContent>
+            )}
           </Card>
         </div>
       </div>
