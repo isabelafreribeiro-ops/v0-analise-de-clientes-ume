@@ -420,7 +420,7 @@ export function SegmentacaoTab() {
             />
             <KpiCard
               label="Taxa de Juros"
-              value={clienteUmeKpis.avgJuros ? formatPercentage(clienteUmeKpis.avgJuros, 2) : "—"}
+              value={clienteUmeKpis.avgJuros ? (clienteUmeKpis.avgJuros * 100).toFixed(1) + "%" : "—"}
               sub="ao mês"
             />
             <KpiCard label="App Adoption" value={formatPercentage(clienteUmeKpis.appAdoption)} sub="entre aprovados" />
@@ -451,7 +451,7 @@ export function SegmentacaoTab() {
               <span className="font-semibold">~{clienteUmeKpis.avgParcelas?.toFixed(0) || "—"}x</span>{" "}
               com taxa de{" "}
               <span className="font-semibold">
-                {clienteUmeKpis.avgJuros ? formatPercentage(clienteUmeKpis.avgJuros, 2) : "—"}
+                {clienteUmeKpis.avgJuros ? (clienteUmeKpis.avgJuros * 100).toFixed(1) + "%" : "—"}
               </span>{" "}
               ao mês. Quando ativo, compra em média{" "}
               <span className="font-semibold">
@@ -716,7 +716,7 @@ export function SegmentacaoTab() {
           </div>
 
           <div className="mt-4 p-3 bg-[#F7FAF8] rounded border border-[#E2E8F0] text-xs text-[#64748b]">
-            ✓ Soma dos 7 segmentos: {formatNumber(segmentMetrics.reduce((s, m) => s + m.count, 0))} clientes ={" "}
+            �� Soma dos 7 segmentos: {formatNumber(segmentMetrics.reduce((s, m) => s + m.count, 0))} clientes ={" "}
             {formatNumber(clientesData.length)} total — cobertura 100%.
           </div>
         </CardContent>
