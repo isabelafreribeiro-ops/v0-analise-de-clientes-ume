@@ -121,73 +121,60 @@ export function CreditoTab() {
         <CardHeader>
           <CardTitle>Diagnóstico da Política Atual (inferido da base)</CardTitle>
           <p className="text-xs text-[#64748b] mt-2">
-            Sem acesso ao manual interno, os 5 traços abaixo são lidos diretamente dos dados — eles
-            descrevem como a política de crédito da Ume opera hoje, na prática.
+            Como a política de crédito da Ume opera hoje, lida diretamente dos dados.
           </p>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
             {/* Traço 1 */}
             <div className="rounded border-l-4 border-[#94A3B8] bg-[#F1F5F9]/60 p-3">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[#475569]">Traço 01 — Aprovação binária</p>
-              <p className="text-sm font-bold text-[#1a1a1a] mt-1">Cutoff rígido em score 400</p>
-              <p className="text-xs text-[#475569] mt-1">
-                Sem zona cinzenta. Aprovados começam em score 400, negados terminam em 399. Não há aprovação condicional ou avaliação manual.
-              </p>
+              <p className="text-[10px] font-semibold text-[#64748b] uppercase tracking-wider">Cutoff de aprovação</p>
+              <p className="text-2xl font-bold text-[#1a1a1a] mt-1">Score 400</p>
+              <p className="text-[11px] text-[#475569] mt-1 leading-snug">Binário — sem zona cinzenta nem revisão manual.</p>
             </div>
 
             {/* Traço 2 */}
             <div className="rounded border-l-4 border-[#94A3B8] bg-[#F1F5F9]/60 p-3">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[#475569]">Traço 02 — Limite não escala</p>
-              <p className="text-sm font-bold text-[#1a1a1a] mt-1">~R$ 730 médio em todas as faixas de score</p>
-              <p className="text-xs text-[#475569] mt-1">
-                Score 500 → R$ 729 | Score 700 → R$ 726 | Score 900+ → R$ 727. Cliente AAA recebe o mesmo limite de cliente C. Score só decide aprovar/negar, não dimensiona.
-              </p>
+              <p className="text-[10px] font-semibold text-[#64748b] uppercase tracking-wider">Limite médio</p>
+              <p className="text-2xl font-bold text-[#1a1a1a] mt-1">R$ 730</p>
+              <p className="text-[11px] text-[#475569] mt-1 leading-snug">Em qualquer faixa de score. Score 500 = score 1000.</p>
             </div>
 
             {/* Traço 3 */}
             <div className="rounded border-l-4 border-[#94A3B8] bg-[#F1F5F9]/60 p-3">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[#475569]">Traço 03 — Taxa flat</p>
-              <p className="text-sm font-bold text-[#1a1a1a] mt-1">~11,5% a.m. para todo aprovado</p>
-              <p className="text-xs text-[#475569] mt-1">
-                Score 500 → 11,45% | Score 900+ → 11,50%. Política não é risk-based. Cobra demais de cliente premium e de menos de cliente arriscado.
-              </p>
+              <p className="text-[10px] font-semibold text-[#64748b] uppercase tracking-wider">Taxa de juros</p>
+              <p className="text-2xl font-bold text-[#1a1a1a] mt-1">11,5% a.m.</p>
+              <p className="text-[11px] text-[#475569] mt-1 leading-snug">Flat — não é risk-based, não premia AAA.</p>
             </div>
 
             {/* Traço 4 */}
             <div className="rounded border-l-4 border-[#94A3B8] bg-[#F1F5F9]/60 p-3">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[#475569]">Traço 04 — Aumento por histórico</p>
-              <p className="text-sm font-bold text-[#1a1a1a] mt-1">Dirigido por compras, não por score</p>
-              <p className="text-xs text-[#475569] mt-1">
-                Quem recebeu aumento tem 15,9 compras médias. Quem não recebeu, 1,7. Score idêntico nos dois grupos (775). Política só aumenta para quem provou na prática.
-              </p>
+              <p className="text-[10px] font-semibold text-[#64748b] uppercase tracking-wider">Aumento de limite</p>
+              <p className="text-2xl font-bold text-[#1a1a1a] mt-1">15,9 vs 1,7</p>
+              <p className="text-[11px] text-[#475569] mt-1 leading-snug">Compras médias (com vs sem aumento). Score igual.</p>
             </div>
+          </div>
 
-            {/* Traço 5 — DESTAQUE VERMELHO */}
-            <div className="rounded border-l-4 border-[#EF4444] bg-[#FEF2F2] p-4 md:col-span-2">
-              <div className="flex items-start gap-3">
-                <span className="text-2xl">🚨</span>
-                <div className="flex-1">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-[#991B1B]">Traço 05 — Zona morta da política</p>
-                  <p className="text-sm font-bold text-[#1a1a1a] mt-1">
-                    Score 400-549: 2.351 aprovados, <span className="text-[#EF4444]">100% inadimplência</span>
-                  </p>
-                  <p className="text-xs text-[#475569] mt-2 leading-relaxed">
-                    Adimplentes começam em score <strong>550</strong>, não em 400. Os 2.351 clientes aprovados na faixa
-                    400-549 viraram <strong>todos</strong> inadimplentes — perda direta de <strong className="text-[#EF4444]">R$ 1,09 M</strong>{" "}
-                    (R$ 117k CAC + R$ 975k perda de saldo). O cutoff atual está calibrado <strong>150 pontos abaixo</strong> do
-                    ponto onde a base efetivamente paga.
-                  </p>
+          {/* Traço 5 — DESTAQUE VERMELHO (zona morta) */}
+          <div className="rounded border-l-4 border-[#EF4444] bg-[#FEF2F2] p-4">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl">🚨</span>
+              <div className="flex-1">
+                <p className="text-[10px] font-semibold text-[#991B1B] uppercase tracking-wider">Zona morta da política</p>
+                <div className="flex items-baseline gap-3 mt-1">
+                  <p className="text-2xl font-bold text-[#EF4444]">R$ 1,09 M</p>
+                  <p className="text-xs text-[#475569]">perda direta · 2.351 clientes · 100% inadimplência</p>
                 </div>
+                <p className="text-[11px] text-[#1a1a1a] mt-1 leading-snug">
+                  Adimplentes começam em <strong>score 550</strong>, não em 400. Cutoff calibrado <strong>150 pontos abaixo</strong> do que a base efetivamente paga.
+                </p>
               </div>
             </div>
           </div>
 
-          <div className="mt-4 p-3 bg-[#1a1a1a] rounded text-xs text-white leading-relaxed">
+          <div className="mt-3 p-3 bg-[#1a1a1a] rounded text-xs text-white leading-snug">
             <strong className="text-[#00C853]">Síntese:</strong>{" "}
-            Política atual reduz tudo a uma decisão binária baseada em score, sem precificar risco nem dimensionar limite.
-            O cutoff é frouxo (perda direta de R$ 1,09 M na zona 400-549) e a taxa/limite são uniformes (deixa receita na mesa em
-            AAA, exposição em B/C). Cada uma das 4 regras propostas a seguir endereça um traço específico desse diagnóstico.
+            Aprovação binária, limite e taxa uniformes, cutoff 150pts frouxo. Cada regra a seguir endereça um traço.
           </div>
         </CardContent>
       </Card>
