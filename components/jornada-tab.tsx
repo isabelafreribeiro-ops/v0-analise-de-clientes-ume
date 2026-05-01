@@ -537,8 +537,11 @@ export function JornadaTab() {
       {/* Behavioral Triggers Section */}
       <div className="border-t border-[#E2E8F0] pt-8 mt-8">
         <h2 className="text-2xl font-bold text-[#1a1a1a] mb-2">Gatilhos Comportamentais (Event-Based)</h2>
-        <p className="text-sm text-[#64748b] mb-6">
+        <p className="text-sm text-[#64748b] mb-2">
           Estes eventos têm prioridade sobre a jornada time-based. Quando ambos disparam no mesmo dia, envie apenas a mensagem do gatilho.
+        </p>
+        <p className="text-[10px] text-[#94a3b8] italic mb-6">
+          * Resultados esperados são benchmarks de referência da indústria (CRM/BNPL — Klaviyo, McKinsey Retail Banking, fintechs comparáveis). Range a ser calibrado com primeiro batch de teste interno.
         </p>
 
         <div className="grid grid-cols-1 gap-6">
