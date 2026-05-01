@@ -5,7 +5,6 @@ import { TrendingUp, Users, UserCheck, ShoppingBag } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useData } from "@/lib/data-context";
 import { FunnelChart } from "./funnel-chart";
-import { InsightCallout } from "./insight-callout";
 import type { FunnelStep } from "@/lib/types";
 
 const MONTH_NAMES = [
@@ -278,58 +277,53 @@ export function ClientesFunnel({ }: ClientesFunnelProps) {
           </CardHeader>
           <CardContent className="space-y-4">
             {(() => {
-              let maiorPerda = { label: "", diff: 0, pct: 0, de: "", para: "", deDiff: 0, paraDiff: 0 };
-              
-              for (let i = 0; i < funnelData.length - 1; i++) {
-                const diff = funnelData[i].value - funnelData[i + 1].value;
-                const pct = funnelData[i].value > 0 ? (diff / funnelData[i].value) * 100 : 0;
-                
-                if (diff > maiorPerda.diff) {
-                  maiorPerda = {
-                    label: `${funnelData[i].name} → ${funnelData[i + 1].name}`,
-                    diff,
-                    pct,
-                    de: funnelData[i].name,
-                    para: funnelData[i + 1].name,
-                    deDiff: funnelData[i].value,
-                    paraDiff: funnelData[i + 1].value
-                  };
-                }
-              }
+              // MUDANÇA 3: Hardcode to show "Aprovados → Ativados" transition (index 1 to 2)
+              const aprovedToActivated = funnelData.length > 2 ? {
+                de: funnelData[1].name,
+                deDiff: funnelData[1].value,
+                para: funnelData[2].name,
+                paraDiff: funnelData[2].value,
+                diff: funnelData[1].value - funnelData[2].value,
+              } : null;
+
+              if (!aprovedToActivated) return <p className="text-sm text-[#64748b]">Dados insuficientes para análise</p>;
+
+              const pct = aprovedToActivated.deDiff > 0 ? (aprovedToActivated.diff / aprovedToActivated.deDiff) * 100 : 0;
+              const label = `${aprovedToActivated.de} → ${aprovedToActivated.para}`;
 
               return (
                 <div className="space-y-4">
                   <div>
                     <p className="text-sm text-[#64748b] mb-1">Etapa crítica:</p>
-                    <p className="text-lg font-bold text-[#1a1a1a]">{maiorPerda.label}</p>
+                    <p className="text-lg font-bold text-[#1a1a1a]">{label}</p>
                   </div>
                   <div className="grid grid-cols-3 gap-4">
                     <div>
                       <p className="text-xs text-[#64748b] font-semibold">Saída:</p>
-                      <p className="text-2xl font-bold text-[#1a1a1a]">{maiorPerda.deDiff.toLocaleString("pt-BR")}</p>
+                      <p className="text-2xl font-bold text-[#1a1a1a]">{aprovedToActivated.deDiff.toLocaleString("pt-BR")}</p>
                     </div>
                     <div className="flex items-center justify-center">
                       <span className="text-2xl">→</span>
                     </div>
                     <div>
                       <p className="text-xs text-[#64748b] font-semibold">Chegada:</p>
-                      <p className="text-2xl font-bold text-[#1a1a1a]">{maiorPerda.paraDiff.toLocaleString("pt-BR")}</p>
+                      <p className="text-2xl font-bold text-[#1a1a1a]">{aprovedToActivated.paraDiff.toLocaleString("pt-BR")}</p>
                     </div>
                   </div>
                   <div className="bg-[#F59E0B]/10 rounded p-3 border border-[#F59E0B]/30">
                     <p className="text-sm font-bold text-[#D97706]">
-                      {maiorPerda.diff.toLocaleString("pt-BR")} clientes perdidos ({maiorPerda.pct.toFixed(1)}% de atrito)
+                      {aprovedToActivated.diff.toLocaleString("pt-BR")} clientes perdidos ({pct.toFixed(1)}% de atrito)
                     </p>
                   </div>
                   
                   <div className="border-t border-[#F59E0B]/20 pt-3 space-y-2">
                     <div>
                       <p className="text-xs font-semibold text-[#D97706] mb-1">💡 Hipótese:</p>
-                      <p className="text-sm text-[#64748b]">Concentração de perdas nesta etapa indica oportunidade de otimização — revisar critérios e fluxo.</p>
+                      <p className="text-sm text-[#64748b]">Pode indicar atrito na ativação (ponto de venda), baixa percepção de valor da Ume vs. cartão tradicional, limite aprovado insuficiente para a primeira compra desejada, ou falta de follow-up do vendedor/promotor após aprovação.</p>
                     </div>
                     <div>
                       <p className="text-xs font-semibold text-[#D97706] mb-1">🎯 Ação sugerida:</p>
-                      <p className="text-sm text-[#64748b]">Analisar motivos da perda nesta etapa e testar intervenções pontuais.</p>
+                      <p className="text-sm text-[#64748b]">Reforçar comunicação pós-aprovação (jornada de ativação Q3), treinar promotores no PDV para abordagem ativa, considerar limite mínimo mais flexível para primeira compra.</p>
                     </div>
                   </div>
                 </div>
@@ -338,9 +332,6 @@ export function ClientesFunnel({ }: ClientesFunnelProps) {
           </CardContent>
         </Card>
       )}
-
-      {/* Insight */}
-      <InsightCallout data={funnelData} title="clientes" />
     </div>
   );
 }

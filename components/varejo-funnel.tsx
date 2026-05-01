@@ -157,25 +157,6 @@ export function VarejoFunnel({
         <>
           {/* Filter Toolbar */}
           <div className="flex flex-wrap items-center gap-3 border-b border-[#E2E8F0] pb-3">
-        <span className="text-xs font-medium text-[#64748b]">Varejo:</span>
-        <Select value={selectedVarejo} onValueChange={onVarejoChange}>
-          <SelectTrigger className="h-8 w-48 border-[#E2E8F0] bg-white text-xs text-[#1a1a1a]">
-            <span className="truncate">
-              {selectedVarejo === "todos" ? "Todos os Varejos" : selectedVarejo}
-            </span>
-          </SelectTrigger>
-          <SelectContent className="border-[#E2E8F0] bg-white">
-            <SelectItem value="todos" className="text-xs text-[#1a1a1a]">
-              Todos os Varejos
-            </SelectItem>
-            {varejos.map((varejo) => (
-              <SelectItem key={varejo} value={varejo} className="text-xs text-[#1a1a1a]">
-                {varejo}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
         <span className="text-xs font-medium text-[#64748b]">Segmento:</span>
         <Select value={selectedSegmento} onValueChange={onSegmentoChange}>
           <SelectTrigger className="h-8 w-48 border-[#E2E8F0] bg-white text-xs text-[#1a1a1a]">
@@ -190,6 +171,25 @@ export function VarejoFunnel({
             {segmentos.map((segmento) => (
               <SelectItem key={segmento} value={segmento} className="text-xs text-[#1a1a1a]">
                 {segmento}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <span className="text-xs font-medium text-[#64748b]">Varejo:</span>
+        <Select value={selectedVarejo} onValueChange={onVarejoChange}>
+          <SelectTrigger className="h-8 w-48 border-[#E2E8F0] bg-white text-xs text-[#1a1a1a]">
+            <span className="truncate">
+              {selectedVarejo === "todos" ? "Todos os Varejos" : selectedVarejo}
+            </span>
+          </SelectTrigger>
+          <SelectContent className="border-[#E2E8F0] bg-white">
+            <SelectItem value="todos" className="text-xs text-[#1a1a1a]">
+              Todos os Varejos
+            </SelectItem>
+            {varejos.map((varejo) => (
+              <SelectItem key={varejo} value={varejo} className="text-xs text-[#1a1a1a]">
+                {varejo}
               </SelectItem>
             ))}
           </SelectContent>
@@ -301,8 +301,8 @@ export function VarejoFunnel({
         </CardContent>
       </Card>
 
-      {/* Insight */}
-      <InsightCallout data={funnelData} title="varejos" />
+      {/* Insight - only show if we have varejo data */}
+      {varejoData.length > 0 && <InsightCallout data={funnelData} title="varejos" />}
         </>
       )}
     </div>
