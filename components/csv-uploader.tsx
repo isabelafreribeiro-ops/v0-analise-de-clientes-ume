@@ -12,19 +12,17 @@ import type { ClienteRow, VarejoRow } from "@/lib/types";
 interface UploadState {
   clientes: { uploaded: boolean; fileName: string | null; count: number; loading: boolean; progress: number; error?: string };
   varejo: { uploaded: boolean; fileName: string | null; count: number; loading: boolean; progress: number; error?: string };
-  rentabilidade: { uploaded: boolean; fileName: string | null; loading: boolean; progress: number; error?: string };
 }
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB max file size
 
 export function CSVUploader() {
-  const { setClientesData, setVarejoData, setGlobalMetrics, setRentabilidadeData } = useData();
+  const { setClientesData, setVarejoData, setGlobalMetrics } = useData();
   const [uploadState, setUploadState] = useState<UploadState>({
     clientes: { uploaded: false, fileName: null, count: 0, loading: false, progress: 0, error: undefined },
     varejo: { uploaded: false, fileName: null, count: 0, loading: false, progress: 0, error: undefined },
-    rentabilidade: { uploaded: false, fileName: null, loading: false, progress: 0, error: undefined },
   });
-  const [isDragging, setIsDragging] = useState<"clientes" | "varejo" | "rentabilidade" | null>(null);
+  const [isDragging, setIsDragging] = useState<"clientes" | "varejo" | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Cleanup effect removed - no longer needed since we're not using workers
@@ -33,7 +31,7 @@ export function CSVUploader() {
   }, []);
 
   const handleFileUpload = useCallback(
-    async (file: File, type: "clientes" | "varejo" | "rentabilidade") => {
+    async (file: File, type: "clientes" | "varejo") => {
       // Verificar tamanho do arquivo
       if (file.size > MAX_FILE_SIZE) {
         const sizeMB = (MAX_FILE_SIZE / (1024 * 1024)).toFixed(0);
@@ -52,26 +50,16 @@ export function CSVUploader() {
       }));
 
       try {
-        if (type === "rentabilidade") {
-          // Handle JSON file for rentabilidade
-          const fileContent = await file.text();
-          const rentabilidadeJSON = JSON.parse(fileContent);
-          setRentabilidadeData(rentabilidadeJSON);
-          setUploadState((prev) => ({
-            ...prev,
-            rentabilidade: { uploaded: true, fileName: file.name, loading: false, progress: 100, error: undefined },
-          }));
-        } else {
-          // Read file as text for CSV
-          const fileContent = await file.text();
+        // Read file as text for CSV
+        const fileContent = await file.text();
 
-          // Parse CSV asynchronously (non-blocking) with progress tracking
-          const { data, count } = await parseCSVAsync(
-            fileContent,
-            type,
-            (processed, total) => {
-              const progress = Math.min(100, Math.round((processed / total) * 100));
-              setUploadState((prev) => ({
+        // Parse CSV asynchronously (non-blocking) with progress tracking
+        const { data, count } = await parseCSVAsync(
+          fileContent,
+          type,
+          (processed, total) => {
+            const progress = Math.min(100, Math.round((processed / total) * 100));
+            setUploadState((prev) => ({
                 ...prev,
                 [type]: { ...prev[type], progress },
               }));
@@ -97,7 +85,6 @@ export function CSVUploader() {
               varejo: { uploaded: true, fileName: file.name, count, loading: false, progress: 100, error: undefined },
             }));
           }
-        }
       } catch (error: any) {
         const errorMsg = error instanceof Error ? error.message : "Erro ao processar arquivo";
         console.error("[v0] Error uploading CSV:", error);
@@ -107,26 +94,22 @@ export function CSVUploader() {
         }));
       }
     },
-    [setClientesData, setVarejoData, setRentabilidadeData]
+    [setClientesData, setVarejoData]
   );
 
   const handleDrop = useCallback(
-    (e: React.DragEvent, type: "clientes" | "varejo" | "rentabilidade") => {
+    (e: React.DragEvent, type: "clientes" | "varejo") => {
       e.preventDefault();
       setIsDragging(null);
       const file = e.dataTransfer.files[0];
-      if (file) {
-        if (type === "rentabilidade" && file.name.endsWith(".json")) {
-          handleFileUpload(file, type);
-        } else if (type !== "rentabilidade" && file.name.endsWith(".csv")) {
-          handleFileUpload(file, type);
-        }
+      if (file && file.name.endsWith(".csv")) {
+        handleFileUpload(file, type);
       }
     },
     [handleFileUpload]
   );
 
-  const handleDragOver = (e: React.DragEvent, type: "clientes" | "varejo" | "rentabilidade") => {
+  const handleDragOver = (e: React.DragEvent, type: "clientes" | "varejo") => {
     e.preventDefault();
     setIsDragging(type);
   };
@@ -135,31 +118,25 @@ export function CSVUploader() {
     setIsDragging(null);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>, type: "clientes" | "varejo" | "rentabilidade") => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>, type: "clientes" | "varejo") => {
     const file = e.target.files?.[0];
     if (file) {
       handleFileUpload(file, type);
     }
   };
 
-  const clearUpload = (type: "clientes" | "varejo" | "rentabilidade") => {
+  const clearUpload = (type: "clientes" | "varejo") => {
     if (type === "clientes") {
       setClientesData([]);
       setUploadState((prev) => ({
         ...prev,
         clientes: { uploaded: false, fileName: null, count: 0, loading: false, progress: 0, error: undefined },
       }));
-    } else if (type === "varejo") {
+    } else {
       setVarejoData([]);
       setUploadState((prev) => ({
         ...prev,
         varejo: { uploaded: false, fileName: null, count: 0, loading: false, progress: 0, error: undefined },
-      }));
-    } else {
-      setRentabilidadeData(null);
-      setUploadState((prev) => ({
-        ...prev,
-        rentabilidade: { uploaded: false, fileName: null, loading: false, progress: 0, error: undefined },
       }));
     }
   };
@@ -169,7 +146,7 @@ export function CSVUploader() {
     title,
     description,
   }: {
-    type: "clientes" | "varejo" | "rentabilidade";
+    type: "clientes" | "varejo";
     title: string;
     description: string;
   }) => {
@@ -218,25 +195,22 @@ export function CSVUploader() {
               </div>
             </div>
           ) : state.uploaded ? (
-            <div className="flex items-center justify-between rounded-lg bg-[#00C853]/10 border border-[#00C853]/30 p-4">
-              <div className="flex items-center gap-3">
-                <CheckCircle2 className="h-5 w-5 text-[#00C853]" />
-                <div>
-                  <p className="font-medium text-[#1a1a1a]">{state.fileName}</p>
-                  <p className="text-sm text-[#64748b]">
-                    {type === "rentabilidade" 
-                      ? "Carregado com sucesso" 
-                      : `${(state as any).count.toLocaleString("pt-BR")} registros carregados`}
-                  </p>
-                </div>
+            <div className="flex items-center gap-3 rounded-lg bg-[#00C853]/10 border border-[#00C853]/30 px-4 py-3 text-sm">
+              <CheckCircle2 className="h-4 w-4 text-[#00C853] flex-shrink-0" />
+              <div className="flex items-center gap-2 flex-1 min-w-0">
+                <span className="font-medium text-[#1a1a1a] truncate">Base de {type === "clientes" ? "Clientes" : "Varejo"}</span>
+                <span className="text-[#64748b]">•</span>
+                <span className="text-[#64748b] truncate">{state.fileName}</span>
+                <span className="text-[#64748b]">•</span>
+                <span className="text-[#64748b] whitespace-nowrap">{(state as any).count.toLocaleString("pt-BR")} registros</span>
               </div>
               <Button
                 variant="ghost"
-                size="icon"
+                size="sm"
                 onClick={() => clearUpload(type)}
-                className="h-8 w-8 hover:bg-red-500/10 hover:text-red-400 text-[#64748b]"
+                className="ml-auto h-7 px-2 text-[#00C853] hover:bg-[#00C853]/20 text-xs font-medium"
               >
-                <X className="h-4 w-4" />
+                Trocar
               </Button>
             </div>
           ) : (
@@ -270,7 +244,7 @@ export function CSVUploader() {
   };
 
   return (
-    <div className="grid gap-4 md:grid-cols-3">
+    <div className="grid gap-4 md:grid-cols-2">
       <UploadCard
         type="clientes"
         title="Base de Clientes"
@@ -280,11 +254,6 @@ export function CSVUploader() {
         type="varejo"
         title="Base de Varejo"
         description="Upload da base de varejo"
-      />
-      <UploadCard
-        type="rentabilidade"
-        title="Dados de Rentabilidade (Q4)"
-        description="Upload do JSON rentabilidade_v2_agregado.json"
       />
     </div>
   );

@@ -1,15 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import { TrendingUp, Users, UserCheck, ShoppingBag, Calendar, X } from "lucide-react";
+import { TrendingUp, Users, UserCheck, ShoppingBag } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-} from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
 import { useData } from "@/lib/data-context";
 import { FunnelChart } from "./funnel-chart";
 import { InsightCallout } from "./insight-callout";
@@ -27,12 +20,12 @@ interface PeriodOption {
 }
 
 interface ClientesFunnelProps {
-  periodFrom: string;
-  periodTo: string;
-  onPeriodFromChange: (value: string) => void;
-  onPeriodToChange: (value: string) => void;
-  varejoFilter: string;
-  onVarejoFilterChange: (value: string) => void;
+  periodFrom?: string;
+  periodTo?: string;
+  onPeriodFromChange?: (value: string) => void;
+  onPeriodToChange?: (value: string) => void;
+  varejoFilter?: string;
+  onVarejoFilterChange?: (value: string) => void;
 }
 
 function getSortKey(period: string): number {
@@ -40,111 +33,21 @@ function getSortKey(period: string): number {
   return year * 100 + month;
 }
 
-export function ClientesFunnel({ 
-  periodFrom, 
-  periodTo, 
-  onPeriodFromChange, 
-  onPeriodToChange,
-  varejoFilter,
-  onVarejoFilterChange
-}: ClientesFunnelProps) {
+export function ClientesFunnel({ }: ClientesFunnelProps) {
   const { clientesData } = useData();
 
   // Get unique periods from data
   const periods = useMemo((): PeriodOption[] => {
-    const periodsMap = new Map<string, PeriodOption>();
-    
-    clientesData.forEach((cliente) => {
-      const date = cliente["Data de Entrada na Ume"];
-      if (date) {
-        const dateStr = String(date);
-        let month: number | null = null;
-        let year: number | null = null;
-        
-        const slashParts = dateStr.split("/");
-        if (slashParts.length >= 3) {
-          month = parseInt(slashParts[1], 10);
-          year = parseInt(slashParts[2], 10);
-        } else if (dateStr.includes("-")) {
-          const dashParts = dateStr.split("-");
-          if (dashParts.length >= 2) {
-            year = parseInt(dashParts[0], 10);
-            month = parseInt(dashParts[1], 10);
-          }
-        }
-        
-        if (month && year && month >= 1 && month <= 12) {
-          const value = `${month.toString().padStart(2, "0")}/${year}`;
-          const label = `${MONTH_NAMES[month - 1]}/${year}`;
-          const sortKey = year * 100 + month;
-          
-          if (!periodsMap.has(value)) {
-            periodsMap.set(value, { value, label, sortKey });
-          }
-        }
-      }
-    });
-    
-    return Array.from(periodsMap.values()).sort((a, b) => a.sortKey - b.sortKey);
-  }, [clientesData]);
+    return [];
+  }, []);
 
   const getSelectedLabel = (value: string) => {
     if (value === "all") return "Todos";
-    const found = periods.find(p => p.value === value);
-    return found ? found.label : value;
+    return value;
   };
 
-  // Filter clients by period range AND varejo filter
-  const filteredClientes = useMemo(() => {
-    let filtered = clientesData;
-    
-    // Apply period filter
-    if (periodFrom !== "all" || periodTo !== "all") {
-      const fromKey = periodFrom !== "all" ? getSortKey(periodFrom) : 0;
-      const toKey = periodTo !== "all" ? getSortKey(periodTo) : 999999;
-      
-      filtered = filtered.filter((cliente) => {
-        const date = cliente["Data de Entrada na Ume"];
-        if (!date) return false;
-        
-        const dateStr = String(date);
-        let month: number | null = null;
-        let year: number | null = null;
-        
-        const parts = dateStr.split("/");
-        if (parts.length >= 3) {
-          month = parseInt(parts[1], 10);
-          year = parseInt(parts[2], 10);
-        } else if (dateStr.includes("-")) {
-          const dateParts = dateStr.split("-");
-          if (dateParts.length >= 2) {
-            year = parseInt(dateParts[0], 10);
-            month = parseInt(dateParts[1], 10);
-          }
-        }
-        
-        if (!month || !year) return false;
-        
-        const clientKey = year * 100 + month;
-        return clientKey >= fromKey && clientKey <= toKey;
-      });
-    }
-    
-    // Apply varejo filter
-    if (varejoFilter !== "todos") {
-      filtered = filtered.filter((cliente) => {
-        const qtdVarejos = Number(cliente["Qtd de Varejos que já comprou"]) || 0;
-        
-        if (varejoFilter === "1") return qtdVarejos === 1;
-        if (varejoFilter === "2") return qtdVarejos === 2;
-        if (varejoFilter === "3+") return qtdVarejos >= 3;
-        
-        return true;
-      });
-    }
-    
-    return filtered;
-  }, [clientesData, periodFrom, periodTo, varejoFilter]);
+  // Use all clients - no filtering
+  const filteredClientes = clientesData;
 
   // Calculate funnel data (4 steps: Solicitações → Aprovados → Ativados → Recorrentes)
   const funnelData = useMemo((): FunnelStep[] => {
@@ -225,13 +128,6 @@ export function ClientesFunnel({
 
   const hasData = clientesData.length > 0;
 
-  const clearFilters = () => {
-    onPeriodFromChange("all");
-    onPeriodToChange("all");
-  };
-
-  const hasActiveFilters = periodFrom !== "all" || periodTo !== "all";
-
   return (
     <div className="space-y-6">
       {/* Title and Filters */}
@@ -244,78 +140,8 @@ export function ClientesFunnel({
         </div>
         
         {/* Filter Toolbar */}
-        <div className="mt-4 flex flex-wrap items-center gap-3 border-b border-[#E2E8F0] pb-3">
-          <Calendar className="h-3.5 w-3.5 text-[#64748b]" />
-          <span className="text-xs font-medium text-[#64748b]">De:</span>
-          <Select value={periodFrom} onValueChange={onPeriodFromChange}>
-            <SelectTrigger className="h-8 w-32 border-[#E2E8F0] bg-white text-xs text-[#1a1a1a]">
-              <span className="truncate">{getSelectedLabel(periodFrom)}</span>
-            </SelectTrigger>
-            <SelectContent className="border-[#E2E8F0] bg-white">
-              <SelectItem value="all" className="text-xs text-[#1a1a1a]">
-                Todos
-              </SelectItem>
-              {periods.map((period) => (
-                <SelectItem key={period.value} value={period.value} className="text-xs text-[#1a1a1a]">
-                  {period.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          
-          <span className="text-xs font-medium text-[#64748b]">Até:</span>
-          <Select value={periodTo} onValueChange={onPeriodToChange}>
-            <SelectTrigger className="h-8 w-32 border-[#E2E8F0] bg-white text-xs text-[#1a1a1a]">
-              <span className="truncate">{getSelectedLabel(periodTo)}</span>
-            </SelectTrigger>
-            <SelectContent className="border-[#E2E8F0] bg-white">
-              <SelectItem value="all" className="text-xs text-[#1a1a1a]">
-                Todos
-              </SelectItem>
-              {periods.map((period) => (
-                <SelectItem key={period.value} value={period.value} className="text-xs text-[#1a1a1a]">
-                  {period.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          
-          {hasActiveFilters && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={clearFilters}
-              className="h-8 px-2 text-[#64748b] hover:bg-[#F0F4F3] hover:text-[#1a1a1a]"
-            >
-              <X className="h-3 w-3" />
-            </Button>
-          )}
-
-          <span className="text-xs font-medium text-[#64748b]">Varejos:</span>
-          <Select value={varejoFilter} onValueChange={onVarejoFilterChange}>
-            <SelectTrigger className="h-8 w-40 border-[#E2E8F0] bg-white text-xs text-[#1a1a1a]">
-              <span className="truncate">
-                {varejoFilter === "todos" && "Todos"}
-                {varejoFilter === "1" && "1 varejo"}
-                {varejoFilter === "2" && "2 varejos"}
-                {varejoFilter === "3+" && "3+ varejos"}
-              </span>
-            </SelectTrigger>
-            <SelectContent className="border-[#E2E8F0] bg-white">
-              <SelectItem value="todos" className="text-xs text-[#1a1a1a]">
-                Todos
-              </SelectItem>
-              <SelectItem value="1" className="text-xs text-[#1a1a1a]">
-                1 varejo
-              </SelectItem>
-              <SelectItem value="2" className="text-xs text-[#1a1a1a]">
-                2 varejos
-              </SelectItem>
-              <SelectItem value="3+" className="text-xs text-[#1a1a1a]">
-                3+ varejos
-              </SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="mt-4 text-xs text-[#64748b]">
+          Análise sobre snapshot completo da base — {clientesData.length.toLocaleString("pt-BR")} clientes
         </div>
       </div>
 

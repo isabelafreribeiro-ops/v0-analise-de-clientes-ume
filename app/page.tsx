@@ -11,6 +11,7 @@ import { SegmentacaoTab } from "@/components/segmentacao-tab";
 import { JornadaTab } from "@/components/jornada-tab";
 import { RentabilidadeTab } from "@/components/rentabilidade-tab";
 import { GlobalMetricsDisplay } from "@/components/global-metrics-display";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState("aquisicao");
@@ -31,6 +32,28 @@ export default function Home() {
           {/* Aquisição Tab */}
           {activeTab === "aquisicao" && (
             <>
+              {/* Anchor Question */}
+              <section className="mb-8">
+                <Card className="border-[#E2E8F0] bg-gradient-to-r from-[#F0F9F4] via-white to-[#F7FAF8]">
+                  <CardContent className="py-6">
+                    <div className="flex items-start gap-3">
+                      <span className="text-2xl">❓</span>
+                      <div className="flex-1">
+                        <p className="text-xs font-semibold text-[#64748b] uppercase tracking-wide mb-1">
+                          Pergunta-âncora
+                        </p>
+                        <p className="text-base font-semibold text-[#1a1a1a] leading-relaxed">
+                          Como funciona o funil de aquisição da Ume e onde estão os maiores gargalos de conversão?
+                        </p>
+                        <p className="text-xs text-[#64748b] mt-2">
+                          Para responder: mapeamos o funil completo (solicitação → aprovação → ativação → recorrência), identificamos as taxas de conversão entre cada etapa e destacamos o maior ponto de perda na jornada.
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </section>
+
               {/* Upload Section */}
               <section className="mb-12">
                 <h2 className="mb-2 text-xl font-bold text-[#1a1a1a]">
