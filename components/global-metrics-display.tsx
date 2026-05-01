@@ -40,7 +40,7 @@ export function GlobalMetricsDisplay() {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {/* Taxa de Aprovação */}
       <Card className="border-[#E2E8F0] bg-gradient-to-br from-[#F7FAF8] to-white">
         <CardHeader className="pb-2">
@@ -66,44 +66,22 @@ export function GlobalMetricsDisplay() {
       {/* Score Médio (Geral) */}
       <Card className="border-[#E2E8F0] bg-gradient-to-br from-[#F7FAF8] to-white">
         <CardHeader className="pb-2">
-          <CardTitle className="text-xs font-semibold text-[#64748b] uppercase">Score Médio (Base Total)</CardTitle>
+          <CardTitle className="text-xs font-semibold text-[#64748b] uppercase">Score Médio</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-[#1a1a1a]">{formatNumber(globalMetrics.scoreMediaGeral)}</div>
-          <p className="text-xs text-[#94a3b8] mt-1">todas as {formatNumber(globalMetrics.totalClientes)} linhas</p>
-        </CardContent>
-      </Card>
-
-      {/* Score Médio (Aprovados) */}
-      <Card className="border-[#E2E8F0] bg-gradient-to-br from-[#F7FAF8] to-white">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-xs font-semibold text-[#64748b] uppercase">Score Médio (Aprovados)</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-[#1a1a1a]">{formatNumber(globalMetrics.scoreMediaAprovados)}</div>
-          <p className="text-xs text-[#94a3b8] mt-1">{formatNumber(globalMetrics.totalAprovados)} clientes aprovados</p>
+          <p className="text-xs text-[#94a3b8] mt-1">base completa: {formatNumber(globalMetrics.totalClientes)} clientes</p>
         </CardContent>
       </Card>
 
       {/* App Adoption (Geral) */}
       <Card className="border-[#E2E8F0] bg-gradient-to-br from-[#F7FAF8] to-white">
         <CardHeader className="pb-2">
-          <CardTitle className="text-xs font-semibold text-[#64748b] uppercase">App Adoption (Base Total)</CardTitle>
+          <CardTitle className="text-xs font-semibold text-[#64748b] uppercase">App Adoption</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-[#1a1a1a]">{formatPercentage(globalMetrics.appAdoptionGeral)}</div>
           <p className="text-xs text-[#94a3b8] mt-1">clientes com app ativo</p>
-        </CardContent>
-      </Card>
-
-      {/* App Adoption (Aprovados) */}
-      <Card className="border-[#E2E8F0] bg-gradient-to-br from-[#F7FAF8] to-white">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-xs font-semibold text-[#64748b] uppercase">App Adoption (Aprovados)</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold text-[#1a1a1a]">{formatPercentage(globalMetrics.appAdoptionAprovados)}</div>
-          <p className="text-xs text-[#94a3b8] mt-1">{formatNumber(globalMetrics.totalAprovados)} aprovados</p>
         </CardContent>
       </Card>
     </div>
