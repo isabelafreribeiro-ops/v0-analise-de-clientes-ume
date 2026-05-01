@@ -19,7 +19,7 @@ export async function parseCSVAsync(
       Papa.parse(fileContent, {
         header: true,
         skipEmptyLines: true,
-        dynamicTyping: true,
+        dynamicTyping: false,
         complete: (results) => {
           const data = results.data as ClienteRow[] | VarejoRow[];
 
