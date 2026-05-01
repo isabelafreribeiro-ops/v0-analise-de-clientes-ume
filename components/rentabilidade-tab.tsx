@@ -273,7 +273,7 @@ export function RentabilidadeTab() {
               <p className="text-xs text-[#64748b]">gera o caixa</p>
             </div>
             <div className="p-3 bg-[#F1F8E9] border-l-4 border-[#66BB6A] rounded">
-              <p className="text-[10px] font-semibold text-[#2E7D32] uppercase">Pico em ~12%</p>
+              <p className="text-[10px] font-semibold text-[#2E7D32] uppercase">Pico em ~{pareto.picoPctClientes.toFixed(0)}%</p>
               <p className="text-lg font-bold text-[#66BB6A]">{formatBRL(pareto.picoValor)}</p>
               <p className="text-xs text-[#64748b]">margem máxima</p>
             </div>
