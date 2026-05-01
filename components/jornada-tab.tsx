@@ -98,7 +98,6 @@ function calculateSegmentSizes(clientesData: ClienteRow[]) {
 
 export function JornadaTab() {
   const { clientesData } = useData();
-  const [selectedScoreFilter, setSelectedScoreFilter] = useState<"all" | "baixo" | "medio" | "alto">("all");
 
   if (!clientesData || clientesData.length === 0) {
     return (
@@ -274,40 +273,6 @@ export function JornadaTab() {
         </div>
       </div>
 
-      {/* Score Filter */}
-      <div className="flex gap-2">
-        <button
-          onClick={() => setSelectedScoreFilter("all")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-            selectedScoreFilter === "all"
-              ? "bg-[#2196F3] text-white"
-              : "bg-[#E2E8F0] text-[#64748b] hover:bg-[#D0D8E0]"
-          }`}
-        >
-          Todos os Scores
-        </button>
-        <button
-          onClick={() => setSelectedScoreFilter("baixo")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-            selectedScoreFilter === "baixo"
-              ? "bg-[#E53935] text-white"
-              : "bg-[#E2E8F0] text-[#64748b] hover:bg-[#D0D8E0]"
-          }`}
-        >
-          Score Baixo (&lt;400)
-        </button>
-        <button
-          onClick={() => setSelectedScoreFilter("alto")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition ${
-            selectedScoreFilter === "alto"
-              ? "bg-[#00C853] text-white"
-              : "bg-[#E2E8F0] text-[#64748b] hover:bg-[#D0D8E0]"
-          }`}
-        >
-          Score Alto (≥700)
-        </button>
-      </div>
-
       {/* 7 Segment Cards */}
       <div className="grid grid-cols-1 gap-6">
         {journeys.map((journey) => {
@@ -352,22 +317,58 @@ export function JornadaTab() {
                 {/* Messages */}
                 <div className="space-y-2">
                   <p className="text-xs text-[#64748b] font-semibold uppercase">Fluxo de Mensagens</p>
-                  {journey.scoreBased && selectedScoreFilter !== "all" ? (
-                    journey.scoreBased[selectedScoreFilter as "baixo" | "alto"]?.map((msg, idx) => (
-                      <div key={idx} className="text-xs bg-white/60 p-2 rounded border border-[#E2E8F0]">
-                        <p className="font-medium text-[#1a1a1a]">{msg.momento} ({msg.canal})</p>
-                        <p className="text-[#64748b] mt-1 italic">"{msg.mensagem}"</p>
-                      </div>
-                    ))
-                  ) : (
-                    journey.detalhamentoPadrao.map((msg, idx) => (
-                      <div key={idx} className="text-xs bg-white/60 p-2 rounded border border-[#E2E8F0]">
-                        <p className="font-medium text-[#1a1a1a]">{msg.momento} ({msg.canal})</p>
-                        <p className="text-[#64748b] mt-1 italic">"{msg.mensagem}"</p>
-                      </div>
-                    ))
-                  )}
+                  {journey.detalhamentoPadrao.map((msg, idx) => (
+                    <div key={idx} className="text-xs bg-white/60 p-2 rounded border border-[#E2E8F0]">
+                      <p className="font-medium text-[#1a1a1a]">{msg.momento} ({msg.canal})</p>
+                      <p className="text-[#64748b] mt-1 italic">"{msg.mensagem}"</p>
+                    </div>
+                  ))}
                 </div>
+
+                {/* Personalization by Score - only for approved segments */}
+                {(journey.id === "aprovados-nao-ativados" || journey.id === "potencial" || journey.id === "recorrentes") && (
+                  <div className="bg-white/70 p-3 rounded border-2 border-dashed" style={{ borderColor: config.accent }}>
+                    <p className="text-xs font-semibold text-[#64748b] uppercase mb-2">Personalização por Score</p>
+                    <div className="space-y-2 text-xs">
+                      {journey.id === "aprovados-nao-ativados" && (
+                        <>
+                          <div className="bg-[#FFEBEE] p-2 rounded">
+                            <p className="font-medium text-[#B71C1C]">Score Baixo (&lt;400):</p>
+                            <p className="text-[#1a1a1a] mt-1">Tom educativo, foco em uso responsável. Ex: "Use seu crédito com inteligência: parcele só o que cabe na sua próxima renda"</p>
+                          </div>
+                          <div className="bg-[#E8F5E9] p-2 rounded">
+                            <p className="font-medium text-[#1B5E20]">Score Alto (≥700):</p>
+                            <p className="text-[#1a1a1a] mt-1">Tom assertivo, foco em poder de compra. Ex: "Você foi pré-aprovado com R$[LIMITE] — limite acima da média. Aproveite em até 12x"</p>
+                          </div>
+                        </>
+                      )}
+                      {journey.id === "potencial" && (
+                        <>
+                          <div className="bg-[#FFEBEE] p-2 rounded">
+                            <p className="font-medium text-[#B71C1C]">Score Baixo (&lt;400):</p>
+                            <p className="text-[#1a1a1a] mt-1">Reforço positivo + educação. Ex: "Parabéns pela primeira compra! Use de forma responsável"</p>
+                          </div>
+                          <div className="bg-[#E8F5E9] p-2 rounded">
+                            <p className="font-medium text-[#1B5E20]">Score Alto (≥700):</p>
+                            <p className="text-[#1a1a1a] mt-1">Cross-loja + value prop. Ex: "Sucesso na compra! Você tem R$[LIMITE_RESTANTE] em 50+ lojas Ume"</p>
+                          </div>
+                        </>
+                      )}
+                      {journey.id === "recorrentes" && (
+                        <>
+                          <div className="bg-[#FFEBEE] p-2 rounded">
+                            <p className="font-medium text-[#B71C1C]">Score Baixo (&lt;400):</p>
+                            <p className="text-[#1a1a1a] mt-1">Reconhecimento + manutenção. Ex: "Bom histórico! Continue assim"</p>
+                          </div>
+                          <div className="bg-[#E8F5E9] p-2 rounded">
+                            <p className="font-medium text-[#1B5E20]">Score Alto (≥700):</p>
+                            <p className="text-[#1a1a1a] mt-1">Aumento de limite + benefícios. Ex: "Histórico premium reconhecido — novo limite R$[LIMITE_NOVO]"</p>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {/* Expected Results */}
                 <div className="bg-white/40 p-2 rounded border border-[#E2E8F0]">
@@ -394,12 +395,128 @@ export function JornadaTab() {
           <p>✓ Negados recebem APENAS SMS (custo controlado em ~R${(segmentSizes["negados-recuperaveis"] * 0.03 + segmentSizes["negados-alto-risco"] * 0.03).toFixed(0)})</p>
           <p>✓ Mensagens de Inadimplentes nunca mencionam "VIP" ou "Plus"</p>
           <p>✓ Score baixo NUNCA recebe oferta de aumento de limite</p>
-          <p>✓ Personalização por score aplicada em {(selectedScoreFilter !== "all" ? "3 segmentos" : "0 segmentos")} de aprovados</p>
+          <p>✓ Personalização por score aplicada em 3 segmentos de aprovados (via seção textual dentro dos cards)</p>
         </CardContent>
       </Card>
 
-      {/* Behavioral Triggers Section */}
+      {/* Messaging Cost Summary Section */}
       <div className="border-t border-[#E2E8F0] pt-8">
+        <h2 className="text-2xl font-bold text-[#1a1a1a] mb-2">Resumo Operacional: Custo de Mensageria por Segmento</h2>
+        <p className="text-sm text-[#64748b] mb-6">
+          A operacionalização das jornadas resulta nos seguintes custos anuais de mensageria por cliente. Este custo é input direto da modelagem de rentabilidade.
+        </p>
+
+        {/* Cost Table */}
+        <Card className="mb-6 overflow-x-auto">
+          <CardContent className="pt-6">
+            <table className="w-full text-xs border-collapse">
+              <thead>
+                <tr className="bg-[#F7FAF8] border-b-2 border-[#E2E8F0]">
+                  <th className="text-left p-2 font-semibold text-[#1a1a1a]">Segmento</th>
+                  <th className="text-center p-2 font-semibold text-[#1a1a1a]">Push (R$ 0/msg)</th>
+                  <th className="text-center p-2 font-semibold text-[#1a1a1a]">WhatsApp (R$ 0,30/msg)</th>
+                  <th className="text-center p-2 font-semibold text-[#1a1a1a]">SMS (R$ 0,03/msg)</th>
+                  <th className="text-right p-2 font-semibold text-[#1a1a1a]">Custo Anual/Cliente</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-b border-[#E2E8F0] bg-[#E3F2FD]">
+                  <td className="p-2 font-medium text-[#0D47A1]">🔵 Aprovados Não Ativados</td>
+                  <td className="text-center p-2 text-[#1a1a1a]">0</td>
+                  <td className="text-center p-2 text-[#1a1a1a]">2</td>
+                  <td className="text-center p-2 text-[#1a1a1a]">3</td>
+                  <td className="text-right p-2 font-semibold text-[#0D47A1]">R$ 0,69</td>
+                </tr>
+                <tr className="border-b border-[#E2E8F0] bg-[#FFF3E0]">
+                  <td className="p-2 font-medium text-[#3E2723]">🟠 Potencial</td>
+                  <td className="text-center p-2 text-[#1a1a1a]">0</td>
+                  <td className="text-center p-2 text-[#1a1a1a]">2</td>
+                  <td className="text-center p-2 text-[#1a1a1a]">1</td>
+                  <td className="text-right p-2 font-semibold text-[#3E2723]">R$ 0,63</td>
+                </tr>
+                <tr className="border-b border-[#E2E8F0] bg-[#F3E5F5]">
+                  <td className="p-2 font-medium text-[#4A148C]">🟣 Recorrentes</td>
+                  <td className="text-center p-2 text-[#1a1a1a]">0</td>
+                  <td className="text-center p-2 text-[#1a1a1a]">12</td>
+                  <td className="text-center p-2 text-[#1a1a1a]">8</td>
+                  <td className="text-right p-2 font-semibold text-[#4A148C]">R$ 4,20</td>
+                </tr>
+                <tr className="border-b border-[#E2E8F0] bg-[#F0F4F3]">
+                  <td className="p-2 font-medium text-[#001a0f]">🟢 Ume Plus</td>
+                  <td className="text-center p-2 text-[#1a1a1a]">0</td>
+                  <td className="text-center p-2 text-[#1a1a1a]">24</td>
+                  <td className="text-center p-2 text-[#1a1a1a]">12</td>
+                  <td className="text-right p-2 font-semibold text-[#001a0f]">R$ 8,16</td>
+                </tr>
+                <tr className="border-b border-[#E2E8F0] bg-[#FFF9C4]">
+                  <td className="p-2 font-medium text-[#F57F17]">🟡 Negados Recuperáveis</td>
+                  <td className="text-center p-2 text-[#1a1a1a]">0</td>
+                  <td className="text-center p-2 text-[#1a1a1a]">0</td>
+                  <td className="text-center p-2 text-[#1a1a1a]">3</td>
+                  <td className="text-right p-2 font-semibold text-[#F57F17]">R$ 0,09</td>
+                </tr>
+                <tr className="border-b border-[#E2E8F0] bg-[#FFEBEE]">
+                  <td className="p-2 font-medium text-[#B71C1C]">🔴 Negados Alto Risco</td>
+                  <td className="text-center p-2 text-[#1a1a1a]">0</td>
+                  <td className="text-center p-2 text-[#1a1a1a]">0</td>
+                  <td className="text-center p-2 text-[#1a1a1a]">1</td>
+                  <td className="text-right p-2 font-semibold text-[#B71C1C]">R$ 0,03</td>
+                </tr>
+                <tr className="bg-[#FCE4EC]">
+                  <td className="p-2 font-medium text-[#880E4F]">🩷 Inadimplentes</td>
+                  <td className="text-center p-2 text-[#1a1a1a]">0</td>
+                  <td className="text-center p-2 text-[#1a1a1a]">2</td>
+                  <td className="text-center p-2 text-[#1a1a1a]">2</td>
+                  <td className="text-right p-2 font-semibold text-[#880E4F]">R$ 0,66</td>
+                </tr>
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+
+        {/* Cost Notes */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <Card className="border-l-4" style={{ borderLeftColor: "#FF9800", backgroundColor: "#FFF3E0" }}>
+            <CardContent className="pt-4">
+              <p className="text-sm font-semibold text-[#F57F17] mb-2">📱 NOTA 1 — Push Removido</p>
+              <p className="text-xs text-[#3E2723]">Push notifications removidas de Aprovados Não Ativados — apenas 0,6% deles têm o app, tornando o canal inviável neste segmento.</p>
+            </CardContent>
+          </Card>
+          <Card className="border-l-4" style={{ borderLeftColor: "#1976D2", backgroundColor: "#E3F2FD" }}>
+            <CardContent className="pt-4">
+              <p className="text-sm font-semibold text-[#0D47A1] mb-2">💸 NOTA 2 — Negados em SMS Only</p>
+              <p className="text-xs text-[#0D47A1]">Negados recebem APENAS SMS para contenção de custo. WhatsApp custaria 10x mais e o ROI marginal é baixo dado o perfil de risco.</p>
+            </CardContent>
+          </Card>
+          <Card className="border-l-4" style={{ borderLeftColor: "#00C853", backgroundColor: "#F0F4F3" }}>
+            <CardContent className="pt-4">
+              <p className="text-sm font-semibold text-[#001a0f] mb-2">⚙️ NOTA 3 — Cadência Recorrentes</p>
+              <p className="text-xs text-[#1a1a1a]">Cadência dos Recorrentes foi reduzida (~24 toques/ano vs. 60+ que seria semanal) para evitar fadiga e opt-out.</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Total Cost */}
+        <Card style={{ backgroundColor: "#001a0f", borderColor: "#00C853", borderWidth: "2px" }}>
+          <CardContent className="pt-6">
+            <p className="text-sm font-semibold text-[#00C853] mb-2 uppercase">Custo Total Anual Estimado</p>
+            <p className="text-3xl font-bold text-white">
+              R$ {new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(
+                (segmentSizes["aprovados-nao-ativados"] * 0.69 +
+                  segmentSizes["potencial"] * 0.63 +
+                  segmentSizes["recorrentes"] * 4.20 +
+                  segmentSizes["ume-plus"] * 8.16 +
+                  segmentSizes["negados-recuperaveis"] * 0.09 +
+                  segmentSizes["negados-alto-risco"] * 0.03 +
+                  segmentSizes["inadimplentes"] * 0.66)
+              )}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Behavioral Triggers Section */}
+      <div className="border-t border-[#E2E8F0] pt-8 mt-8">
         <h2 className="text-2xl font-bold text-[#1a1a1a] mb-2">Gatilhos Comportamentais (Event-Based)</h2>
         <p className="text-sm text-[#64748b] mb-6">
           Estes eventos têm prioridade sobre a jornada time-based. Quando ambos disparam no mesmo dia, envie apenas a mensagem do gatilho.
