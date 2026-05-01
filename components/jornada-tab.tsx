@@ -413,6 +413,12 @@ export function JornadaTab() {
                       </p>
                     )}
                     {!expandedSegments[journey.id] && (
+                      <p className="text-xs mt-1" style={{ color: config.text, opacity: 0.7 }}>
+                        <span className="uppercase tracking-wide text-[10px] font-semibold" style={{ opacity: 0.8 }}>Resultado esperado:</span>{" "}
+                        {journey.resultadoEsperado.join(" · ")}
+                      </p>
+                    )}
+                    {!expandedSegments[journey.id] && (
                       <p className="text-xs mt-1" style={{ color: config.text, opacity: 0.8 }}>
                         Canais: {journey.channels.map(c => c === "sms" ? "SMS" : c === "whatsapp" ? "WhatsApp" : "Push").join(", ")}
                       </p>
@@ -546,6 +552,9 @@ export function JornadaTab() {
               {!expandedTriggers["A"] && (
                 <p className="text-xs mt-2 text-[#64748b]">Aplicável: Potencial, Recorrentes, Ume Plus</p>
               )}
+              {!expandedTriggers["A"] && (
+                <p className="text-xs mt-1 text-[#64748b]"><span className="uppercase tracking-wide text-[10px] font-semibold">Resultado esperado:</span> Recuperação de ~10-15% dos abandonos</p>
+              )}
             </CardHeader>
             <CardContent className={expandedTriggers["A"] ? "block space-y-4" : "hidden"}>
               <div>
@@ -580,6 +589,9 @@ export function JornadaTab() {
               {!expandedTriggers["B"] && (
                 <p className="text-xs mt-2 text-[#64748b]">Aplicável: Recorrentes, Ume Plus</p>
               )}
+              {!expandedTriggers["B"] && (
+                <p className="text-xs mt-1 text-[#64748b]"><span className="uppercase tracking-wide text-[10px] font-semibold">Resultado esperado:</span> Recuperação de ~5-8% dos inativos</p>
+              )}
             </CardHeader>
             <CardContent className={expandedTriggers["B"] ? "block space-y-4" : "hidden"}>
               <div>
@@ -610,6 +622,9 @@ export function JornadaTab() {
               </div>
               {!expandedTriggers["C"] && (
                 <p className="text-xs mt-2 text-[#64748b]">Aplicável: Todos os aprovados</p>
+              )}
+              {!expandedTriggers["C"] && (
+                <p className="text-xs mt-1 text-[#64748b]"><span className="uppercase tracking-wide text-[10px] font-semibold">Resultado esperado:</span> Redução de inadimplência, aumento de antecipações</p>
               )}
             </CardHeader>
             <CardContent className={expandedTriggers["C"] ? "block space-y-4" : "hidden"}>
@@ -642,6 +657,9 @@ export function JornadaTab() {
               {!expandedTriggers["D"] && (
                 <p className="text-xs mt-2 text-[#64748b]">Aplicável: Recorrentes, Ume Plus</p>
               )}
+              {!expandedTriggers["D"] && (
+                <p className="text-xs mt-1 text-[#64748b]"><span className="uppercase tracking-wide text-[10px] font-semibold">Resultado esperado:</span> Cross-loja de 8-12%, diversificação de uso</p>
+              )}
             </CardHeader>
             <CardContent className={expandedTriggers["D"] ? "block space-y-4" : "hidden"}>
               <div>
@@ -673,6 +691,9 @@ export function JornadaTab() {
               {!expandedTriggers["E"] && (
                 <p className="text-xs mt-2 text-[#64748b]">Aplicável: Todos os aprovados</p>
               )}
+              {!expandedTriggers["E"] && (
+                <p className="text-xs mt-1 text-[#64748b]"><span className="uppercase tracking-wide text-[10px] font-semibold">Resultado esperado:</span> Aumento de AOV 15-25%, retenção reforçada</p>
+              )}
             </CardHeader>
             <CardContent className={expandedTriggers["E"] ? "block space-y-4" : "hidden"}>
               <div>
@@ -703,6 +724,9 @@ export function JornadaTab() {
               </div>
               {!expandedTriggers["F"] && (
                 <p className="text-xs mt-2 text-[#64748b]">Aplicável: Inadimplentes</p>
+              )}
+              {!expandedTriggers["F"] && (
+                <p className="text-xs mt-1 text-[#64748b]"><span className="uppercase tracking-wide text-[10px] font-semibold">Resultado esperado:</span> Retenção de ~40-50% dos recuperados, reativação suave</p>
               )}
             </CardHeader>
             <CardContent className={expandedTriggers["F"] ? "block space-y-4" : "hidden"}>
