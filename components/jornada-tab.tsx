@@ -203,10 +203,10 @@ export function JornadaTab() {
     },
     {
       id: "negados-recuperaveis",
-      name: "Negados Recuperáveis",
+      name: "Negados Próximos do Corte",
       size: segmentSizes["negados-recuperaveis"],
       objetivo: "Educação financeira + reaplicação",
-      trigger: "Situação = Negada + Score 300-400",
+      trigger: "Situação = Negada + Score 300-449",
       timeline: ["D0", "D30", "D90"],
       channels: ["sms"],
       fluxo: ["SMS", "SMS", "SMS"],
@@ -274,146 +274,6 @@ export function JornadaTab() {
           <Users className="h-12 w-12 text-[#2196F3] opacity-20" />
         </div>
       </div>
-
-      {/* 7 Segment Cards */}
-      <div className="grid grid-cols-1 gap-6">
-        {journeys.map((journey) => {
-          const config = SEGMENT_CONFIG[journey.id];
-          const percentage = ((journey.size / totalClientes) * 100).toFixed(1);
-
-          return (
-            <Card key={journey.id} className={`border-l-4 cursor-pointer`} style={{ borderLeftColor: config.accent, backgroundColor: config.bg }} onClick={() => setExpandedSegments(prev => ({ ...prev, [journey.id]: !prev[journey.id] }))}>
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <CardTitle className="text-lg" style={{ color: config.text }}>
-                      {journey.icon} {journey.name}
-                    </CardTitle>
-                    <p className="text-xs mt-1" style={{ color: config.text, opacity: 0.8 }}>
-                      {formatNumber(journey.size)} clientes — {percentage}% da base
-                    </p>
-                    {!expandedSegments[journey.id] && (
-                      <p className="text-xs mt-2 font-medium" style={{ color: config.text }}>
-                        Objetivo: {journey.objetivo}
-                      </p>
-                    )}
-                    {!expandedSegments[journey.id] && (
-                      <p className="text-xs mt-1" style={{ color: config.text, opacity: 0.8 }}>
-                        Canais: {journey.channels.map(c => c === "sms" ? "SMS" : c === "whatsapp" ? "WhatsApp" : "Push").join(", ")}
-                      </p>
-                    )}
-                  </div>
-                  <ChevronDown className="h-5 w-5 transition-transform" style={{ color: config.text, transform: expandedSegments[journey.id] ? "rotate(180deg)" : "rotate(0deg)" }} />
-                </div>
-              </CardHeader>
-              {expandedSegments[journey.id] && (
-              <CardContent className="space-y-4">
-                {/* Key Info */}
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-xs text-[#64748b] font-semibold">Objetivo</p>
-                    <p className="text-[#1a1a1a] font-medium mt-1">{journey.objetivo}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-[#64748b] font-semibold">Trigger</p>
-                    <p className="text-[#1a1a1a] font-medium mt-1 text-xs">{journey.trigger}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-[#64748b] font-semibold">Timeline</p>
-                    <p className="text-[#1a1a1a] font-medium mt-1 text-xs">{journey.timeline.join(" → ")}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-[#64748b] font-semibold">Canais</p>
-                    <p className="text-[#1a1a1a] font-medium mt-1 text-xs">{journey.channels.join(", ").toUpperCase()}</p>
-                  </div>
-                </div>
-
-                {/* Messages */}
-                <div className="space-y-2">
-                  <p className="text-xs text-[#64748b] font-semibold uppercase">Fluxo de Mensagens</p>
-                  {journey.detalhamentoPadrao.map((msg, idx) => (
-                    <div key={idx} className="text-xs bg-white/60 p-2 rounded border border-[#E2E8F0]">
-                      <p className="font-medium text-[#1a1a1a]">{msg.momento} ({msg.canal})</p>
-                      <p className="text-[#64748b] mt-1 italic">"{msg.mensagem}"</p>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Personalization by Score - only for approved segments */}
-                {(journey.id === "aprovados-nao-ativados" || journey.id === "potencial" || journey.id === "recorrentes") && (
-                  <div className="bg-white/70 p-3 rounded border-2 border-dashed" style={{ borderColor: config.accent }}>
-                    <p className="text-xs font-semibold text-[#64748b] uppercase mb-2">Personalização por Score</p>
-                    <div className="space-y-2 text-xs">
-                      {journey.id === "aprovados-nao-ativados" && (
-                        <>
-                          <div className="bg-[#FFEBEE] p-2 rounded">
-                            <p className="font-medium text-[#B71C1C]">Score Baixo (&lt;400):</p>
-                            <p className="text-[#1a1a1a] mt-1">Tom educativo, foco em uso responsável. Ex: "Use seu crédito com inteligência: parcele só o que cabe na sua próxima renda"</p>
-                          </div>
-                          <div className="bg-[#E8F5E9] p-2 rounded">
-                            <p className="font-medium text-[#1B5E20]">Score Alto (≥700):</p>
-                            <p className="text-[#1a1a1a] mt-1">Tom assertivo, foco em poder de compra. Ex: "Você foi pré-aprovado com R$[LIMITE] — limite acima da média. Aproveite em até 12x"</p>
-                          </div>
-                        </>
-                      )}
-                      {journey.id === "potencial" && (
-                        <>
-                          <div className="bg-[#FFEBEE] p-2 rounded">
-                            <p className="font-medium text-[#B71C1C]">Score Baixo (&lt;400):</p>
-                            <p className="text-[#1a1a1a] mt-1">Reforço positivo + educação. Ex: "Parabéns pela primeira compra! Use de forma responsável"</p>
-                          </div>
-                          <div className="bg-[#E8F5E9] p-2 rounded">
-                            <p className="font-medium text-[#1B5E20]">Score Alto (≥700):</p>
-                            <p className="text-[#1a1a1a] mt-1">Cross-loja + value prop. Ex: "Sucesso na compra! Você tem R$[LIMITE_RESTANTE] em 50+ lojas Ume"</p>
-                          </div>
-                        </>
-                      )}
-                      {journey.id === "recorrentes" && (
-                        <>
-                          <div className="bg-[#FFEBEE] p-2 rounded">
-                            <p className="font-medium text-[#B71C1C]">Score Baixo (&lt;400):</p>
-                            <p className="text-[#1a1a1a] mt-1">Reconhecimento + manutenção. Ex: "Bom histórico! Continue assim"</p>
-                          </div>
-                          <div className="bg-[#E8F5E9] p-2 rounded">
-                            <p className="font-medium text-[#1B5E20]">Score Alto (≥700):</p>
-                            <p className="text-[#1a1a1a] mt-1">Aumento de limite + benefícios. Ex: "Histórico premium reconhecido — novo limite R$[LIMITE_NOVO]"</p>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Expected Results */}
-                <div className="bg-white/40 p-2 rounded border border-[#E2E8F0]">
-                  <p className="text-xs text-[#64748b] font-semibold uppercase mb-1">Resultado Esperado</p>
-                  <ul className="text-xs text-[#1a1a1a] space-y-0.5">
-                    {journey.resultadoEsperado.map((resultado, idx) => (
-                      <li key={idx}>• {resultado}</li>
-                    ))}
-                  </ul>
-                </div>
-              </CardContent>
-              )}
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* Checklist */}
-      <Card className="border-[#E2E8F0] bg-[#F7FAF8]">
-        <CardHeader>
-          <CardTitle className="text-sm font-semibold text-[#64748b] uppercase">Checklist de Implementação</CardTitle>
-        </CardHeader>
-        <CardContent className="text-xs space-y-2 text-[#1a1a1a]">
-          <p>✓ Soma de tamanhos dos 7 segmentos = {formatNumber(totalSegments)} clientes</p>
-          <p>✓ Negados recebem APENAS SMS (custo controlado em ~R${(segmentSizes["negados-recuperaveis"] * 0.03 + segmentSizes["negados-alto-risco"] * 0.03).toFixed(0)})</p>
-          <p>✓ Mensagens de Inadimplentes nunca mencionam "VIP" ou "Plus"</p>
-          <p>✓ Score baixo NUNCA recebe oferta de aumento de limite</p>
-          <p>✓ Personalização por score aplicada em 3 segmentos de aprovados (via seção textual dentro dos cards)</p>
-        </CardContent>
-      </Card>
-
       {/* Messaging Cost Summary Section */}
       <div className="border-t border-[#E2E8F0] pt-8">
         <h2 className="text-2xl font-bold text-[#1a1a1a] mb-2">Resumo Operacional: Custo de Mensageria por Segmento</h2>
@@ -530,6 +390,144 @@ export function JornadaTab() {
         </Card>
       </div>
 
+      {/* 7 Segment Cards */}
+      <div className="grid grid-cols-1 gap-6">
+        {journeys.map((journey) => {
+          const config = SEGMENT_CONFIG[journey.id];
+          const percentage = ((journey.size / totalClientes) * 100).toFixed(1);
+
+          return (
+            <Card key={journey.id} className={`border-l-4 cursor-pointer`} style={{ borderLeftColor: config.accent, backgroundColor: config.bg }} onClick={() => setExpandedSegments(prev => ({ ...prev, [journey.id]: !prev[journey.id] }))}>
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <CardTitle className="text-lg" style={{ color: config.text }}>
+                      {journey.icon} {journey.name}
+                    </CardTitle>
+                    <p className="text-xs mt-1" style={{ color: config.text, opacity: 0.8 }}>
+                      {formatNumber(journey.size)} clientes — {percentage}% da base
+                    </p>
+                    {!expandedSegments[journey.id] && (
+                      <p className="text-xs mt-2 font-medium" style={{ color: config.text }}>
+                        Objetivo: {journey.objetivo}
+                      </p>
+                    )}
+                    {!expandedSegments[journey.id] && (
+                      <p className="text-xs mt-1" style={{ color: config.text, opacity: 0.8 }}>
+                        Canais: {journey.channels.map(c => c === "sms" ? "SMS" : c === "whatsapp" ? "WhatsApp" : "Push").join(", ")}
+                      </p>
+                    )}
+                  </div>
+                  <ChevronDown className="h-5 w-5 transition-transform" style={{ color: config.text, transform: expandedSegments[journey.id] ? "rotate(180deg)" : "rotate(0deg)" }} />
+                </div>
+              </CardHeader>
+              <CardContent className={expandedSegments[journey.id] ? "block space-y-4" : "hidden"}>
+                {/* Key Info */}
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="text-xs text-[#64748b] font-semibold">Objetivo</p>
+                    <p className="text-[#1a1a1a] font-medium mt-1">{journey.objetivo}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[#64748b] font-semibold">Trigger</p>
+                    <p className="text-[#1a1a1a] font-medium mt-1 text-xs">{journey.trigger}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[#64748b] font-semibold">Timeline</p>
+                    <p className="text-[#1a1a1a] font-medium mt-1 text-xs">{journey.timeline.join(" → ")}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-[#64748b] font-semibold">Canais</p>
+                    <p className="text-[#1a1a1a] font-medium mt-1 text-xs">{journey.channels.join(", ").toUpperCase()}</p>
+                  </div>
+                </div>
+
+                {/* Messages */}
+                <div className="space-y-2">
+                  <p className="text-xs text-[#64748b] font-semibold uppercase">Fluxo de Mensagens</p>
+                  {journey.detalhamentoPadrao.map((msg, idx) => (
+                    <div key={idx} className="text-xs bg-white/60 p-2 rounded border border-[#E2E8F0]">
+                      <p className="font-medium text-[#1a1a1a]">{msg.momento} ({msg.canal})</p>
+                      <p className="text-[#64748b] mt-1 italic">"{msg.mensagem}"</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Personalization by Score - only for approved segments */}
+                {(journey.id === "aprovados-nao-ativados" || journey.id === "potencial" || journey.id === "recorrentes") && (
+                  <div className="bg-white/70 p-3 rounded border-2 border-dashed" style={{ borderColor: config.accent }}>
+                    <p className="text-xs font-semibold text-[#64748b] uppercase mb-2">Personalização por Score</p>
+                    <div className="space-y-2 text-xs">
+                      {journey.id === "aprovados-nao-ativados" && (
+                        <>
+                          <div className="bg-[#FFEBEE] p-2 rounded">
+                            <p className="font-medium text-[#B71C1C]">Score Baixo (&lt;400):</p>
+                            <p className="text-[#1a1a1a] mt-1">Tom educativo, foco em uso responsável. Ex: "Use seu crédito com inteligência: parcele só o que cabe na sua próxima renda"</p>
+                          </div>
+                          <div className="bg-[#E8F5E9] p-2 rounded">
+                            <p className="font-medium text-[#1B5E20]">Score Alto (≥700):</p>
+                            <p className="text-[#1a1a1a] mt-1">Tom assertivo, foco em poder de compra. Ex: "Você foi pré-aprovado com R$[LIMITE] — limite acima da média. Aproveite em até 12x"</p>
+                          </div>
+                        </>
+                      )}
+                      {journey.id === "potencial" && (
+                        <>
+                          <div className="bg-[#FFEBEE] p-2 rounded">
+                            <p className="font-medium text-[#B71C1C]">Score Baixo (&lt;400):</p>
+                            <p className="text-[#1a1a1a] mt-1">Reforço positivo + educação. Ex: "Parabéns pela primeira compra! Use de forma responsável"</p>
+                          </div>
+                          <div className="bg-[#E8F5E9] p-2 rounded">
+                            <p className="font-medium text-[#1B5E20]">Score Alto (≥700):</p>
+                            <p className="text-[#1a1a1a] mt-1">Cross-loja + value prop. Ex: "Sucesso na compra! Você tem R$[LIMITE_RESTANTE] em 50+ lojas Ume"</p>
+                          </div>
+                        </>
+                      )}
+                      {journey.id === "recorrentes" && (
+                        <>
+                          <div className="bg-[#FFEBEE] p-2 rounded">
+                            <p className="font-medium text-[#B71C1C]">Score Baixo (&lt;400):</p>
+                            <p className="text-[#1a1a1a] mt-1">Reconhecimento + manutenção. Ex: "Bom histórico! Continue assim"</p>
+                          </div>
+                          <div className="bg-[#E8F5E9] p-2 rounded">
+                            <p className="font-medium text-[#1B5E20]">Score Alto (≥700):</p>
+                            <p className="text-[#1a1a1a] mt-1">Aumento de limite + benefícios. Ex: "Histórico premium reconhecido — novo limite R$[LIMITE_NOVO]"</p>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Expected Results */}
+                <div className="bg-white/40 p-2 rounded border border-[#E2E8F0]">
+                  <p className="text-xs text-[#64748b] font-semibold uppercase mb-1">Resultado Esperado</p>
+                  <ul className="text-xs text-[#1a1a1a] space-y-0.5">
+                    {journey.resultadoEsperado.map((resultado, idx) => (
+                      <li key={idx}>• {resultado}</li>
+                    ))}
+                  </ul>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Checklist */}
+      <Card className="border-[#E2E8F0] bg-[#F7FAF8]">
+        <CardHeader>
+          <CardTitle className="text-sm font-semibold text-[#64748b] uppercase">Checklist de Implementação</CardTitle>
+        </CardHeader>
+        <CardContent className="text-xs space-y-2 text-[#1a1a1a]">
+          <p>✓ Soma de tamanhos dos 7 segmentos = {formatNumber(totalSegments)} clientes</p>
+          <p>✓ Negados recebem APENAS SMS (custo controlado em ~R${(segmentSizes["negados-recuperaveis"] * 0.03 + segmentSizes["negados-alto-risco"] * 0.03).toFixed(0)})</p>
+          <p>✓ Mensagens de Inadimplentes nunca mencionam "VIP" ou "Plus"</p>
+          <p>✓ Score baixo NUNCA recebe oferta de aumento de limite</p>
+          <p>✓ Personalização por score aplicada em 3 segmentos de aprovados (via seção textual dentro dos cards)</p>
+        </CardContent>
+      </Card>
+
+
       {/* Behavioral Triggers Section */}
       <div className="border-t border-[#E2E8F0] pt-8 mt-8">
         <h2 className="text-2xl font-bold text-[#1a1a1a] mb-2">Gatilhos Comportamentais (Event-Based)</h2>
@@ -549,8 +547,7 @@ export function JornadaTab() {
                 <p className="text-xs mt-2 text-[#64748b]">Aplicável: Potencial, Recorrentes, Ume Plus</p>
               )}
             </CardHeader>
-            {expandedTriggers["A"] && (
-            <CardContent className="space-y-4">
+            <CardContent className={expandedTriggers["A"] ? "block space-y-4" : "hidden"}>
               <div>
                 <p className="text-sm font-semibold text-[#64748b]">TRIGGER</p>
                 <p className="text-sm text-[#1a1a1a]">Cliente clicou em mensagem ou abriu app, mas não completou compra em 24h</p>
@@ -571,7 +568,6 @@ export function JornadaTab() {
                 <p className="text-sm text-[#1a1a1a]">Recuperação de ~10-15% dos abandonos</p>
               </div>
             </CardContent>
-            )}
           </Card>
 
           {/* Trigger B: Inatividade Prolongada */}
@@ -585,8 +581,7 @@ export function JornadaTab() {
                 <p className="text-xs mt-2 text-[#64748b]">Aplicável: Recorrentes, Ume Plus</p>
               )}
             </CardHeader>
-            {expandedTriggers["B"] && (
-            <CardContent className="space-y-4">
+            <CardContent className={expandedTriggers["B"] ? "block space-y-4" : "hidden"}>
               <div>
                 <p className="text-sm font-semibold text-[#64748b]">TRIGGER</p>
                 <p className="text-sm text-[#1a1a1a]">Recorrente ou Ume Plus sem compra há 60 dias (ajustável)</p>
@@ -604,7 +599,6 @@ export function JornadaTab() {
                 <p className="text-sm text-[#1a1a1a]">Recuperação de ~5-8% dos inátivos</p>
               </div>
             </CardContent>
-            )}
           </Card>
 
           {/* Trigger C: Aproximação de Vencimento */}
@@ -618,8 +612,7 @@ export function JornadaTab() {
                 <p className="text-xs mt-2 text-[#64748b]">Aplicável: Todos os aprovados</p>
               )}
             </CardHeader>
-            {expandedTriggers["C"] && (
-            <CardContent className="space-y-4">
+            <CardContent className={expandedTriggers["C"] ? "block space-y-4" : "hidden"}>
               <div>
                 <p className="text-sm font-semibold text-[#64748b]">TRIGGER</p>
                 <p className="text-sm text-[#1a1a1a]">Parcela vence em 3 dias</p>
@@ -637,7 +630,6 @@ export function JornadaTab() {
                 <p className="text-sm text-[#1a1a1a]">Redução de inadimplência, aumento de antecipações</p>
               </div>
             </CardContent>
-            )}
           </Card>
 
           {/* Trigger D: Primeiro Uso de Novo Varejo */}
@@ -651,8 +643,7 @@ export function JornadaTab() {
                 <p className="text-xs mt-2 text-[#64748b]">Aplicável: Recorrentes, Ume Plus</p>
               )}
             </CardHeader>
-            {expandedTriggers["D"] && (
-            <CardContent className="space-y-4">
+            <CardContent className={expandedTriggers["D"] ? "block space-y-4" : "hidden"}>
               <div>
                 <p className="text-sm font-semibold text-[#64748b]">TRIGGER</p>
                 <p className="text-sm text-[#1a1a1a]">Cliente compra em varejo Ume novo na rede</p>
@@ -670,7 +661,6 @@ export function JornadaTab() {
                 <p className="text-sm text-[#1a1a1a]">Cross-loja de 8-12%, diversificação de uso</p>
               </div>
             </CardContent>
-            )}
           </Card>
 
           {/* Trigger E: Aumento Automático de Limite */}
@@ -684,8 +674,7 @@ export function JornadaTab() {
                 <p className="text-xs mt-2 text-[#64748b]">Aplicável: Todos os aprovados</p>
               )}
             </CardHeader>
-            {expandedTriggers["E"] && (
-            <CardContent className="space-y-4">
+            <CardContent className={expandedTriggers["E"] ? "block space-y-4" : "hidden"}>
               <div>
                 <p className="text-sm font-semibold text-[#64748b]">TRIGGER</p>
                 <p className="text-sm text-[#1a1a1a]">Limite total foi aumentado pelo motor de crédito</p>
@@ -703,7 +692,6 @@ export function JornadaTab() {
                 <p className="text-sm text-[#1a1a1a]">Aumento de AOV 15-25%, retenção reforçada</p>
               </div>
             </CardContent>
-            )}
           </Card>
 
           {/* Trigger F: Recuperação Pós-Inadimplência */}
@@ -717,8 +705,7 @@ export function JornadaTab() {
                 <p className="text-xs mt-2 text-[#64748b]">Aplicável: Inadimplentes</p>
               )}
             </CardHeader>
-            {expandedTriggers["F"] && (
-            <CardContent className="space-y-4">
+            <CardContent className={expandedTriggers["F"] ? "block space-y-4" : "hidden"}>
               <div>
                 <p className="text-sm font-semibold text-[#64748b]">TRIGGER</p>
                 <p className="text-sm text-[#1a1a1a]">Cliente que estava Inadimplente regularizou</p>
@@ -739,7 +726,6 @@ export function JornadaTab() {
                 <p className="text-sm text-[#1a1a1a]">Retenção de ~40-50% dos recuperados, reativação suave</p>
               </div>
             </CardContent>
-            )}
           </Card>
         </div>
       </div>
