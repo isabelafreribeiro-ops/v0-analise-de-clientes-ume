@@ -288,43 +288,23 @@ export function VarejoFunnel({
         </Card>
       </div>
 
-      {/* Funnel Chart */}
-      <Card className="border-[#E2E8F0] bg-white">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-[#1a1a1a]">
-            <Store className="h-5 w-5 text-[#00C853]" />
-            Funil de Aquisição de Varejos
-          </CardTitle>
-          <CardDescription className="text-[#64748b]">
-            Visualização do engajamento dos varejos na rede
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {varejoData.length > 0 ? (
-            <>
-              <FunnelChart data={funnelData} />
-              
-              {/* Metric Descriptions */}
-              <div className="space-y-2 pt-4 border-t border-[#E2E8F0] text-xs text-[#64748b]">
-                <div><span className="font-medium text-[#1a1a1a]">Total na Rede:</span> varejos parceiros presentes na base.</div>
-                <div><span className="font-medium text-[#1a1a1a]">Varejos Ativos:</span> varejos com transações recorrentes ou conversões.</div>
-                <div><span className="font-medium text-[#1a1a1a]">Varejos com Conversões:</span> varejos com transações de conversão no período.</div>
-                <div><span className="font-medium text-[#1a1a1a]">Originação Total:</span> volume total de crédito originado pelos varejos.</div>
-              </div>
-            </>
-          ) : (
-            <div className="flex h-64 flex-col items-center justify-center text-center">
-              <Store className="mb-4 h-12 w-12 text-[#cbd5e1]" />
-              <p className="text-lg font-medium text-[#64748b]">
-                Nenhum dado carregado
-              </p>
-              <p className="text-sm text-[#94a3b8]">
-                Faça upload da Base de Varejo para visualizar o funil
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Summary Line (replaces funnel chart per AJUSTE 3) */}
+      {varejoData.length > 0 && (
+        <div className="space-y-4">
+          {/* Summary callout */}
+          <p className="text-sm text-[#475569]">
+            {((summaryMetrics.varejosAtivos / summaryMetrics.totalVarejos) * 100).toFixed(1)}% dos {summaryMetrics.totalVarejos} varejos parceiros estão ativos. A rede tem alta cobertura — o desafio é concentração, não ativação.
+          </p>
+          
+          {/* Metric Descriptions */}
+          <div className="space-y-2 pt-4 border-t border-[#E2E8F0] text-xs text-[#64748b]">
+            <div><span className="font-medium text-[#1a1a1a]">Total na Rede:</span> varejos parceiros presentes na base.</div>
+            <div><span className="font-medium text-[#1a1a1a]">Varejos Ativos:</span> varejos com transações recorrentes ou conversões.</div>
+            <div><span className="font-medium text-[#1a1a1a]">Varejos com Conversões:</span> varejos com transações de conversão no período.</div>
+            <div><span className="font-medium text-[#1a1a1a]">Originação Total:</span> volume total de crédito originado pelos varejos.</div>
+          </div>
+        </div>
+      )}
 
       {/* Insight - only show if we have varejo data */}
       {varejoData.length > 0 && <InsightCallout data={funnelData} title="varejos" />}

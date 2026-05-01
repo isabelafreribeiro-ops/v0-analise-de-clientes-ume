@@ -165,7 +165,7 @@ export function VarejoInsights({ data }: VarejoInsightsProps) {
             varejos com originação &lt; R$ 5k
           </p>
           <p className="text-xs text-[#64748b] mt-2">
-            Considerando custo operacional de R$ 60k/ano por varejo, esses parceiros podem estar destruindo valor. {insights.semConversoes} varejo{insights.semConversoes > 1 ? 's' : ''} tem{insights.semConversoes > 1 ? '' : ' 0'} conversões/mês.
+            Considerando custo operacional de R$ 60k/ano por varejo, esses parceiros podem estar destruindo valor. Em média, esses {insights.caudaFraca} varejos geram apenas {insights.semConversoes} conversões/mês cada.
           </p>
         </CardContent>
       </Card>

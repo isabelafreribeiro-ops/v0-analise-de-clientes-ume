@@ -7,6 +7,7 @@ import { useData } from "@/lib/data-context";
 import { FunnelChart } from "./funnel-chart";
 import { Select, SelectContent, SelectItem, SelectTrigger } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { parseNumber, getColumnValue } from "@/lib/segmentation";
 import type { FunnelStep } from "@/lib/types";
 
 const MONTH_NAMES = [
@@ -142,14 +143,20 @@ export function ClientesFunnel({ }: ClientesFunnelProps) {
     const ativos = filteredClientes.filter((c) => Number(c["Qtd de Compras"]) >= 1).length;
     const taxaConversao = aprovados > 0 ? (ativos / aprovados) * 100 : 0;
     
-    // MUDANÇA 1: Calculate "Qualidade dos Recorrentes"
-    const recorrentes = filteredClientes.filter((c) => Number(c["Qtd de Compras"]) >= 2).length;
+    // MUDANÇA 1: Calculate "Qualidade dos Recorrentes" using same logic as Segmentação
+    const recorrentes = filteredClientes.filter((c) => {
+      const compras = parseNumber(getColumnValue(c, ["qtd de compras", "compras"])) || 0;
+      return compras >= 2;
+    }).length;
     const umePlus = filteredClientes.filter((c) => {
-      const compras = Number(c["Qtd de Compras"]);
-      const score = Number(c.Score);
+      const compras = parseNumber(getColumnValue(c, ["qtd de compras", "compras"])) || 0;
+      const score = parseNumber(getColumnValue(c, ["score de crédito", "score"])) || 0;
       return compras >= 3 && score >= 700;
     }).length;
     const qualidadeRecorrentes = recorrentes > 0 ? (umePlus / recorrentes) * 100 : 0;
+    
+    // Debug log for validation
+    console.log("[v0] Qualidade Recorrentes —", { umePlus, recorrentes, percent: qualidadeRecorrentes });
 
     return { total, aprovados, ativos, taxaConversao, recorrentes, umePlus, qualidadeRecorrentes };
   }, [filteredClientes]);
@@ -324,7 +331,7 @@ export function ClientesFunnel({ }: ClientesFunnelProps) {
               {new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(summaryMetrics.qualidadeRecorrentes)}%
             </div>
             <p className="mt-1 text-xs text-[#64748b]">
-              {summaryMetrics.umePlus.toLocaleString("pt-BR")} dos {summaryMetrics.recorrentes.toLocaleString("pt-BR")} recorrentes
+              {summaryMetrics.umePlus.toLocaleString("pt-BR")} de {summaryMetrics.recorrentes.toLocaleString("pt-BR")} recorrentes são Ume Plus
             </p>
           </CardContent>
         </Card>
