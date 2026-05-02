@@ -69,6 +69,12 @@ function formatMil(value: number): string {
   return value < 0 ? `(${formatted})` : formatted;
 }
 
+function formatPctReceita(valor: number, receitaTotal: number): string {
+  if (!receitaTotal) return "—";
+  const pct = (Math.abs(valor) / receitaTotal) * 100;
+  return `${pct.toFixed(1).replace(".", ",")}%`;
+}
+
 // ============================================================================
 // COMPONENT
 // ============================================================================
@@ -484,7 +490,10 @@ export function RentabilidadeTab() {
       <Card className="border-[#E2E8F0]">
         <CardHeader>
           <CardTitle>5. P&L Consolidado da Ume</CardTitle>
-          <p className="text-xs text-[#64748b] mt-1">(R$ '000)</p>
+          <div className="flex justify-between items-center text-xs text-[#64748b] mt-1">
+            <span>(R$ '000)</span>
+            <span>% Receita</span>
+          </div>
           <p className="text-xs text-[#64748b] mt-2">
             Visão consolidada: margem dos clientes menos custos do portfólio de varejos resulta no
             EBITDA estimado da operação.
@@ -503,6 +512,18 @@ export function RentabilidadeTab() {
                 verde_destaque: "#00C853",
               };
               const valorColor = colorMap[line.cor] || "#1a1a1a";
+              
+              // Determinar cor do % receita baseado no tipo de linha
+              let pctColor = "#1a1a1a"; // preto padrão
+              if (line.cor === "verde") {
+                pctColor = "#00C853"; // verde para receita
+              } else if (line.cor === "verde_escuro" || line.cor === "verde_destaque") {
+                pctColor = "#1B5E20"; // verde escuro para EBITDA
+              } else if (line.cor === "neutro") {
+                pctColor = "#64748b"; // cinza para custos
+              } else if (isSubtotal || line.tipo === "=") {
+                pctColor = "#1a1a1a"; // preto para subtotais
+              }
 
               return (
                 <div
@@ -532,14 +553,24 @@ export function RentabilidadeTab() {
                       {line.descricao}
                     </span>
                   </div>
-                  <span
-                    className={`font-bold tabular-nums ${
-                      isFinal ? "text-xl text-[#00C853]" : isSubtotal ? "text-base" : "text-sm"
-                    }`}
-                    style={{ color: valorColor }}
-                  >
-                    {formatMil(line.valor)}
-                  </span>
+                  <div className="flex gap-4 items-center">
+                    <span
+                      className={`font-bold tabular-nums text-right w-20 ${
+                        isFinal ? "text-xl text-[#00C853]" : isSubtotal ? "text-base" : "text-sm"
+                      }`}
+                      style={{ color: valorColor }}
+                    >
+                      {formatMil(line.valor)}
+                    </span>
+                    <span
+                      className={`font-semibold tabular-nums text-right w-16 ${
+                        isFinal ? "text-lg" : isSubtotal ? "text-base" : "text-sm"
+                      }`}
+                      style={{ color: pctColor }}
+                    >
+                      {formatPctReceita(line.valor, kpis.receitaTotal)}
+                    </span>
+                  </div>
                 </div>
               );
             })}
