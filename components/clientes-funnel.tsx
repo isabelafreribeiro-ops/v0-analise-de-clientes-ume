@@ -141,7 +141,7 @@ export function ClientesFunnel({ }: ClientesFunnelProps) {
 
       // Apply score filter
       if (filterScore !== "todos") {
-        const score = Number(c.Score) || 0;
+        const score = parseNumber(getColumnValue(c, ["score de crédito", "score"])) || 0;
         if (filterScore === "baixo" && score >= 400) return false;
         if (filterScore === "medio" && (score < 400 || score >= 700)) return false;
         if (filterScore === "alto" && score < 700) return false;
