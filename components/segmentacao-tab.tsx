@@ -541,7 +541,7 @@ export function SegmentacaoTab() {
               titulo="Base trimodal — três mundos, três políticas"
               shockValue={`${formatPercentage(insight2.pctLow, 0)} | ${formatPercentage(insight2.pctMid, 0)} | ${formatPercentage(insight2.pctHigh, 0)}`}
               shockLabel={`Distribuição score: baixo (<400) | médio (400-700) | alto (≥700). 86% da base concentra-se nos extremos; a "classe média" do crédito quase não existe.`}
-              implicacao="A bipolaridade exige três políticas distintas, não uma única. Bottom 76% (score <400): triagem automática e bloqueio de novo processamento (R4). Middle 10% (400-700): zona de precisão — pequenas calibrações no cutoff têm grande impacto, é onde mora a 'zona morta' da política atual (R4 reaplicação). Top 15% (≥700): pool premium onde o gargalo é ativação, não crédito — 13,4k score alto não compraram (R1 + jornada). Política única deixa receita na mesa nos três extremos."
+              implicacao="Cada faixa de score precisa de uma política diferente: descartar rápido os 76% de score baixo, ajustar o corte com cuidado nos 10% do meio, e priorizar a ativação dos 15% com score alto. Usar a mesma regra para todos faz a Ume perder dinheiro nas três pontas."
             />
 
             <InsightCard
