@@ -75,20 +75,29 @@ export function ClientesFunnel({ }: ClientesFunnelProps) {
       return 0;
     }
 
+    // 1a passagem: calcular o teto real a partir de "Data da Última Compra"
+    let maxUltimaCompra = 0;
+    clientesData.forEach((c) => {
+      const dataUltimaCompra = c["Data da Última Compra"] || c["Data Ultima Compra"] || "";
+      const sk = parseDateToSortKey(dataUltimaCompra);
+      if (sk > maxUltimaCompra) maxUltimaCompra = sk;
+    });
+
+    // 2a passagem: construir o periodSet limitado ao teto de "Data da Última Compra"
     clientesData.forEach((c) => {
       const dataEntrada = c["Data de Entrada na Ume"] || c["Data de Entrada"] || "";
-      const dataUltimaCompra = c["Data da Última Compra"] || c["Data Ultima Compra"] || "";
-
       const skEntrada = parseDateToSortKey(dataEntrada);
-      if (skEntrada > 0) {
-        const [month, year] = [skEntrada % 100, Math.floor(skEntrada / 100)];
+      // só adicionar meses que não ultrapassam a data máxima de última compra
+      if (skEntrada > 0 && skEntrada <= maxUltimaCompra) {
+        const month = skEntrada % 100;
+        const year = Math.floor(skEntrada / 100);
         periodSet.add(`${month}/${year}`);
         if (skEntrada > maxSortKey) maxSortKey = skEntrada;
       }
-
-      const skUltima = parseDateToSortKey(dataUltimaCompra);
-      if (skUltima > maxSortKey) maxSortKey = skUltima;
     });
+
+    // garantir que maxSortKey reflete o teto das últimas compras
+    if (maxUltimaCompra > maxSortKey) maxSortKey = maxUltimaCompra;
 
     const sorted = Array.from(periodSet)
       .map((p) => {
