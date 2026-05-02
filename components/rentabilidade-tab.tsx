@@ -149,7 +149,7 @@ export function RentabilidadeTab() {
         />
         <KpiCard
           label="Concentração de Valor"
-          value={formatPct(paretoSummary.picoPctClientes)}
+          value={formatPct(pareto.picoPctClientes)}
           sub="geram 100% da margem positiva"
           accent="#00C853"
           bg="#E8F5E9"
