@@ -142,11 +142,11 @@ export function RentabilidadeTab() {
           bg="#F9FBE7"
         />
         <KpiCard
-          label="Destruidores"
-          value={formatPct(kpis.pctDestruidores)}
-          sub="destroem valor"
-          accent="#EF4444"
-          bg="#FEF2F2"
+          label="Concentração de Valor"
+          value={formatPct(paretoSummary.picoPctClientes)}
+          sub="geram 100% da margem positiva"
+          accent="#00C853"
+          bg="#E8F5E9"
         />
       </div>
 
@@ -316,7 +316,7 @@ export function RentabilidadeTab() {
             <div className="p-3 bg-[#E8F5E9] border-l-4 border-[#00C853] rounded">
               <p className="text-[10px] font-semibold text-[#1B5E20] uppercase">Top 10%</p>
               <p className="text-lg font-bold text-[#00C853]">{formatBRL(pareto.top10pctMargem)}</p>
-              <p className="text-xs text-[#64748b]">gera o caixa</p>
+              <p className="text-xs text-[#64748b]">{pareto.top10pctReceita.toFixed(1).replace(".", ",")}% da receita gerada</p>
             </div>
             <div className="p-3 bg-[#F1F8E9] border-l-4 border-[#66BB6A] rounded">
               <p className="text-[10px] font-semibold text-[#2E7D32] uppercase">Pico em ~{pareto.picoPctClientes.toFixed(0)}%</p>
@@ -326,7 +326,7 @@ export function RentabilidadeTab() {
             <div className="p-3 bg-[#FEF2F2] border-l-4 border-[#EF4444] rounded">
               <p className="text-[10px] font-semibold text-[#991B1B] uppercase">Bottom 10%</p>
               <p className="text-lg font-bold text-[#EF4444]">{formatBRL(pareto.bottom10pctMargem)}</p>
-              <p className="text-xs text-[#64748b]">pior performance</p>
+              <p className="text-xs text-[#64748b]">{pareto.bottom10pctReceita.toFixed(1).replace(".", ",")}% da receita gerada</p>
             </div>
           </div>
         </CardContent>

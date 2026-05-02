@@ -358,16 +358,22 @@ export interface ParetoSummary {
   bottom10pctMargem: number;
   picoPctClientes: number;
   picoValor: number;
+  top10pctReceita: number;
+  bottom10pctReceita: number;
 }
 
 export function calcularParetoSummary(processed: ClienteComRentabilidade[]): ParetoSummary {
   const sortedMargens = processed.map((p) => p.breakdown.margem).sort((a, b) => b - a);
   const n = sortedMargens.length;
   if (n === 0) {
-    return { top10pctMargem: 0, top50pctMargem: 0, bottom10pctMargem: 0, picoPctClientes: 0, picoValor: 0 };
+    return { top10pctMargem: 0, top50pctMargem: 0, bottom10pctMargem: 0, picoPctClientes: 0, picoValor: 0, top10pctReceita: 0, bottom10pctReceita: 0 };
   }
 
-  // Cumulativa
+  // Ordenar por margem decrescente para calcular receita
+  const sortedProcessed = [...processed].sort((a, b) => b.breakdown.margem - a.breakdown.margem);
+  const receitaTotal = sum(sortedProcessed.map((p) => p.breakdown.receitaMdr + p.breakdown.receitaJuros));
+
+  // Cumulativa de margens
   const cumulative: number[] = [];
   let acc = 0;
   for (const m of sortedMargens) {
@@ -389,12 +395,18 @@ export function calcularParetoSummary(processed: ClienteComRentabilidade[]): Par
     }
   }
 
+  // Calcular receita acumulada do top 10% e bottom 10%
+  const top10Receita = sum(sortedProcessed.slice(0, top10Idx).map((p) => p.breakdown.receitaMdr + p.breakdown.receitaJuros));
+  const bottom10Receita = sum(sortedProcessed.slice(bottom10Idx).map((p) => p.breakdown.receitaMdr + p.breakdown.receitaJuros));
+
   return {
     top10pctMargem: cumulative[top10Idx],
     top50pctMargem: cumulative[top50Idx],
     bottom10pctMargem: cumulative[n - 1] - cumulative[bottom10Idx],
     picoPctClientes: ((picoIdx + 1) / n) * 100,
     picoValor,
+    top10pctReceita: receitaTotal > 0 ? (top10Receita / receitaTotal) * 100 : 0,
+    bottom10pctReceita: receitaTotal > 0 ? (bottom10Receita / receitaTotal) * 100 : 0,
   };
 }
 
