@@ -74,8 +74,9 @@ export function VarejoInsights({ data }: VarejoInsightsProps) {
 
     // Card 4: Cauda Fraca (varejos abaixo do breakeven operacional: R$ 12k/mês)
     // Breakeven = custo R$ 5k/mês ÷ (ratio receita/MDR 13,7x × MDR 3%) ≈ R$ 12k originação/mês
+    // Usar 12 meses fixos para calcular média mensal (período padrão da base)
     const caudaFraca = data.filter(
-      (v) => parseBRNumber(v["Originação Total"]) < 12000
+      (v) => (parseBRNumber(v["Originação Total"]) / 12) < 12000
     ).length;
     const semConversoes = data.filter(
       (v) => (Number(v["Transações de Conversões por mês"]) || 0) === 0
