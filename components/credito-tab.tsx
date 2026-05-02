@@ -214,6 +214,10 @@ export function CreditoTab() {
                   <p className="text-[10px] font-semibold text-[#64748b] uppercase">Ação</p>
                   <p className="text-[#1a1a1a]">+30% no limite, sem solicitação do cliente</p>
                 </div>
+                <div>
+                  <p className="text-[10px] font-semibold text-[#64748b] uppercase">Evidência</p>
+                  <p className="text-xs text-[#1a1a1a]">Ume Plus tem score médio 848 mas limite médio de R$ 1.112 — pouco acima do segmento Potencial (R$ 561). Limite virou gargalo de receita, não de risco.</p>
+                </div>
                 <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#00C853]/20">
                   <div>
                     <p className="text-[10px] font-semibold text-[#64748b] uppercase">Elegíveis</p>
@@ -256,6 +260,10 @@ export function CreditoTab() {
                     90-180d: WhatsApp + SMS | &gt;180d: SMS only (custo controlado)
                   </p>
                 </div>
+                <div>
+                  <p className="text-[10px] font-semibold text-[#64748b] uppercase">Evidência</p>
+                  <p className="text-xs text-[#1a1a1a]">11.540 adimplentes (26,7% da base aprovada) sem compra há 90+ dias. CAC já pago — reativar é mais barato que aquisição nova.</p>
+                </div>
                 <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#66BB6A]/20">
                   <div>
                     <p className="text-[10px] font-semibold text-[#64748b] uppercase">Elegíveis</p>
@@ -296,6 +304,10 @@ export function CreditoTab() {
                     Reduzir taxa 1-2pp para retenção (de ~11,5% para ~10% a.m.)
                   </p>
                 </div>
+                <div>
+                  <p className="text-[10px] font-semibold text-[#64748b] uppercase">Evidência</p>
+                  <p className="text-xs text-[#1a1a1a]">Taxa atual é flat ~11,5% em todas as faixas de score (500 → 11,45%; 900+ → 11,50%). Política não é risk-based — cliente AAA paga o mesmo que cliente B. Espaço para premiar fidelidade.</p>
+                </div>
                 <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#9CCC65]/20">
                   <div>
                     <p className="text-[10px] font-semibold text-[#64748b] uppercase">Elegíveis</p>
@@ -333,6 +345,10 @@ export function CreditoTab() {
                 <div>
                   <p className="text-[10px] font-semibold text-[#64748b] uppercase">Score &lt;300 → Bloqueio</p>
                   <p className="text-[#1a1a1a]">Bloquear nova solicitação por 6 meses — corta CAC desperdiçado</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold text-[#64748b] uppercase">Evidência</p>
+                  <p className="text-xs text-[#1a1a1a]">Zona morta da política (score 400-549): 2.351 aprovados, 100% inadimplência, R$ 1,09M perda direta. Cutoff atual está calibrado 150 pontos abaixo do score onde a base efetivamente paga (550).</p>
                 </div>
                 <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#475569]/20">
                   <div>
