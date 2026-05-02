@@ -498,8 +498,8 @@ export function calcularInsights(
       implicacao:
         "Ume é fundamentalmente uma fintech de crédito, não uma processadora de pagamentos. Política de juros e prazo é a principal alavanca de receita.",
       isHeadline: false,
-      accentColor: "#66BB6A",
-      bgColor: "#F1F8E9",
+      accentColor: "#475569",
+      bgColor: "#F8FAFC",
     },
     {
       numero: "03",
@@ -511,8 +511,8 @@ export function calcularInsights(
       implicacao:
         "Concentre upsell no topo da pirâmide — converter 1 cliente para Ume Plus rende muito mais que ativar 1 Potencial novo.",
       isHeadline: false,
-      accentColor: "#9CCC65",
-      bgColor: "#F9FBE7",
+      accentColor: "#475569",
+      bgColor: "#F8FAFC",
     },
     {
       numero: "04",
@@ -537,8 +537,8 @@ export function calcularInsights(
       implicacao:
         "Maior dreno isolado da operação. Revisar funil pré-aprovação ou monetizar base negada (parceria com score builder).",
       isHeadline: false,
-      accentColor: "#94A3B8",
-      bgColor: "#F1F5F9",
+      accentColor: "#475569",
+      bgColor: "#F8FAFC",
     },
   ];
 }

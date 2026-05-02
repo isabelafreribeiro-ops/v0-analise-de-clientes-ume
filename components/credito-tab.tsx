@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useData } from "@/lib/data-context";
-import { Target, AlertTriangle, Lightbulb } from "lucide-react";
+import { Target, AlertTriangle, Lightbulb, Crown, Repeat2, ClipboardList } from "lucide-react";
 
 // ============================================================================
 // Q5 CRÉDITO — Política de crédito proposta
@@ -201,7 +201,7 @@ export function CreditoTab() {
                 </span>
               </div>
               <h3 className="text-sm font-bold text-[#1a1a1a] mb-3">
-                💎 Aumento automático de limite
+                <Crown className="h-4 w-4 inline-block text-[#475569] mr-1" /> Aumento automático de limite
               </h3>
               <div className="space-y-2 text-xs">
                 <div>
@@ -245,7 +245,7 @@ export function CreditoTab() {
                 </span>
               </div>
               <h3 className="text-sm font-bold text-[#1a1a1a] mb-3">
-                🔁 Reativação de inativos
+                <Repeat2 className="h-4 w-4 inline-block text-[#475569] mr-1" /> Reativação de inativos
               </h3>
               <div className="space-y-2 text-xs">
                 <div>
@@ -335,7 +335,7 @@ export function CreditoTab() {
                 </span>
               </div>
               <h3 className="text-sm font-bold text-[#1a1a1a] mb-3">
-                📋 Política de negados (escala)
+                <ClipboardList className="h-4 w-4 inline-block text-[#475569] mr-1" /> Política de negados (escala)
               </h3>
               <div className="space-y-2 text-xs">
                 <div>
@@ -392,7 +392,7 @@ export function CreditoTab() {
               </thead>
               <tbody>
                 <tr className="border-b border-[#E2E8F0] bg-[#E8F5E9]/30">
-                  <td className="py-2 px-2 font-medium">💎 R1 — Aumento de limite</td>
+                  <td className="py-2 px-2 font-medium"><Crown className="h-4 w-4 inline-block text-[#475569] mr-1" /> R1 — Aumento de limite</td>
                   <td className="py-2 px-2 text-right">4.686</td>
                   <td className="py-2 px-2 text-right text-[#00C853] font-bold">R$ 258 mil</td>
                   <td className="py-2 px-2 text-center">
@@ -406,7 +406,7 @@ export function CreditoTab() {
                   </td>
                 </tr>
                 <tr className="border-b border-[#E2E8F0] bg-[#F1F5F9]/40">
-                  <td className="py-2 px-2 font-medium">📋 R4 — Funil de negados</td>
+                  <td className="py-2 px-2 font-medium"><ClipboardList className="h-4 w-4 inline-block text-[#475569] mr-1" /> R4 — Funil de negados</td>
                   <td className="py-2 px-2 text-right">151.855</td>
                   <td className="py-2 px-2 text-right text-[#0F172A] font-bold">R$ 323 mil</td>
                   <td className="py-2 px-2 text-center">
@@ -434,7 +434,7 @@ export function CreditoTab() {
                   </td>
                 </tr>
                 <tr className="border-b border-[#E2E8F0] bg-[#F1F8E9]/40">
-                  <td className="py-2 px-2 font-medium">🔁 R2 — Reativação</td>
+                  <td className="py-2 px-2 font-medium"><Repeat2 className="h-4 w-4 inline-block text-[#475569] mr-1" /> R2 — Reativação</td>
                   <td className="py-2 px-2 text-right">11.540</td>
                   <td className="py-2 px-2 text-right text-[#2E7D32] font-bold">R$ 48 mil</td>
                   <td className="py-2 px-2 text-center">

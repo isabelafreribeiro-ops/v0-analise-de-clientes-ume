@@ -333,14 +333,14 @@ export function RentabilidadeTab() {
               >
                 <div className="flex items-start gap-2 mb-2">
                   <span className="text-2xl">{i.icon}</span>
-                  <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: i.accentColor }}>
-                    Insight {i.numero}
-                  </p>
-                </div>
-                <p className="text-xs font-bold text-[#1a1a1a] leading-snug">{i.titulo}</p>
-                <p className="text-xl font-bold mt-2" style={{ color: i.accentColor }}>
-                  {i.valorPrincipal}
+                <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: i.accentColor }}>
+                  Insight {i.numero}
                 </p>
+              </div>
+              <p className="text-xs font-bold text-[#1a1a1a] leading-snug">{i.titulo}</p>
+              <p className="text-xl font-bold mt-2" style={{ color: i.numero === "05" ? "#EF4444" : i.accentColor }}>
+                {i.valorPrincipal}
+              </p>
                 <p className="text-[10px] text-[#64748b] mt-0.5">{i.subLabel}</p>
                 <p className="text-[10px] text-[#1a1a1a] mt-2 leading-relaxed italic">{i.implicacao}</p>
               </div>
@@ -589,8 +589,8 @@ interface KpiCardProps {
 function KpiCard({ label, value, sub, accent, bg }: KpiCardProps) {
   return (
     <div
-      className="p-4 rounded border-l-4 transition hover:shadow-md"
-      style={{ backgroundColor: bg, borderLeftColor: accent }}
+      className="p-4 rounded border border-[#E2E8F0] border-l-4 transition hover:shadow-md bg-white"
+      style={{ borderLeftColor: accent }}
     >
       <p className="text-[10px] font-semibold text-[#64748b] uppercase tracking-wide">{label}</p>
       <p className="text-2xl font-bold mt-1" style={{ color: accent }}>
