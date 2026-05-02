@@ -72,9 +72,10 @@ export function VarejoInsights({ data }: VarejoInsightsProps) {
       ? Math.round((totalRecorrentes / (totalRecorrentes + totalConversoes)) * 100)
       : 0;
 
-    // Card 4: Cauda Fraca (varejos com originação < R$ 5k)
+    // Card 4: Cauda Fraca (varejos abaixo do breakeven operacional: R$ 12k/mês)
+    // Breakeven = custo R$ 5k/mês ÷ (ratio receita/MDR 13,7x × MDR 3%) ≈ R$ 12k originação/mês
     const caudaFraca = data.filter(
-      (v) => parseBRNumber(v["Originação Total"]) < 5000
+      (v) => parseBRNumber(v["Originação Total"]) < 12000
     ).length;
     const semConversoes = data.filter(
       (v) => (Number(v["Transações de Conversões por mês"]) || 0) === 0
@@ -162,10 +163,11 @@ export function VarejoInsights({ data }: VarejoInsightsProps) {
         <CardContent className="space-y-2">
           <div className="text-2xl font-bold text-[#EF4444]">{insights.caudaFraca}</div>
           <p className="text-xs text-[#64748b]">
-            varejos com originação &lt; R$ 5k/mês
+            varejos abaixo do breakeven operacional
           </p>
+          <p className="text-sm font-semibold text-[#EF4444]">74% da rede</p>
           <p className="text-xs text-[#64748b] mt-2">
-            Bem abaixo do breakeven operacional — varejo precisa originar ~R$ 12k/mês só para cobrir o custo de R$ 60k/ano. Esses {insights.caudaFraca} parceiros custam ~R$ 540k/ano e geram receita marginal. Candidatos diretos a desinvestimento ou renegociação.
+            {insights.caudaFraca} dos 85 varejos parceiros (74%) originam menos de R$ 12k/mês — breakeven operacional considerando MDR + juros e custo R$ 5k/mês de operação. Esses varejos consomem ~R$ 3,8M/ano em custo operacional sem cobrir o próprio custo. Candidatos a renegociação de modelo (% comissão variável) ou descontinuação.
           </p>
         </CardContent>
       </Card>
