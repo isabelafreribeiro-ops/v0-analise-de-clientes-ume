@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { TrendingUp, AlertCircle, MessageSquare, Send, Phone, Users, ChevronDown, Crown, Repeat2, Sprout, Moon, ClipboardList, Ban, AlertTriangle, Smartphone, DollarSign, Settings } from "lucide-react";
+import { TrendingUp, AlertCircle, MessageSquare, Send, Phone, Users, ChevronDown, Crown, Repeat2, Sprout, Moon, ClipboardList, Ban, AlertTriangle, Smartphone, DollarSign, Settings, Zap } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useData } from "@/lib/data-context";
@@ -550,7 +550,7 @@ export function JornadaTab() {
           <Card className="border-l-4 cursor-pointer" style={{ borderLeftColor: "#94A3B8", backgroundColor: "#F1F5F9" }} onClick={() => setExpandedTriggers(prev => ({ ...prev, "A": !prev["A"] }))}>
             <CardHeader>
               <div className="flex items-start justify-between">
-                <CardTitle className="text-lg text-[#1a1a1a]">⚡ Gatilho A: Abandono de Carrinho/Checkout</CardTitle>
+                <CardTitle className="text-lg text-[#1a1a1a] flex items-center gap-2"><Zap className="h-4 w-4 inline-block text-[#475569]" /> Gatilho A: Abandono de Carrinho/Checkout</CardTitle>
                 <ChevronDown className="h-5 w-5 text-[#475569] transition-transform" style={{ transform: expandedTriggers["A"] ? "rotate(180deg)" : "rotate(0deg)" }} />
               </div>
               {!expandedTriggers["A"] && (
@@ -587,7 +587,7 @@ export function JornadaTab() {
           <Card className="border-l-4 cursor-pointer" style={{ borderLeftColor: "#94A3B8", backgroundColor: "#F1F5F9" }} onClick={() => setExpandedTriggers(prev => ({ ...prev, "B": !prev["B"] }))}>
             <CardHeader>
               <div className="flex items-start justify-between">
-                <CardTitle className="text-lg text-[#1a1a1a]">⚡ Gatilho B: Inatividade Prolongada (Churn Precoce)</CardTitle>
+                <CardTitle className="text-lg text-[#1a1a1a] flex items-center gap-2"><Zap className="h-4 w-4 inline-block text-[#475569]" /> Gatilho B: Inatividade Prolongada (Churn Precoce)</CardTitle>
                 <ChevronDown className="h-5 w-5 text-[#475569] transition-transform" style={{ transform: expandedTriggers["B"] ? "rotate(180deg)" : "rotate(0deg)" }} />
               </div>
               {!expandedTriggers["B"] && (
@@ -621,7 +621,7 @@ export function JornadaTab() {
           <Card className="border-l-4 cursor-pointer" style={{ borderLeftColor: "#94A3B8", backgroundColor: "#F1F5F9" }} onClick={() => setExpandedTriggers(prev => ({ ...prev, "C": !prev["C"] }))}>
             <CardHeader>
               <div className="flex items-start justify-between">
-                <CardTitle className="text-lg text-[#1a1a1a]">⚡ Gatilho C: Aproximação de Vencimento de Parcela</CardTitle>
+                <CardTitle className="text-lg text-[#1a1a1a] flex items-center gap-2"><Zap className="h-4 w-4 inline-block text-[#475569]" /> Gatilho C: Aproximação de Vencimento de Parcela</CardTitle>
                 <ChevronDown className="h-5 w-5 text-[#475569] transition-transform" style={{ transform: expandedTriggers["C"] ? "rotate(180deg)" : "rotate(0deg)" }} />
               </div>
               {!expandedTriggers["C"] && (
@@ -655,7 +655,7 @@ export function JornadaTab() {
           <Card className="border-l-4 cursor-pointer" style={{ borderLeftColor: "#94A3B8", backgroundColor: "#F1F5F9" }} onClick={() => setExpandedTriggers(prev => ({ ...prev, "D": !prev["D"] }))}>
             <CardHeader>
               <div className="flex items-start justify-between">
-                <CardTitle className="text-lg text-[#1a1a1a]">⚡ Gatilho D: Primeiro Uso de Novo Varejo</CardTitle>
+                <CardTitle className="text-lg text-[#1a1a1a] flex items-center gap-2"><Zap className="h-4 w-4 inline-block text-[#475569]" /> Gatilho D: Primeiro Uso de Novo Varejo</CardTitle>
                 <ChevronDown className="h-5 w-5 text-[#475569] transition-transform" style={{ transform: expandedTriggers["D"] ? "rotate(180deg)" : "rotate(0deg)" }} />
               </div>
               {!expandedTriggers["D"] && (
@@ -689,7 +689,7 @@ export function JornadaTab() {
           <Card className="border-l-4 cursor-pointer" style={{ borderLeftColor: "#94A3B8", backgroundColor: "#F1F5F9" }} onClick={() => setExpandedTriggers(prev => ({ ...prev, "E": !prev["E"] }))}>
             <CardHeader>
               <div className="flex items-start justify-between">
-                <CardTitle className="text-lg text-[#1a1a1a]">⚡ Gatilho E: Aumento Automático de Limite</CardTitle>
+                <CardTitle className="text-lg text-[#1a1a1a] flex items-center gap-2"><Zap className="h-4 w-4 inline-block text-[#475569]" /> Gatilho E: Aumento Automático de Limite</CardTitle>
                 <ChevronDown className="h-5 w-5 text-[#475569] transition-transform" style={{ transform: expandedTriggers["E"] ? "rotate(180deg)" : "rotate(0deg)" }} />
               </div>
               {!expandedTriggers["E"] && (
@@ -723,7 +723,7 @@ export function JornadaTab() {
           <Card className="border-l-4 cursor-pointer" style={{ borderLeftColor: "#94A3B8", backgroundColor: "#F1F5F9" }} onClick={() => setExpandedTriggers(prev => ({ ...prev, "F": !prev["F"] }))}>
             <CardHeader>
               <div className="flex items-start justify-between">
-                <CardTitle className="text-lg text-[#1a1a1a]">⚡ Gatilho F: Recuperação Pós-Inadimplência</CardTitle>
+                <CardTitle className="text-lg text-[#1a1a1a] flex items-center gap-2"><Zap className="h-4 w-4 inline-block text-[#475569]" /> Gatilho F: Recuperação Pós-Inadimplência</CardTitle>
                 <ChevronDown className="h-5 w-5 text-[#475569] transition-transform" style={{ transform: expandedTriggers["F"] ? "rotate(180deg)" : "rotate(0deg)" }} />
               </div>
               {!expandedTriggers["F"] && (

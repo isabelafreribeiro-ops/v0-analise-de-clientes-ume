@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, Trophy, TrendingDown, Lightbulb } from "lucide-react";
+import { AlertTriangle, Trophy, TrendingDown, Lightbulb, Crown, Banknote, Target, Wallet } from "lucide-react";
 import {
   AreaChart,
   Area,
@@ -331,7 +331,7 @@ export function RentabilidadeTab() {
               style={{ backgroundColor: insights[0].bgColor, borderLeftColor: insights[0].accentColor }}
             >
               <div className="flex items-start gap-4">
-                <span className="text-4xl">{insights[0].icon}</span>
+                <Crown className="h-5 w-5 text-[#00C853] shrink-0 mt-1" />
                 <div className="flex-1">
                   <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: insights[0].accentColor }}>
                     Insight {insights[0].numero} — Headline
@@ -362,7 +362,10 @@ export function RentabilidadeTab() {
                 style={{ backgroundColor: i.bgColor, borderLeftColor: i.accentColor }}
               >
                 <div className="flex items-start gap-2 mb-2">
-                  <span className="text-2xl">{i.icon}</span>
+                  {i.numero === "02" && <Banknote className="h-5 w-5 text-[#475569] shrink-0" />}
+                  {i.numero === "03" && <Target className="h-5 w-5 text-[#475569] shrink-0" />}
+                  {i.numero === "04" && <AlertTriangle className="h-5 w-5 text-[#EF4444] shrink-0" />}
+                  {i.numero === "05" && <Wallet className="h-5 w-5 text-[#475569] shrink-0" />}
                 <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: i.accentColor }}>
                   Insight {i.numero}
                 </p>
