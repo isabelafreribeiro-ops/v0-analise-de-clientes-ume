@@ -397,6 +397,16 @@ export function SegmentacaoTab() {
         <p className="text-sm text-[#64748b] mt-1">
           Análise de segmentação da base — perfil, comportamento e oportunidades por grupo.
         </p>
+        
+        {/* TESE CENTRAL */}
+        <div className="mt-3 bg-[#F0FDF4]/60 border-l-2 border-l-[#00C853] rounded py-2 px-3">
+          <p className="text-[10px] font-semibold text-[#00C853] uppercase tracking-wider flex items-center gap-1">
+            <Lightbulb className="h-4 w-4 text-[#00C853]" /> Tese
+          </p>
+          <p className="text-sm italic text-[#1a1a1a] mt-1">
+            A base não tem cliente médio — é polarizada entre 11% que gera 100% da margem e 75% que nunca vai ser aprovado. Os 7 segmentos endereçam essa polaridade com jornada e crédito específicos.
+          </p>
+        </div>
       </div>
 
       {/* SEÇÃO 1: QUEM É O CLIENTE UME */}

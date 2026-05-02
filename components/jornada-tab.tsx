@@ -263,6 +263,16 @@ export function JornadaTab() {
         <p className="text-sm text-[#64748b] mt-2">
           Estratégia de CRM segmentada para todos os 7 segmentos — cobertura {coverage}% da base ({formatNumber(totalClientes)} clientes).
         </p>
+        
+        {/* TESE CENTRAL */}
+        <div className="mt-3 bg-[#F0FDF4]/60 border-l-2 border-l-[#00C853] rounded py-2 px-3">
+          <p className="text-[10px] font-semibold text-[#00C853] uppercase tracking-wider flex items-center gap-1">
+            <Zap className="h-4 w-4 text-[#00C853]" /> Tese
+          </p>
+          <p className="text-sm italic text-[#1a1a1a] mt-1">
+            Cada segmento tem CAC já gasto e potencial de receita assimétrico — Ume Plus rende 20x mais que Potencial. Por isso a jornada é cirúrgica por segmento, não one-size-fits-all.
+          </p>
+        </div>
       </div>
 
       {/* Coverage Tag */}

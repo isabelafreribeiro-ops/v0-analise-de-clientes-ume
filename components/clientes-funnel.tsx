@@ -272,6 +272,16 @@ export function ClientesFunnel({ }: ClientesFunnelProps) {
           <p className="text-sm text-[#64748b]">
             Análise do funil de aquisição e conversão de clientes Ume
           </p>
+          
+          {/* TESE CENTRAL */}
+          <div className="mt-3 bg-[#F0FDF4]/60 border-l-2 border-l-[#00C853] rounded py-2 px-3">
+            <p className="text-[10px] font-semibold text-[#00C853] uppercase tracking-wider flex items-center gap-1">
+              <Lightbulb className="h-4 w-4 text-[#00C853]" /> Tese
+            </p>
+            <p className="text-sm italic text-[#1a1a1a] mt-1">
+              O funil aprova 24% e ativa só 14% — de cada 100 solicitações, R$ 50 de custo entram, 14 viram cliente. As 4 alavancas a seguir reduzem desperdício e maximizam conversão de quem realmente paga.
+            </p>
+          </div>
         </div>
         
         {/* Filter Toolbar */}

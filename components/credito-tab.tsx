@@ -61,6 +61,16 @@ export function CreditoTab() {
         <p className="text-sm text-[#64748b] mt-1">
           Como ajustar critérios de aprovação, limite e taxa para liberar margem sem aumentar risco.
         </p>
+        
+        {/* TESE CENTRAL */}
+        <div className="mt-3 bg-[#F0FDF4]/60 border-l-2 border-l-[#00C853] rounded py-2 px-3">
+          <p className="text-[10px] font-semibold text-[#00C853] uppercase tracking-wider flex items-center gap-1">
+            <Lightbulb className="h-4 w-4 text-[#00C853]" /> Tese
+          </p>
+          <p className="text-sm italic text-[#1a1a1a] mt-1">
+            A política atual deixa receita na mesa em ambos os lados — limite/taxa flat para os top, e cutoff frouxo deixa entrar 2.351 que somam R$ 1,09M de perda direta. As 4 regras corrigem ambas as pontas.
+          </p>
+        </div>
       </div>
 
       {/* DIAGNÓSTICO DA POLÍTICA ATUAL */}

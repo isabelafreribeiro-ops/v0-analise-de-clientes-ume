@@ -120,6 +120,16 @@ export function RentabilidadeTab() {
         <p className="text-sm text-[#64748b] mt-1">
           P&L unitário automatizado — geradores e destruidores de valor.
         </p>
+        
+        {/* TESE CENTRAL */}
+        <div className="mt-3 bg-[#F0FDF4]/60 border-l-2 border-l-[#00C853] rounded py-2 px-3">
+          <p className="text-[10px] font-semibold text-[#00C853] uppercase tracking-wider flex items-center gap-1">
+            <Lightbulb className="h-4 w-4 text-[#00C853]" /> Tese
+          </p>
+          <p className="text-sm italic text-[#1a1a1a] mt-1">
+            11% da base gera 97% da receita e 100% da margem positiva. Toda alavanca de growth gira em torno de proteger e expandir esses 23.000 clientes — o resto é ruído ou ineficiência de funil.
+          </p>
+        </div>
       </div>
 
       {/* KPIs — 4 CARDS */}
@@ -481,7 +491,7 @@ export function RentabilidadeTab() {
             <Lightbulb className="w-4 h-4 shrink-0 mt-0.5 text-[#475569]" />
             <span><strong>Spread expressivo entre top e bottom</strong> — política de crédito atual
             aprova clientes que geram milhares vs clientes que destroem outros milhares. Ajuste de
-            critérios pode liberar caixa expressivo (vide Q5).</span>
+            crit��rios pode liberar caixa expressivo (vide Q5).</span>
           </div>
         </CardContent>
       </Card>
