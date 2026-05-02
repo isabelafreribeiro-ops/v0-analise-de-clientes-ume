@@ -437,9 +437,7 @@ export function generateSegmentInsights(
 export function calculatePurchaseDistribution(clientesData: ClienteRow[]): PurchaseDistribution[] {
   if (!clientesData || clientesData.length === 0) return [];
 
-  // Use sample for large datasets
-  const dataToAnalyze = sampleDataForAnalysis(clientesData, 50000);
-
+  // SEM sampling — count é operação trivial que precisa do total real (200.592 clientes)
   const distribution = {
     0: 0,
     1: 0,
@@ -447,7 +445,7 @@ export function calculatePurchaseDistribution(clientesData: ClienteRow[]): Purch
     "3+": 0,
   };
 
-  dataToAnalyze.forEach((cliente) => {
+  clientesData.forEach((cliente) => {
     const compras = parseNumber(getColumnValue(cliente, ["qtd de compras", "compras", "qtd compras"])) || 0;
 
     if (compras === 0) distribution[0]++;
@@ -456,7 +454,7 @@ export function calculatePurchaseDistribution(clientesData: ClienteRow[]): Purch
     else distribution["3+"]++;
   });
 
-  const total = dataToAnalyze.length;
+  const total = clientesData.length; // usar total real, não sample
   return [
     {
       range: "0 compras",
