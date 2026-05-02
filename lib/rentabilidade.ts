@@ -578,11 +578,24 @@ export function buildWaterfallV2(
   const custoMsgTotal = sum(processed.map((p) => p.breakdown.custoMsg));
   const perdaInadTotal = sum(processed.map((p) => p.breakdown.perdaInad));
 
+  // Separar CAC em: ativados vs Ineficiência de Funil
+  // Cliente ativado = situação Adimplente/Inadimplente E Qtd de Compras > 0
+  const ativados = processed.filter((p) => {
+    const sit = String(getColumnValue(p.cliente, ["situação", "situacao", "status"]) || "")
+      .toLowerCase()
+      .trim();
+    const compras = parseNumber(getColumnValue(p.cliente, ["qtd de compras", "compras"])) || 0;
+    return (sit === "adimplente" || sit === "inadimplente") && compras > 0;
+  });
+  const cacAtivadosTotal = ativados.length * CAC_BRL;
+  const ineficienciaFunilTotal = cacTotal - cacAtivadosTotal;
+
   return [
     { tipo: "+", descricao: "Receita MDR (3% sobre GMV)", valor: kpis.receitaMdrTotal, cor: "verde", isSubtotal: false, isFinal: false },
     { tipo: "+", descricao: "Receita Juros (Tabela Price individualizada)", valor: kpis.receitaJurosTotal, cor: "verde", isSubtotal: false, isFinal: false },
     { tipo: "=", descricao: "Receita Total", valor: kpis.receitaTotal, cor: "neutro", isSubtotal: true, isFinal: false },
-    { tipo: "−", descricao: "CAC (R$ 50/cliente)", valor: -cacTotal, cor: "vermelho", isSubtotal: false, isFinal: false },
+    { tipo: "−", descricao: `CAC sobre ativados (${ativados.length.toLocaleString("pt-BR")} × R$ 50)`, valor: -cacAtivadosTotal, cor: "vermelho", isSubtotal: false, isFinal: false },
+    { tipo: "−", descricao: `Ineficiência de Funil (não-ativados + negados, ${(processed.length - ativados.length).toLocaleString("pt-BR")} × R$ 50)`, valor: -ineficienciaFunilTotal, cor: "vermelho", isSubtotal: false, isFinal: false },
     { tipo: "−", descricao: "Custo Mensageria (por segmento)", valor: -custoMsgTotal, cor: "vermelho", isSubtotal: false, isFinal: false },
     { tipo: "−", descricao: "Perda Inadimplência (80% saldo)*", valor: -perdaInadTotal, cor: "vermelho", isSubtotal: false, isFinal: false },
     { tipo: "=", descricao: "Margem de Contribuição", valor: kpis.margemContribuicaoTotal, cor: "verde_escuro", isSubtotal: true, isFinal: false },
