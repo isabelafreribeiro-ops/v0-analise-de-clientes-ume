@@ -50,22 +50,22 @@ export function ClientesFunnel({ }: ClientesFunnelProps) {
   // compute the maximum sortKey across BOTH "Data de Entrada na Ume"
   // and "Data da Última Compra" to cap the Período (fim) selector.
   const { availablePeriods, maxPeriodSortKey } = useMemo(() => {
-    if (!clientesData || clientesData.length === 0) return { availablePeriods: [], maxPeriodSortKey: 999999 };
+    if (!clientesData || clientesData.length === 0) {
+      return { availablePeriods: [], maxPeriodSortKey: 999999 };
+    }
 
-    const periodSet = new Set<string>();
-    let maxSortKey = 0;
-
-    function parseDateToSortKey(raw: string): number {
+    function parseDateToSortKey(raw: any): number {
       if (!raw) return 0;
+      const str = typeof raw === "string" ? raw : String(raw);
       let month: number, year: number;
-      if (raw.includes("/")) {
-        const parts = raw.split("/");
+      if (str.includes("/")) {
+        const parts = str.split("/");
         if (parts.length >= 3) {
           month = parseInt(parts[1], 10);
           year = parseInt(parts[2], 10);
         } else return 0;
-      } else if (raw.includes("-")) {
-        const parts = raw.split("-");
+      } else if (str.includes("-")) {
+        const parts = str.split("-");
         year = parseInt(parts[0], 10);
         month = parseInt(parts[1], 10);
       } else return 0;
@@ -75,29 +75,28 @@ export function ClientesFunnel({ }: ClientesFunnelProps) {
       return 0;
     }
 
-    // 1a passagem: calcular o teto real a partir de "Data da Última Compra"
+    // 1) Coletar TODOS os meses únicos de "Data de Entrada na Ume"
+    const periodSet = new Set<string>();
+    let maxEntrada = 0;
     let maxUltimaCompra = 0;
-    clientesData.forEach((c) => {
-      const dataUltimaCompra = c["Data da Última Compra"] || c["Data Ultima Compra"] || "";
-      const sk = parseDateToSortKey(dataUltimaCompra);
-      if (sk > maxUltimaCompra) maxUltimaCompra = sk;
-    });
 
-    // 2a passagem: construir o periodSet limitado ao teto de "Data da Última Compra"
     clientesData.forEach((c) => {
       const dataEntrada = c["Data de Entrada na Ume"] || c["Data de Entrada"] || "";
       const skEntrada = parseDateToSortKey(dataEntrada);
-      // só adicionar meses que não ultrapassam a data máxima de última compra
-      if (skEntrada > 0 && skEntrada <= maxUltimaCompra) {
+      if (skEntrada > 0) {
         const month = skEntrada % 100;
         const year = Math.floor(skEntrada / 100);
         periodSet.add(`${month}/${year}`);
-        if (skEntrada > maxSortKey) maxSortKey = skEntrada;
+        if (skEntrada > maxEntrada) maxEntrada = skEntrada;
       }
+
+      const dataUltima = c["Data da Última Compra"] || c["Data Ultima Compra"] || "";
+      const skUltima = parseDateToSortKey(dataUltima);
+      if (skUltima > maxUltimaCompra) maxUltimaCompra = skUltima;
     });
 
-    // garantir que maxSortKey reflete o teto das últimas compras
-    if (maxUltimaCompra > maxSortKey) maxSortKey = maxUltimaCompra;
+    // 2) Teto do filtro = min(maior entrada, maior última compra) — evita meses futuros
+    const teto = Math.min(maxEntrada || 999999, maxUltimaCompra || 999999);
 
     const sorted = Array.from(periodSet)
       .map((p) => {
@@ -108,9 +107,10 @@ export function ClientesFunnel({ }: ClientesFunnelProps) {
           sortKey: year * 100 + month,
         };
       })
+      .filter((p) => p.sortKey <= teto) // remove meses futuros (sintéticos)
       .sort((a, b) => a.sortKey - b.sortKey);
 
-    return { availablePeriods: sorted, maxPeriodSortKey: maxSortKey || 999999 };
+    return { availablePeriods: sorted, maxPeriodSortKey: teto };
   }, [clientesData]);
 
   // Filter clientes based on period, score and age
