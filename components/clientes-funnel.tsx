@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { TrendingUp, Users, UserCheck, ShoppingBag, X, Info } from "lucide-react";
+import { TrendingUp, Users, UserCheck, ShoppingBag, X, Info, Lightbulb } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useData } from "@/lib/data-context";
 import { FunnelChart } from "./funnel-chart";
