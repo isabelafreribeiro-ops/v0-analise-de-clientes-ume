@@ -63,60 +63,6 @@ export function CreditoTab() {
         </p>
       </div>
 
-      {/* HEADLINE — Card de impacto principal */}
-      <Card className="border-2 border-[#00C853] bg-[#E8F5E9]">
-        <CardContent className="p-6">
-          <div className="flex items-start gap-4">
-            <Target className="w-10 h-10 shrink-0 text-[#00C853]" />
-            <div className="flex-1">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-[#1B5E20]">
-                Diagnóstico Central
-              </p>
-              <p className="text-lg font-bold text-[#1a1a1a] mt-1">
-                Hoje 26,3% dos adimplentes receberam aumento de limite — limite virou gargalo, não risco.
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
-                <div>
-                  <p className="text-[10px] font-semibold text-[#64748b] uppercase">Hoje</p>
-                  <p className="text-2xl font-bold text-[#475569]">26,3%</p>
-                  <p className="text-xs text-[#64748b]">11.343 de 43.188 adimplentes</p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-semibold text-[#64748b] uppercase">Meta sugerida</p>
-                  <p className="text-2xl font-bold text-[#00C853]">50%</p>
-                  <p className="text-xs text-[#64748b]">+10.251 clientes elegíveis</p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-semibold text-[#64748b] uppercase">Upside estimado</p>
-                  <p className="text-2xl font-bold text-[#00C853]">R$ 1,1 M</p>
-                  <p className="text-xs text-[#64748b]">juros incrementais/ano</p>
-                </div>
-              </div>
-              <p className="text-xs text-[#1a1a1a] mt-4 leading-relaxed">
-                <strong className="uppercase tracking-wider text-[10px] text-[#64748b]">Implicação:</strong>{" "}
-                Ume Plus tem score médio 848 e limite médio de R$ 1.112 — adimplentes premium estão com
-                limite menor que o segmento Potencial em alguns casos. A política de crédito atual é
-                conservadora demais com quem já provou pagar.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* PREMISSA CAC */}
-      <div className="rounded border-l-4 border-[#94A3B8] bg-[#F1F5F9] p-4">
-        <p className="text-[10px] font-bold uppercase tracking-wider text-[#475569] mb-1">
-          Premissa metodológica
-        </p>
-        <p className="text-xs text-[#1a1a1a] leading-relaxed">
-          <strong>CAC R$ 50/cliente é aplicado por solicitação processada</strong> — inclui custo de
-          promotor/vendedor mesmo em casos negados. Por isso a base negada carrega{" "}
-          <strong className="text-[#EF4444]">R$ 7,59 M de CAC sem retorno</strong> (151.855 negados × R$ 50).
-          É a alavanca de melhoria isolada mais relevante da operação — refinar pré-aprovação reduz
-          desperdício direto.
-        </p>
-      </div>
-
       {/* DIAGNÓSTICO DA POLÍTICA ATUAL */}
       <Card className="border-[#E2E8F0]">
         <CardHeader>
@@ -179,6 +125,60 @@ export function CreditoTab() {
           </div>
         </CardContent>
       </Card>
+
+      {/* HEADLINE — Card de impacto principal (tese central) */}
+      <Card className="border-2 border-[#00C853] bg-[#E8F5E9]">
+        <CardContent className="p-6">
+          <div className="flex items-start gap-4">
+            <Target className="w-10 h-10 shrink-0 text-[#00C853]" />
+            <div className="flex-1">
+              <p className="text-[10px] font-bold uppercase tracking-wider text-[#1B5E20]">
+                Tese Central
+              </p>
+              <p className="text-lg font-bold text-[#1a1a1a] mt-1">
+                Hoje 26,3% dos adimplentes receberam aumento de limite — limite virou gargalo, não risco.
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                <div>
+                  <p className="text-[10px] font-semibold text-[#64748b] uppercase">Hoje</p>
+                  <p className="text-2xl font-bold text-[#475569]">26,3%</p>
+                  <p className="text-xs text-[#64748b]">11.343 de 43.188 adimplentes</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold text-[#64748b] uppercase">Meta sugerida</p>
+                  <p className="text-2xl font-bold text-[#00C853]">50%</p>
+                  <p className="text-xs text-[#64748b]">+10.251 clientes elegíveis</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold text-[#64748b] uppercase">Upside estimado</p>
+                  <p className="text-2xl font-bold text-[#00C853]">R$ 1,1 M</p>
+                  <p className="text-xs text-[#64748b]">juros incrementais/ano</p>
+                </div>
+              </div>
+              <p className="text-xs text-[#1a1a1a] mt-4 leading-relaxed">
+                <strong className="uppercase tracking-wider text-[10px] text-[#64748b]">Implicação:</strong>{" "}
+                Ume Plus tem score médio 848 e limite médio de R$ 1.112 — adimplentes premium estão com
+                limite menor que o segmento Potencial em alguns casos. A política de crédito atual é
+                conservadora demais com quem já provou pagar.
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* PREMISSA CAC */}
+      <div className="rounded border-l-4 border-[#94A3B8] bg-[#F1F5F9] p-4">
+        <p className="text-[10px] font-bold uppercase tracking-wider text-[#475569] mb-1">
+          Premissa metodológica
+        </p>
+        <p className="text-xs text-[#1a1a1a] leading-relaxed">
+          <strong>CAC R$ 50/cliente é aplicado por solicitação processada</strong> — inclui custo de
+          promotor/vendedor mesmo em casos negados. Por isso a base negada carrega{" "}
+          <strong className="text-[#EF4444]">R$ 7,59 M de CAC sem retorno</strong> (151.855 negados × R$ 50).
+          É a alavanca de melhoria isolada mais relevante da operação — refinar pré-aprovação reduz
+          desperdício direto.
+        </p>
+      </div>
 
       {/* 4 REGRAS — Grid 2x2 */}
       <Card className="border-[#E2E8F0]">
