@@ -191,6 +191,7 @@ export interface SegmentoPL {
   receitaMdr: number;
   receitaJuros: number;
   cac: number;
+  custoFunil: number;
   custoMsg: number;
   perdaInad: number;
   margemTotal: number;
@@ -212,11 +213,16 @@ export function aggregateBySegment(processed: ClienteComRentabilidade[]): Segmen
     const headcount = group.length;
     const receitaMdr = sum(group.map((p) => p.breakdown.receitaMdr));
     const receitaJuros = sum(group.map((p) => p.breakdown.receitaJuros));
-    const cac = sum(group.map((p) => p.breakdown.cac));
+    const cacOriginal = sum(group.map((p) => p.breakdown.cac));
     const custoMsg = sum(group.map((p) => p.breakdown.custoMsg));
     const perdaInad = sum(group.map((p) => p.breakdown.perdaInad));
     const margemTotal = sum(group.map((p) => p.breakdown.margem));
     const gmvTotal = sum(group.map((p) => p.breakdown.gmv));
+
+    // Separar CAC em: aquisição efetiva vs ineficiência de funil
+    // Segmentos não-adquiridos: aprovados-nao-ativados, negados-alto-risco, negados-recuperaveis
+    const SEGMENTOS_NAO_ADQUIRIDOS = ["aprovados-nao-ativados", "negados-alto-risco", "negados-recuperaveis"];
+    const ehNaoAdquirido = SEGMENTOS_NAO_ADQUIRIDOS.includes(id);
 
     return {
       id: id as SegmentId,
@@ -225,7 +231,8 @@ export function aggregateBySegment(processed: ClienteComRentabilidade[]): Segmen
       headcount,
       receitaMdr,
       receitaJuros,
-      cac: -cac, // negativo na tabela
+      cac: ehNaoAdquirido ? 0 : -cacOriginal, // CAC: apenas para segmentos adquiridos
+      custoFunil: ehNaoAdquirido ? -cacOriginal : 0, // Custo Funil: apenas para não-adquiridos
       custoMsg: -custoMsg,
       perdaInad: -perdaInad,
       margemTotal,
@@ -246,6 +253,7 @@ export function aggregateBySegment(processed: ClienteComRentabilidade[]): Segmen
     receitaMdr: sum(segmentos.map((s) => s.receitaMdr)),
     receitaJuros: sum(segmentos.map((s) => s.receitaJuros)),
     cac: sum(segmentos.map((s) => s.cac)),
+    custoFunil: sum(segmentos.map((s) => s.custoFunil)),
     custoMsg: sum(segmentos.map((s) => s.custoMsg)),
     perdaInad: sum(segmentos.map((s) => s.perdaInad)),
     margemTotal: sum(segmentos.map((s) => s.margemTotal)),

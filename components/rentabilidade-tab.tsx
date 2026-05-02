@@ -177,6 +177,10 @@ export function RentabilidadeTab() {
                     <div className="text-[9px] font-normal text-[#94a3b8]">(R$ '000)</div>
                   </th>
                   <th className="text-right py-2 px-2 font-semibold text-[#64748b]">
+                    <div>Custo Funil</div>
+                    <div className="text-[9px] font-normal text-[#94a3b8]">(R$ '000)</div>
+                  </th>
+                  <th className="text-right py-2 px-2 font-semibold text-[#64748b]">
                     <div>Msg.</div>
                     <div className="text-[9px] font-normal text-[#94a3b8]">(R$ '000)</div>
                   </th>
@@ -219,6 +223,9 @@ export function RentabilidadeTab() {
                         {formatMil(s.cac)}
                       </td>
                       <td className="py-2 px-2 text-right text-[#EF4444]">
+                        {formatMil(s.custoFunil)}
+                      </td>
+                      <td className="py-2 px-2 text-right text-[#EF4444]">
                         {formatMil(s.custoMsg)}
                       </td>
                       <td className="py-2 px-2 text-right text-[#EF4444]">
@@ -243,7 +250,12 @@ export function RentabilidadeTab() {
             </table>
           </div>
 
-          <div className="mt-4 p-3 bg-[#FEF2F2] border border-[#EF4444]/20 rounded text-xs text-[#991B1B] flex items-start gap-2">
+          <div className="mt-4 p-3 bg-[#F1F5F9] border border-[#94A3B8]/20 rounded text-xs text-[#475569] flex items-start gap-2">
+            <span className="font-bold">*</span>
+            <span><strong>Custo Funil:</strong> representa o custo de R$ 50/solicitação processada (promotor + vendedor) aplicado a clientes que não foram adquiridos — negados ou aprovados que nunca compraram. Realocado da coluna CAC pois CAC, por definição, refere-se apenas ao custo de aquisição de clientes efetivamente adquiridos.</span>
+          </div>
+
+          <div className="mt-2 p-3 bg-[#FEF2F2] border border-[#EF4444]/20 rounded text-xs text-[#991B1B] flex items-start gap-2">
             <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
             <span><strong>Premissa de Inadimplência:</strong> 80% do saldo em aberto é considerado
             perda. 20% representa recuperação esperada via cobrança (benchmark fintech BR).</span>
