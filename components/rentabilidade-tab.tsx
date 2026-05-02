@@ -121,6 +121,7 @@ export function RentabilidadeTab() {
         <KpiCard
           label="Margem Contribuição"
           value={formatBRL(kpis.margemContribuicaoTotal)}
+          pctDaReceita={pctReceita(kpis.margemContribuicaoTotal, kpis.receitaTotal)}
           sub="margem clientes"
           accent="#00C853"
           bg="#E8F5E9"
@@ -128,6 +129,7 @@ export function RentabilidadeTab() {
         <KpiCard
           label="EBITDA Estimado"
           value={formatBRL(kpis.ebitdaEstimado)}
+          pctDaReceita={pctReceita(kpis.ebitdaEstimado, kpis.receitaTotal)}
           sub="após custos varejo"
           accent="#66BB6A"
           bg="#F1F8E9"
@@ -624,15 +626,21 @@ export function RentabilidadeTab() {
 // ============================================================================
 // SUB-COMPONENT
 // ============================================================================
+function pctReceita(valor: number, receitaTotal: number): string {
+  if (!receitaTotal) return "—";
+  return `${((Math.abs(valor) / receitaTotal) * 100).toFixed(1).replace(".", ",")}% da receita`;
+}
+
 interface KpiCardProps {
   label: string;
   value: string;
   sub: string;
   accent: string;
   bg: string;
+  pctDaReceita?: string;
 }
 
-function KpiCard({ label, value, sub, accent, bg }: KpiCardProps) {
+function KpiCard({ label, value, sub, accent, bg, pctDaReceita }: KpiCardProps) {
   return (
     <div
       className="p-4 rounded border border-[#E2E8F0] border-l-4 transition hover:shadow-md bg-white"
@@ -642,6 +650,9 @@ function KpiCard({ label, value, sub, accent, bg }: KpiCardProps) {
       <p className="text-2xl font-bold mt-1" style={{ color: accent }}>
         {value}
       </p>
+      {pctDaReceita && (
+        <p className="text-xs text-[#64748b] mt-0.5">{pctDaReceita}</p>
+      )}
       <p className="text-[10px] text-[#94a3b8] mt-0.5">{sub}</p>
     </div>
   );
