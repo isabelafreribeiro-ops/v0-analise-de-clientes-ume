@@ -60,6 +60,16 @@ function formatPct(value: number, decimals: number = 1): string {
 }
 
 // ============================================================================
+// HELPER: Format values in thousands (consultive P&L format)
+// ============================================================================
+function formatMil(value: number): string {
+  if (value === null || value === undefined || isNaN(value) || value === 0) return "—";
+  const milhares = Math.round(Math.abs(value) / 1_000);
+  const formatted = new Intl.NumberFormat("pt-BR").format(milhares);
+  return value < 0 ? `(${formatted})` : formatted;
+}
+
+// ============================================================================
 // COMPONENT
 // ============================================================================
 export function RentabilidadeTab() {
@@ -154,12 +164,30 @@ export function RentabilidadeTab() {
                 <tr className="border-b-2 border-[#E2E8F0]">
                   <th className="text-left py-2 px-2 font-semibold text-[#64748b]">Segmento</th>
                   <th className="text-right py-2 px-2 font-semibold text-[#64748b]">Headcount</th>
-                  <th className="text-right py-2 px-2 font-semibold text-[#64748b]">Rec. MDR</th>
-                  <th className="text-right py-2 px-2 font-semibold text-[#64748b]">Rec. Juros</th>
-                  <th className="text-right py-2 px-2 font-semibold text-[#64748b]">CAC</th>
-                  <th className="text-right py-2 px-2 font-semibold text-[#64748b]">Msg.</th>
-                  <th className="text-right py-2 px-2 font-semibold text-[#64748b]">Inadimp.</th>
-                  <th className="text-right py-2 px-2 font-semibold text-[#1a1a1a]">Margem Total</th>
+                  <th className="text-right py-2 px-2 font-semibold text-[#64748b]">
+                    <div>Rec. MDR</div>
+                    <div className="text-[9px] font-normal text-[#94a3b8]">(R$ '000)</div>
+                  </th>
+                  <th className="text-right py-2 px-2 font-semibold text-[#64748b]">
+                    <div>Rec. Juros</div>
+                    <div className="text-[9px] font-normal text-[#94a3b8]">(R$ '000)</div>
+                  </th>
+                  <th className="text-right py-2 px-2 font-semibold text-[#64748b]">
+                    <div>CAC</div>
+                    <div className="text-[9px] font-normal text-[#94a3b8]">(R$ '000)</div>
+                  </th>
+                  <th className="text-right py-2 px-2 font-semibold text-[#64748b]">
+                    <div>Msg.</div>
+                    <div className="text-[9px] font-normal text-[#94a3b8]">(R$ '000)</div>
+                  </th>
+                  <th className="text-right py-2 px-2 font-semibold text-[#64748b]">
+                    <div>Inadimp.</div>
+                    <div className="text-[9px] font-normal text-[#94a3b8]">(R$ '000)</div>
+                  </th>
+                  <th className="text-right py-2 px-2 font-semibold text-[#1a1a1a]">
+                    <div>Margem Total</div>
+                    <div className="text-[9px] font-normal text-[#94a3b8]">(R$ '000)</div>
+                  </th>
                   <th className="text-right py-2 px-2 font-semibold text-[#1a1a1a]">Margem/Cliente</th>
                 </tr>
               </thead>
@@ -182,23 +210,25 @@ export function RentabilidadeTab() {
                       </td>
                       <td className="py-2 px-2 text-right">{formatNum(s.headcount)}</td>
                       <td className="py-2 px-2 text-right text-[#00C853]">
-                        {s.receitaMdr > 0 ? formatBRL(s.receitaMdr) : "—"}
+                        {formatMil(s.receitaMdr)}
                       </td>
                       <td className="py-2 px-2 text-right text-[#00C853]">
-                        {s.receitaJuros > 0 ? formatBRL(s.receitaJuros) : "—"}
-                      </td>
-                      <td className="py-2 px-2 text-right text-[#EF4444]">{formatBRL(s.cac)}</td>
-                      <td className="py-2 px-2 text-right text-[#EF4444]">
-                        {s.custoMsg !== 0 ? formatBRL(s.custoMsg) : "—"}
+                        {formatMil(s.receitaJuros)}
                       </td>
                       <td className="py-2 px-2 text-right text-[#EF4444]">
-                        {s.perdaInad !== 0 ? formatBRL(s.perdaInad) : "—"}
+                        {formatMil(s.cac)}
+                      </td>
+                      <td className="py-2 px-2 text-right text-[#EF4444]">
+                        {formatMil(s.custoMsg)}
+                      </td>
+                      <td className="py-2 px-2 text-right text-[#EF4444]">
+                        {formatMil(s.perdaInad)}
                       </td>
                       <td
                         className="py-2 px-2 text-right font-bold"
                         style={{ color: s.margemTotal >= 0 ? "#00C853" : "#EF4444" }}
                       >
-                        {formatBRL(s.margemTotal)}
+                        {formatMil(s.margemTotal)}
                       </td>
                       <td
                         className="py-2 px-2 text-right font-bold"
@@ -437,6 +467,7 @@ export function RentabilidadeTab() {
       <Card className="border-[#E2E8F0]">
         <CardHeader>
           <CardTitle>5. P&L Consolidado da Ume</CardTitle>
+          <p className="text-xs text-[#64748b] mt-1">(R$ '000)</p>
           <p className="text-xs text-[#64748b] mt-2">
             Visão consolidada: margem dos clientes menos custos do portfólio de varejos resulta no
             EBITDA estimado da operação.
@@ -490,7 +521,7 @@ export function RentabilidadeTab() {
                     }`}
                     style={{ color: valorColor }}
                   >
-                    {formatBRL(line.valor)}
+                    {formatMil(line.valor)}
                   </span>
                 </div>
               );
