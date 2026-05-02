@@ -485,56 +485,72 @@ export function calculatePurchaseDistribution(clientesData: ClienteRow[]): Purch
 export function calculatePurchaseGroupComparison(clientesData: ClienteRow[]): PurchaseGroupComparison[] {
   if (!clientesData || clientesData.length === 0) return [];
 
-  // Use sample for large datasets
-  const dataToAnalyze = sampleDataForAnalysis(clientesData, 50000);
-
-  const groups: Record<string, ClienteRow[]> = {
+  // HEADCOUNT: usar base completa para contagem real
+  const fullGroups: Record<string, ClienteRow[]> = {
     "0 compras": [],
     "1 compra": [],
     "2+ compras": [],
   };
 
-  dataToAnalyze.forEach((cliente) => {
+  clientesData.forEach((cliente) => {
     const compras = parseNumber(getColumnValue(cliente, ["qtd de compras", "compras", "qtd compras"])) || 0;
-
-    if (compras === 0) groups["0 compras"].push(cliente);
-    else if (compras === 1) groups["1 compra"].push(cliente);
-    else groups["2+ compras"].push(cliente);
+    if (compras === 0) fullGroups["0 compras"].push(cliente);
+    else if (compras === 1) fullGroups["1 compra"].push(cliente);
+    else fullGroups["2+ compras"].push(cliente);
   });
 
-  return Object.entries(groups)
+  // MÉTRICAS QUALITATIVAS: usar sample para performance
+  const sampleGroups: Record<string, ClienteRow[]> = {
+    "0 compras": [],
+    "1 compra": [],
+    "2+ compras": [],
+  };
+
+  const dataToAnalyze = sampleDataForAnalysis(clientesData, 50000);
+  dataToAnalyze.forEach((cliente) => {
+    const compras = parseNumber(getColumnValue(cliente, ["qtd de compras", "compras", "qtd compras"])) || 0;
+    if (compras === 0) sampleGroups["0 compras"].push(cliente);
+    else if (compras === 1) sampleGroups["1 compra"].push(cliente);
+    else sampleGroups["2+ compras"].push(cliente);
+  });
+
+  return Object.entries(fullGroups)
     .filter(([, customers]) => customers.length > 0)
     .map(([group, customers]) => {
-      const limites = customers.map((c) =>
+      // customers = grupo completo (para headcount)
+      // sampleCustomers = sample do grupo (para médias)
+      const sampleCustomers = sampleGroups[group] || [];
+      // Usar sampleCustomers para calcular médias (performance)
+      const limites = sampleCustomers.map((c) =>
         parseNumber(getColumnValue(c, ["limite total", "limite", "limit total"]))
       );
-      const scores = customers.map((c) =>
+      const scores = sampleCustomers.map((c) =>
         parseNumber(getColumnValue(c, ["score de crédito", "score", "score_credito"]))
       );
-      const compras = customers.map((c) =>
+      const comprasArr = sampleCustomers.map((c) =>
         parseNumber(getColumnValue(c, ["qtd de compras", "compras", "qtd compras"]))
       );
-      const taxas = customers.map((c) =>
+      const taxas = sampleCustomers.map((c) =>
         parseNumber(getColumnValue(c, ["taxa de juros média (ao mês)", "taxa de juros", "taxa juros", "interest rate"]))
       );
 
-      const comApp = customers.filter((c) =>
+      const comApp = sampleCustomers.filter((c) =>
         parseBoolean(getColumnValue(c, ["tem app?", "tem app", "app", "has app"]))
       ).length;
 
-      const comAumento = customers.filter((c) =>
+      const comAumento = sampleCustomers.filter((c) =>
         parseBoolean(getColumnValue(c, ["aumento limite", "limite aumentado", "limit increase"]))
       ).length;
 
       return {
         group,
-        count: customers.length,
+        count: customers.length, // HEADCOUNT: base completa
         avgLimite: calculateAverage(limites) || 0,
         avgScore: calculateAverage(scores) || 0,
-        avgCompras: calculateAverage(compras) || 0,
+        avgCompras: calculateAverage(comprasArr) || 0,
         avgTaxaJuros: calculateAverage(taxas) || 0,
-        percentageComApp: calculatePercentage(comApp, customers.length),
-        percentageComAumento: calculatePercentage(comAumento, customers.length),
+        percentageComApp: calculatePercentage(comApp, sampleCustomers.length), // % sobre sample
+        percentageComAumento: calculatePercentage(comAumento, sampleCustomers.length),
       };
     });
 }
