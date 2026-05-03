@@ -72,11 +72,11 @@ export function VarejoInsights({ data }: VarejoInsightsProps) {
       ? Math.round((totalRecorrentes / (totalRecorrentes + totalConversoes)) * 100)
       : 0;
 
-    // Card 4: Cauda Fraca (varejos abaixo do breakeven operacional: R$ 12k/mês)
-    // Breakeven = custo R$ 5k/mês ÷ (ratio receita/MDR 13,7x × MDR 3%) ≈ R$ 12k originação/mês
-    // Usar 12 meses fixos para calcular média mensal (período padrão da base)
+    // Card 4: Cauda Fraca (varejos abaixo do mínimo operacional)
+    // Originação Total na base é ANUAL. Originação Total ≤ R$ 12.000/ano = R$ 1k/mês
+    // Breakeven operacional = R$ 12k/mês, portanto esses estão BEM abaixo
     const caudaFraca = data.filter(
-      (v) => (parseBRNumber(v["Originação Total"]) / 12) < 12000
+      (v) => parseBRNumber(v["Originação Total"]) <= 12000
     ).length;
     const semConversoes = data.filter(
       (v) => (Number(v["Transações de Conversões por mês"]) || 0) === 0
@@ -164,11 +164,10 @@ export function VarejoInsights({ data }: VarejoInsightsProps) {
         <CardContent className="space-y-2">
           <div className="text-2xl font-bold text-[#EF4444]">{insights.caudaFraca}</div>
           <p className="text-xs text-[#64748b]">
-            varejos abaixo do breakeven operacional
+            varejos abaixo do mínimo operacional
           </p>
-          <p className="text-sm font-semibold text-[#EF4444]">74% da rede</p>
           <p className="text-xs text-[#64748b] mt-2">
-            {insights.caudaFraca} dos 85 varejos parceiros (74%) originam menos de R$ 12k/mês — breakeven operacional considerando MDR + juros e custo R$ 5k/mês de operação. Esses varejos consomem ~R$ 3,8M/ano em custo operacional sem cobrir o próprio custo. Candidatos a renegociação de modelo (% comissão variável) ou descontinuação.
+            21% da rede origina menos de R$ 1k/mês — bem abaixo do breakeven de R$ 12k/mês (margem efetiva 41% × custo R$ 5k/mês). Esses 18 varejos custam ~R$ 1,1M/ano e geram receita marginal. Candidatos diretos a descontinuação ou renegociação.
           </p>
         </CardContent>
       </Card>
