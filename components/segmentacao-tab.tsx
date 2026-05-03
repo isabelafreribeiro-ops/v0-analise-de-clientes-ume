@@ -409,7 +409,7 @@ export function SegmentacaoTab() {
             <Lightbulb className="h-4 w-4 text-[#00C853]" /> Tese
           </p>
           <p className="text-sm italic text-[#1a1a1a] mt-1">
-            A base não tem cliente médio — é polarizada entre 11% que gera 100% da margem e 75% que nunca vai ser aprovado. Os 7 segmentos endereçam essa polaridade com jornada e crédito específicos.
+            A base é polarizada: 11% concentra 100% da margem, 75% nunca será aprovado. Mas quem chega a ativar não para mais — 94% dos ativados se tornam recorrentes. Os 7 segmentos abaixo endereçam essa estrutura com jornada e crédito específicos.
           </p>
         </div>
       </div>
