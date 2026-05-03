@@ -364,8 +364,8 @@ export function JornadaTab() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <Card className="border-l-4" style={{ borderLeftColor: "#FF9800", backgroundColor: "#FFF3E0" }}>
             <CardContent className="pt-4">
-              <p className="text-sm font-semibold text-[#F57F17] mb-2 flex items-center gap-1"><Smartphone className="w-4 h-4" /> NOTA 1 — Push Removido</p>
-              <p className="text-xs text-[#3E2723]">Push notifications removidas de Aprovados Não Ativados — apenas 0,6% deles têm o app, tornando o canal inviável neste segmento.</p>
+              <p className="text-sm font-semibold text-[#F57F17] mb-2 flex items-center gap-1"><Smartphone className="w-4 h-4" /> NOTA 1 — Push condicionado à presença do app</p>
+              <p className="text-xs text-[#3E2723]">Push dispara apenas para quem tem o app instalado.</p>
             </CardContent>
           </Card>
           <Card className="border-l-4" style={{ borderLeftColor: "#1976D2", backgroundColor: "#E3F2FD" }}>

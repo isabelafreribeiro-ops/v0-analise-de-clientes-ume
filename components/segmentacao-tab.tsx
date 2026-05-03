@@ -295,10 +295,16 @@ export function SegmentacaoTab() {
 
   // INSIGHT 01: App como diferenciador (FATO)
   const insight1 = useMemo(() => {
-    const sem = clientesData.filter(
+    // Comparação válida: apenas dentro de aprovados (negados nunca puderam instalar app)
+    const aprovados = clientesData.filter((c) => {
+      const sit = String(getColumnValue(c, ["situação", "situacao", "status"]) || "").toLowerCase().trim();
+      return sit === "adimplente" || sit === "inadimplente";
+    });
+
+    const sem = aprovados.filter(
       (c) => (parseNumber(getColumnValue(c, ["qtd de compras", "compras"])) || 0) === 0
     );
-    const com = clientesData.filter(
+    const com = aprovados.filter(
       (c) => (parseNumber(getColumnValue(c, ["qtd de compras", "compras"])) || 0) > 0
     );
     const appSem = sem.filter((c) =>
@@ -523,7 +529,7 @@ export function SegmentacaoTab() {
               bg="#F8FAFC"
               titulo="O app é o maior diferenciador comportamental"
               shockValue={`${formatPercentage(insight1.pctSem)} → ${formatPercentage(insight1.pctCom)}`}
-              shockLabel={`Salto de ${insight1.multiplier.toFixed(0)}x na adoção do app entre quem nunca comprou e quem comprou pelo menos uma vez.`}
+              shockLabel={`Salto de ${insight1.multiplier.toFixed(0)}x na adoção do app entre aprovados que nunca compraram (${insight1.pctSem.toFixed(1).replace(".", ",")}%) e aprovados que ativaram (${insight1.pctCom.toFixed(1).replace(".", ",")}%). Comparação restrita a aprovados — negados nunca tiveram a opção de instalar o app.`}
               implicacao="Ter o app é praticamente um proxy de ativação. O status de app diferencia comportamento dentro da base aprovada."
             />
 
@@ -532,10 +538,10 @@ export function SegmentacaoTab() {
               numero="02"
               accent="#475569"
               bg="#F8FAFC"
-              titulo="Score é destino — base bipolar, não normal"
+              titulo="Base trimodal — três mundos, três políticas"
               shockValue={`${formatPercentage(insight2.pctLow, 0)} | ${formatPercentage(insight2.pctMid, 0)} | ${formatPercentage(insight2.pctHigh, 0)}`}
-              shockLabel={`Distribuição score: baixo (<400) | médio (400-700) | alto (≥700). A maioria absoluta é negada por score, e a "classe média" quase não existe.`}
-              implicacao="Não há cliente médio — a base é polarizada entre baixo e alto score. O score diferencia comportamento dentro dos aprovados."
+              shockLabel={`Distribuição score: baixo (<400) | médio (400-700) | alto (≥700). 86% da base concentra-se nos extremos; a "classe média" do crédito quase não existe.`}
+              implicacao="Cada faixa de score precisa de uma política diferente: descartar rápido os 76% de score baixo, ajustar o corte com cuidado nos 10% do meio, e priorizar a ativação dos 15% com score alto. Usar a mesma regra para todos faz a Ume perder dinheiro nas três pontas."
             />
 
             <InsightCard
@@ -569,8 +575,7 @@ export function SegmentacaoTab() {
           <CardHeader>
             <CardTitle>4. Evidência Quantitativa</CardTitle>
             <p className="text-xs text-[#64748b] mt-2">
-              Dados que sustentam os Insights 01-02: clientes com maior frequência têm
-              simultaneamente score mais alto, limite maior e adoção massiva do app.
+              Comparação dentro dos 48.737 aprovados (Adimplentes + Inadimplentes). Denominador alinhado com o Funil de Aquisição. Score alto não causa ativação — adoção do app é o driver real (5,1% nos não-ativados vs 70,2% nos ativados).
             </p>
           </CardHeader>
           <CardContent>
@@ -822,7 +827,7 @@ export function SegmentacaoTab() {
               total={clientesData.length}
               caracteristica="Maior oportunidade de crescimento da base — CAC já pago, basta ativar. Cada conversão recupera o investimento de aquisição e abre potencial de receita futura."
               acoes={[
-                "Reengajamento via SMS + WhatsApp (Push não funciona: 0,6% têm app)",
+                "Reengajamento via SMS + WhatsApp (Push tem alcance baixo: só 5% têm app)",
                 "Abordagem em ponto de venda no varejo parceiro",
                 "Oferta de desconto na primeira compra",
               ]}

@@ -437,9 +437,7 @@ export function generateSegmentInsights(
 export function calculatePurchaseDistribution(clientesData: ClienteRow[]): PurchaseDistribution[] {
   if (!clientesData || clientesData.length === 0) return [];
 
-  // Use sample for large datasets
-  const dataToAnalyze = sampleDataForAnalysis(clientesData, 50000);
-
+  // SEM sampling — count é operação trivial que precisa do total real (200.592 clientes)
   const distribution = {
     0: 0,
     1: 0,
@@ -447,7 +445,7 @@ export function calculatePurchaseDistribution(clientesData: ClienteRow[]): Purch
     "3+": 0,
   };
 
-  dataToAnalyze.forEach((cliente) => {
+  clientesData.forEach((cliente) => {
     const compras = parseNumber(getColumnValue(cliente, ["qtd de compras", "compras", "qtd compras"])) || 0;
 
     if (compras === 0) distribution[0]++;
@@ -456,7 +454,7 @@ export function calculatePurchaseDistribution(clientesData: ClienteRow[]): Purch
     else distribution["3+"]++;
   });
 
-  const total = dataToAnalyze.length;
+  const total = clientesData.length; // usar total real, não sample
   return [
     {
       range: "0 compras",
@@ -485,28 +483,34 @@ export function calculatePurchaseDistribution(clientesData: ClienteRow[]): Purch
 export function calculatePurchaseGroupComparison(clientesData: ClienteRow[]): PurchaseGroupComparison[] {
   if (!clientesData || clientesData.length === 0) return [];
 
-  // HEADCOUNT: usar base completa para contagem real
+  // FILTRAR APENAS APROVADOS — denominador consistente com o Funil de Aquisição
+  const aprovados = clientesData.filter((cliente) => {
+    const sit = String(getColumnValue(cliente, ["situação", "situacao", "status"]) || "").toLowerCase().trim();
+    return sit === "adimplente" || sit === "inadimplente";
+  });
+
+  // HEADCOUNT: usar base de aprovados para contagem real
   const fullGroups: Record<string, ClienteRow[]> = {
     "0 compras": [],
     "1 compra": [],
     "2+ compras": [],
   };
 
-  clientesData.forEach((cliente) => {
+  aprovados.forEach((cliente) => {
     const compras = parseNumber(getColumnValue(cliente, ["qtd de compras", "compras", "qtd compras"])) || 0;
     if (compras === 0) fullGroups["0 compras"].push(cliente);
     else if (compras === 1) fullGroups["1 compra"].push(cliente);
     else fullGroups["2+ compras"].push(cliente);
   });
 
-  // MÉTRICAS QUALITATIVAS: usar sample para performance
+  // MÉTRICAS QUALITATIVAS: usar sample para performance (operação pesada)
   const sampleGroups: Record<string, ClienteRow[]> = {
     "0 compras": [],
     "1 compra": [],
     "2+ compras": [],
   };
 
-  const dataToAnalyze = sampleDataForAnalysis(clientesData, 50000);
+  const dataToAnalyze = sampleDataForAnalysis(aprovados, 50000);
   dataToAnalyze.forEach((cliente) => {
     const compras = parseNumber(getColumnValue(cliente, ["qtd de compras", "compras", "qtd compras"])) || 0;
     if (compras === 0) sampleGroups["0 compras"].push(cliente);
@@ -517,10 +521,7 @@ export function calculatePurchaseGroupComparison(clientesData: ClienteRow[]): Pu
   return Object.entries(fullGroups)
     .filter(([, customers]) => customers.length > 0)
     .map(([group, customers]) => {
-      // customers = grupo completo (para headcount)
-      // sampleCustomers = sample do grupo (para médias)
       const sampleCustomers = sampleGroups[group] || [];
-      // Usar sampleCustomers para calcular médias (performance)
       const limites = sampleCustomers.map((c) =>
         parseNumber(getColumnValue(c, ["limite total", "limite", "limit total"]))
       );
@@ -544,12 +545,12 @@ export function calculatePurchaseGroupComparison(clientesData: ClienteRow[]): Pu
 
       return {
         group,
-        count: customers.length, // HEADCOUNT: base completa
+        count: customers.length,
         avgLimite: calculateAverage(limites) || 0,
         avgScore: calculateAverage(scores) || 0,
         avgCompras: calculateAverage(comprasArr) || 0,
         avgTaxaJuros: calculateAverage(taxas) || 0,
-        percentageComApp: calculatePercentage(comApp, sampleCustomers.length), // % sobre sample
+        percentageComApp: calculatePercentage(comApp, sampleCustomers.length),
         percentageComAumento: calculatePercentage(comAumento, sampleCustomers.length),
       };
     });
