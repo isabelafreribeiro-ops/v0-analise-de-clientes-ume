@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useData } from "@/lib/data-context";
-import { Target, AlertTriangle, Lightbulb, Crown, Repeat2, ClipboardList } from "lucide-react";
+import { Target, AlertTriangle, Lightbulb, Crown, Repeat2, ClipboardList, Shield } from "lucide-react";
 
 // ============================================================================
 // Q5 CRÉDITO — Política de crédito proposta
