@@ -349,8 +349,8 @@ export function CreditoTab() {
               </h3>
               <div className="space-y-2 text-xs">
                 <div>
-                  <p className="text-[10px] font-semibold text-[#64748b] uppercase">Score 300-449 → Reaplicação</p>
-                  <p className="text-[#1a1a1a]">Reaplicar em 90 dias se score subiu — 5% conversão estimada</p>
+                  <p className="text-[10px] font-semibold text-[#64748b] uppercase">Score 300-549 → Reaplicação</p>
+                  <p className="text-[#1a1a1a]">Reaplicar em 90 dias se score subir acima de 550 — 5% conversão estimada</p>
                 </div>
                 <div>
                   <p className="text-[10px] font-semibold text-[#64748b] uppercase">Score &lt;300 → Bloqueio</p>
@@ -371,7 +371,7 @@ export function CreditoTab() {
                   </div>
                 </div>
                 <p className="text-[10px] text-[#64748b] italic mt-1">
-                  101k score 300-449 (reaplicar) + 51k score &lt;300 (bloqueio) | reduz R$ 2,5M CAC desperdiçado
+                  101k score 300-549 (reaplicar) + 51k score &lt;300 (bloqueio) | reduz R$ 2,5M CAC desperdiçado
                 </p>
               </div>
             </div>

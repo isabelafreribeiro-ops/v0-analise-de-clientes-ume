@@ -58,7 +58,7 @@ const SEGMENT_CONFIG = {
     text: "#1E293B",
     Icon: ClipboardList,
     label: "Negados Próximos do Corte",
-    criterio: "Negada + score 300-449",
+    criterio: "Negada + score 300-549",
   },
   "negados-alto-risco": {
     bg: "#F1F5F9",
