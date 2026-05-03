@@ -249,12 +249,14 @@ export function ClientesFunnel({ }: ClientesFunnelProps) {
     // MUDANÇA 1: Calculate "Qualidade dos Recorrentes" using same logic as Segmentação
     const recorrentes = filteredClientes.filter((c) => {
       const compras = parseNumber(getColumnValue(c, ["qtd de compras", "compras"])) || 0;
-      return compras >= 2;
+      const sit = String(getColumnValue(c, ["situação", "situacao", "status"]) || "").toLowerCase().trim();
+      return compras >= 2 && (sit === "adimplente" || sit === "inadimplente");
     }).length;
     const umePlus = filteredClientes.filter((c) => {
       const compras = parseNumber(getColumnValue(c, ["qtd de compras", "compras"])) || 0;
       const score = parseNumber(getColumnValue(c, ["score de crédito", "score"])) || 0;
-      return compras >= 3 && score >= 700;
+      const sit = String(getColumnValue(c, ["situação", "situacao", "status"]) || "").toLowerCase().trim();
+      return compras >= 3 && score >= 700 && sit === "adimplente";
     }).length;
     const qualidadeRecorrentes = recorrentes > 0 ? (umePlus / recorrentes) * 100 : 0;
 
@@ -279,7 +281,7 @@ export function ClientesFunnel({ }: ClientesFunnelProps) {
               <Lightbulb className="h-4 w-4 text-[#00C853]" /> Tese
             </p>
             <p className="text-sm italic text-[#1a1a1a] mt-1">
-              O funil aprova 24% e ativa só 14% — de cada 100 solicitações, R$ 50 de custo entram, 14 viram cliente. As 4 alavancas a seguir reduzem desperdício e maximizam conversão de quem realmente paga.
+              De cada 100 solicitações, 24 são aprovadas e apenas 14 viram cliente pagante — embora 100% gerem custo de aquisição. As próximas análises mapeiam onde o funil vaza e como concentrar esforço onde realmente gera valor.
             </p>
           </div>
         </div>
@@ -501,7 +503,7 @@ export function ClientesFunnel({ }: ClientesFunnelProps) {
               {new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(summaryMetrics.qualidadeRecorrentes)}%
             </div>
             <p className="mt-1 text-xs text-[#64748b]">
-              {summaryMetrics.umePlus.toLocaleString("pt-BR")} de {summaryMetrics.recorrentes.toLocaleString("pt-BR")} recorrentes são Ume Plus
+              {formatNumber(summaryMetrics.umePlus)} de {formatNumber(summaryMetrics.recorrentes)} recorrentes são Ume Plus (3+ compras, score ≥700, adimplentes)
             </p>
           </CardContent>
         </Card>
