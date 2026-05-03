@@ -35,6 +35,11 @@ function getSortKey(period: string): number {
   return year * 100 + month;
 }
 
+function formatNumber(value: number | null): string {
+  if (value === null || value === undefined) return "—";
+  return new Intl.NumberFormat("pt-BR").format(value);
+}
+
 export function ClientesFunnel({ }: ClientesFunnelProps) {
   const { clientesData } = useData();
 
