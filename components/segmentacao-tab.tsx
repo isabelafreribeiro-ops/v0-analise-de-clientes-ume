@@ -340,30 +340,29 @@ export function SegmentacaoTab() {
     };
   }, [clientesData, scoreDistribution]);
 
-  // INSIGHT 03 NOVO: Concentração de transações (FATO PURO)
+  // INSIGHT 03 NOVO: Quem ativa, não para mais
   const insight3 = useMemo(() => {
-    const totalTransacoes = clientesData.reduce(
-      (sum, c) => sum + (parseNumber(getColumnValue(c, ["qtd de compras", "compras"])) || 0),
-      0
-    );
-    const recorrentes = clientesData.filter((c) => {
+    const aprovados = clientesData.filter((c) => {
+      const sit = String(getColumnValue(c, ["situação", "situacao", "status"]) || "").toLowerCase().trim();
+      return sit === "adimplente" || sit === "inadimplente";
+    });
+
+    const ativados = aprovados.filter((c) => {
+      const compras = parseNumber(getColumnValue(c, ["qtd de compras", "compras"])) || 0;
+      return compras >= 1;
+    });
+
+    const recorrentes = aprovados.filter((c) => {
       const compras = parseNumber(getColumnValue(c, ["qtd de compras", "compras"])) || 0;
       return compras >= 2;
     });
-    const transacoesRecorrentes = recorrentes.reduce(
-      (sum, c) => sum + (parseNumber(getColumnValue(c, ["qtd de compras", "compras"])) || 0),
-      0
-    );
-    const pctClientesRec = (recorrentes.length / clientesData.length) * 100;
-    const pctTransacoesRec =
-      totalTransacoes > 0 ? (transacoesRecorrentes / totalTransacoes) * 100 : 0;
+
+    const pctRecorrencia = ativados.length > 0 ? (recorrentes.length / ativados.length) * 100 : 0;
 
     return {
-      qtdRecorrentes: recorrentes.length,
-      pctClientesRec,
-      transacoesRecorrentes,
-      totalTransacoes,
-      pctTransacoesRec,
+      totalAtivados: ativados.length,
+      totalRecorrentes: recorrentes.length,
+      pctRecorrencia,
     };
   }, [clientesData]);
 
@@ -410,7 +409,7 @@ export function SegmentacaoTab() {
             <Lightbulb className="h-4 w-4 text-[#00C853]" /> Tese
           </p>
           <p className="text-sm italic text-[#1a1a1a] mt-1">
-            A base não tem cliente médio — é polarizada entre 11% que gera 100% da margem e 75% que nunca vai ser aprovado. Os 7 segmentos endereçam essa polaridade com jornada e crédito específicos.
+            A base é polarizada: 11% concentra 100% da margem, 75% nunca será aprovado. Mas quem chega a ativar não para mais — 94% dos ativados se tornam recorrentes. Os 7 segmentos abaixo endereçam essa estrutura com jornada e crédito específicos.
           </p>
         </div>
       </div>
@@ -545,14 +544,14 @@ export function SegmentacaoTab() {
             />
 
             <InsightCard
-              Icon={Crown}
+              Icon={Repeat2}
               numero="03"
               accent="#475569"
               bg="#F8FAFC"
-              titulo="Concentração extrema das transações"
-              shockValue={`${formatPercentage(insight3.pctClientesRec, 1)} → ${formatPercentage(insight3.pctTransacoesRec, 0)}`}
-              shockLabel={`${formatNumber(insight3.qtdRecorrentes)} clientes (${formatPercentage(insight3.pctClientesRec, 1)} da base) geram ${formatNumber(insight3.transacoesRecorrentes)} transações (${formatPercentage(insight3.pctTransacoesRec, 0)} do total).`}
-              implicacao="Operação de cauda longa concentrada. O valor por cliente é significativamente maior entre os recorrentes que entre os demais."
+              titulo="Quem ativa, não para mais"
+              shockValue={`${insight3.pctRecorrencia.toFixed(0)}%`}
+              shockLabel={`${formatNumber(insight3.totalRecorrentes)} dos ${formatNumber(insight3.totalAtivados)} clientes ativados se tornaram recorrentes (2+ compras). Quem faz a primeira compra, volta.`}
+              implicacao="O gargalo do funil não é retenção — é ativação. Cada novo cliente ativado tem 94% de chance de virar recorrente. Investir em primeira compra tem ROI quase garantido."
             />
 
             <InsightCard
