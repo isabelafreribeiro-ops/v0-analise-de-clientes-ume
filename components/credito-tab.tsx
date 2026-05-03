@@ -193,7 +193,7 @@ export function CreditoTab() {
       {/* 4 REGRAS — Grid 2x2 */}
       <Card className="border-[#E2E8F0]">
         <CardHeader>
-          <CardTitle>4 Regras de Política de Crédito</CardTitle>
+          <CardTitle>5 Regras de Política de Crédito</CardTitle>
           <p className="text-xs text-[#64748b] mt-2">
             Critérios derivados da base — cada regra com headcount elegível e upside estimado.
           </p>
@@ -375,6 +375,48 @@ export function CreditoTab() {
                 </p>
               </div>
             </div>
+
+            {/* REGRA 05 */}
+            <div className="rounded border-l-4 border-[#00C853] bg-[#E8F5E9]/40 p-4">
+              <div className="flex items-start justify-between mb-2">
+                <span className="text-xs font-bold text-[#1B5E20] uppercase tracking-wider">
+                  Regra 05 — Cutoff
+                </span>
+                <span className="text-[10px] font-semibold px-2 py-1 rounded bg-[#00C853]/20 text-[#1B5E20]">
+                  Upside Direto
+                </span>
+              </div>
+              <h3 className="text-sm font-bold text-[#1a1a1a] mb-3">
+                <Shield className="h-4 w-4 inline-block text-[#475569] mr-1" /> Subir cutoff de aprovação para score 550
+              </h3>
+              <div className="space-y-2 text-xs">
+                <div>
+                  <p className="text-[10px] font-semibold text-[#64748b] uppercase">Critério</p>
+                  <p className="text-[#1a1a1a]">Score &lt; 550 → Negado automático (hoje cutoff é 400)</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold text-[#64748b] uppercase">Ação</p>
+                  <p className="text-[#1a1a1a]">Reduzir aprovação na zona 400-549 — onde 100% dos clientes aprovados viraram inadimplentes</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-semibold text-[#64748b] uppercase">Evidência</p>
+                  <p className="text-xs text-[#1a1a1a]">Faixa de score 400-549 hoje tem 2.351 clientes aprovados, ZERO adimplentes e 100% inadimplência. Adimplentes da base começam em score 550. O cutoff atual (400) está 150 pontos abaixo do score onde a base efetivamente paga.</p>
+                </div>
+                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-[#00C853]/20">
+                  <div>
+                    <p className="text-[10px] font-semibold text-[#64748b] uppercase">Elegíveis (a serem reprovados)</p>
+                    <p className="text-lg font-bold text-[#1B5E20]">2.351</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-semibold text-[#64748b] uppercase">Upside/ano</p>
+                    <p className="text-lg font-bold text-[#00C853]">R$ 1,09 mi</p>
+                  </div>
+                </div>
+                <p className="text-[10px] text-[#64748b] italic mt-1">
+                  Lucro líquido — zero adimplente nessa faixa, zero perda de receita
+                </p>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -457,10 +499,24 @@ export function CreditoTab() {
                     <span className="px-2 py-0.5 rounded bg-[#94A3B8] text-white text-[10px] font-bold">P2</span>
                   </td>
                 </tr>
+                <tr className="border-b border-[#E2E8F0] bg-[#E8F5E9]/30">
+                  <td className="py-2 px-2 font-medium"><Shield className="h-4 w-4 inline-block text-[#475569] mr-1" /> R5 — Cutoff</td>
+                  <td className="py-2 px-2 text-right">2.351</td>
+                  <td className="py-2 px-2 text-right text-[#00C853] font-bold">R$ 1,09 M</td>
+                  <td className="py-2 px-2 text-center">
+                    <span className="px-2 py-0.5 rounded bg-[#E8F5E9] text-[#1B5E20] text-[10px]">Baixo</span>
+                  </td>
+                  <td className="py-2 px-2 text-center">
+                    <span className="px-2 py-0.5 rounded bg-[#E8F5E9] text-[#1B5E20] text-[10px]">Baixo</span>
+                  </td>
+                  <td className="py-2 px-2 text-center">
+                    <span className="px-2 py-0.5 rounded bg-[#00C853] text-white text-[10px] font-bold">P1</span>
+                  </td>
+                </tr>
                 <tr className="bg-[#1a1a1a] text-white font-bold border-t-2 border-[#475569]">
                   <td className="py-3 px-2">Σ Total Programa</td>
-                  <td className="py-3 px-2 text-right">175.087 elegíveis</td>
-                  <td className="py-3 px-2 text-right text-[#00C853]">R$ 1,7 M+ /ano</td>
+                  <td className="py-3 px-2 text-right">178.238 elegíveis</td>
+                  <td className="py-3 px-2 text-right text-[#00C853]">R$ 2,8 M+ /ano</td>
                   <td className="py-3 px-2 text-center" colSpan={3}>
                     <span className="text-xs">+ Retenção LTV (R3) + redução R$ 2,5M CAC desperdiçado (R4)</span>
                   </td>
@@ -471,9 +527,7 @@ export function CreditoTab() {
 
           <div className="mt-4 p-3 bg-[#F1F5F9] border border-[#94A3B8]/20 rounded text-xs text-[#475569] flex items-start gap-2">
             <Lightbulb className="w-4 h-4 shrink-0 mt-0.5 text-[#475569]" />
-            <span><strong>Sequência sugerida:</strong> R1 e R4 primeiro (P1) — risco baixo, alta alavancagem,
-            implementação direta no funil de aprovação. R2 e R3 em fase 2 (P2) — exigem instrumentação de
-            cohort tracking pra medir efeito de retenção.</span>
+            <span><strong>Sequência sugerida:</strong> R1, R4 e R5 primeiro (P1) — ataque ao funil de aprovação. R2 e R3 fase 2 (P2).</span>
           </div>
         </CardContent>
       </Card>
