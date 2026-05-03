@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Store, TrendingUp, DollarSign, Repeat } from "lucide-react";
+import { Store, DollarSign, Repeat } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Select,
@@ -205,7 +205,7 @@ export function VarejoFunnel({
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-4">
         <Card className="border-[#E2E8F0] bg-white">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-[#64748b]">
@@ -234,23 +234,6 @@ export function VarejoFunnel({
             </div>
             <p className="mt-1 text-xs text-[#64748b]">
               {summaryMetrics.totalVarejos > 0 ? new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format((summaryMetrics.varejosAtivos / summaryMetrics.totalVarejos) * 100) : 0}% do total
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card className="border-[#E2E8F0] bg-white">
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-[#64748b]">
-              Varejos com Conversões
-            </CardTitle>
-            <TrendingUp className="h-4 w-4 text-[#00C853]" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-[#00C853]">
-              {summaryMetrics.varejosComConversoes.toLocaleString("pt-BR")}
-            </div>
-            <p className="mt-1 text-xs text-[#64748b]">
-              {summaryMetrics.totalVarejos > 0 ? new Intl.NumberFormat("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format((summaryMetrics.varejosComConversoes / summaryMetrics.totalVarejos) * 100) : 0}% do total
             </p>
           </CardContent>
         </Card>
@@ -300,7 +283,6 @@ export function VarejoFunnel({
           <div className="space-y-2 pt-4 border-t border-[#E2E8F0] text-xs text-[#64748b]">
             <div><span className="font-medium text-[#1a1a1a]">Total na Rede:</span> varejos parceiros presentes na base.</div>
             <div><span className="font-medium text-[#1a1a1a]">Varejos Ativos:</span> varejos com transações recorrentes ou conversões.</div>
-            <div><span className="font-medium text-[#1a1a1a]">Varejos com Conversões:</span> varejos com transações de conversão no período.</div>
             <div><span className="font-medium text-[#1a1a1a]">Originação Total:</span> volume total de crédito originado pelos varejos.</div>
           </div>
         </div>
