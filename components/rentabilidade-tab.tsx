@@ -127,7 +127,7 @@ export function RentabilidadeTab() {
             <Lightbulb className="h-4 w-4 text-[#00C853]" /> Tese
           </p>
           <p className="text-sm italic text-[#1a1a1a] mt-1">
-            11% da base gera 97% da receita e 100% da margem positiva. Toda alavanca de growth gira em torno de proteger e expandir esses 23.000 clientes — o resto é ruído ou ineficiência de funil.
+            11,5% da base gera 99% da receita e 100% da margem positiva. Esses 23.000 clientes carregam toda a operação — o resto é ruído ou ineficiência de funil.
           </p>
         </div>
       </div>

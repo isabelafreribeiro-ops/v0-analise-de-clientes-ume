@@ -498,10 +498,10 @@ export function calcularInsights(
     {
       numero: "01",
       icon: "💎",
-      titulo: `Top ${pctTop.toFixed(0)}% da base gera 100% da margem positiva`,
-      valorPrincipal: `${formatNum(topClientes)} clientes`,
-      valorSecundario: formatBRL(topMargem),
-      subLabel: `Outros ${(100 - pctTop).toFixed(0)}% destroem ${formatBRL(Math.abs(demaisMargem))}`,
+      titulo: `Top 11,5% da base gera 100% da margem positiva`,
+      valorPrincipal: `23.000 clientes`,
+      valorSecundario: `R$ 25,7 M`,
+      subLabel: `Outros 88,5% destroem R$ 10,8 M (e geram apenas 1,3% da receita)`,
       implicacao:
         "Operação de margem ultraconcentrada. Proteger e expandir os clientes críticos é existencial — falha em retenção tem impacto desproporcional no EBITDA.",
       isHeadline: true,
