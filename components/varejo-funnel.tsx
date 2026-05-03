@@ -283,7 +283,6 @@ export function VarejoFunnel({
           <div className="space-y-2 pt-4 border-t border-[#E2E8F0] text-xs text-[#64748b]">
             <div><span className="font-medium text-[#1a1a1a]">Total na Rede:</span> varejos parceiros presentes na base.</div>
             <div><span className="font-medium text-[#1a1a1a]">Varejos Ativos:</span> varejos com transações recorrentes ou conversões.</div>
-            <div><span className="font-medium text-[#1a1a1a]">Varejos com Conversões:</span> varejos com transações de conversão no período.</div>
             <div><span className="font-medium text-[#1a1a1a]">Originação Total:</span> volume total de crédito originado pelos varejos.</div>
           </div>
         </div>
